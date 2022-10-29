@@ -1,8 +1,10 @@
-﻿namespace ZXMAK2.Host.WinForms
+﻿using System.IO;
+
+namespace ZXMAK2.Host.WinForms
 {
 	public class Resources
 	{
-		public static string KeyboardMdx => null;
-		public static string KeyboardWinForms => null;
+		public static string KeyboardMdx => File.ReadAllText("Keyboard.Mdx.config");
+		public static string KeyboardWinForms => File.ReadAllText("Keyboard.WinForms.config");
 	}
 }

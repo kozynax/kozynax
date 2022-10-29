@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
+    <OutputType>WinExe</OutputType>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -32,6 +33,9 @@
     <Reference Include="WeifenLuo.WinFormsUI.Docking, Version=2.9.0.0, Culture=neutral, PublicKeyToken=5cded1a1a0a7b481">
       <HintPath>..\musor\Libraries\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
     </Reference>
+    <Reference Include="ZXMAK2.DirectX">
+      <HintPath>..\musor\_bindebug\ZXMAK2.DirectX.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -42,10 +46,17 @@
     <Compile Remove="ZXMAK2.Hardware\GeneralSoundDevice.cs" />
     <Compile Remove="ZXMAK2.DirectX\DirectSound\Blob.cs" />
     <Compile Remove="ZXMAK2.Host.WinForms\Mdx\Renderers.mdx\**" />
+    <None Remove="ZXMAK2.DirectX\Native\NativeHelper.il" />
+    <Compile Include="ZXMAK2.DirectX\Native\NativeHelper.il" />
+    <None Remove="ZXMAK2.DirectX\Direct3D\Direct3DDevice9.il" />
+    <Compile Include="ZXMAK2.DirectX\Direct3D\Direct3DDevice9.il" />
+    <Compile Remove="ZXMAK2.DirectX\**" />
+    <None Remove="ZXMAK2.DirectX\**" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Remove="ZXMAK2.Host.WinForms\Mdx\Renderers.mdx\**" />
+    <EmbeddedResource Remove="ZXMAK2.DirectX\**" />
   </ItemGroup>
 
   <ItemGroup>
