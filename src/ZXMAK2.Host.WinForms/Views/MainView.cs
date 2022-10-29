@@ -135,10 +135,10 @@ namespace ZXMAK2.Host.WinForms.Views
             _binding.Bind(this, "IsRunning", "IsRunning");
             _binding.Bind(renderVideo, "IsRunning", "IsRunning");
 
-            var imagePause = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuPause_32x32;
-            var imageResume = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuResume_32x32;
-            var imageWindowed = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuWindowed_32x32;
-            var imageFullScreen = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuFullScreen_32x32;
+            var imagePause = global::ZXMAK2.Resources.ResourceImages.EmuPause_32x32;
+            var imageResume = global::ZXMAK2.Resources.ResourceImages.EmuResume_32x32;
+            var imageWindowed = global::ZXMAK2.Resources.ResourceImages.EmuWindowed_32x32;
+            var imageFullScreen = global::ZXMAK2.Resources.ResourceImages.EmuFullScreen_32x32;
             _binding.Bind(
                 tbrButtonPause,
                 "Image",

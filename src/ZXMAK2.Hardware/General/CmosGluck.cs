@@ -2,10 +2,9 @@
 using System.Text;
 using System.Xml;
 using ZXMAK2.Hardware.Circuits;
-using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
-
+using Utils = ZXMAK2.Engine.Utils;
 
 namespace ZXMAK2.Hardware.General
 {

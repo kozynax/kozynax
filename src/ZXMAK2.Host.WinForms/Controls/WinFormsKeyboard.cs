@@ -23,7 +23,7 @@ namespace ZXMAK2.Host.WinForms.Controls
             }
             _form = form;
             _mapper.LoadMapFromString(
-                global::ZXMAK2.Host.WinForms.Properties.Resources.Keyboard_WinForms);
+                global::ZXMAK2.Host.WinForms.Resources.KeyboardWinForms);
             foreach (var key in _mapper.Keys)
             {
                 _state[key] = false;

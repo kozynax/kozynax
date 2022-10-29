@@ -497,7 +497,7 @@
             // tbrButtonOpen
             // 
             this.tbrButtonOpen.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonOpen.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuFileOpen_32x32;
+            this.tbrButtonOpen.Image = global::ZXMAK2.Resources.ResourceImages.EmuFileOpen_32x32;
             this.tbrButtonOpen.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonOpen.Name = "tbrButtonOpen";
             this.tbrButtonOpen.Size = new System.Drawing.Size(36, 36);
@@ -505,7 +505,7 @@
             // tbrButtonSave
             // 
             this.tbrButtonSave.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonSave.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuFileSave_32x32;
+            this.tbrButtonSave.Image = global::ZXMAK2.Resources.ResourceImages.EmuFileSave_32x32;
             this.tbrButtonSave.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonSave.Name = "tbrButtonSave";
             this.tbrButtonSave.Size = new System.Drawing.Size(36, 36);
@@ -518,7 +518,7 @@
             // tbrButtonPause
             // 
             this.tbrButtonPause.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonPause.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuResume_32x32;
+            this.tbrButtonPause.Image = global::ZXMAK2.Resources.ResourceImages.EmuResume_32x32;
             this.tbrButtonPause.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonPause.Name = "tbrButtonPause";
             this.tbrButtonPause.Size = new System.Drawing.Size(36, 36);
@@ -527,7 +527,7 @@
             // 
             this.tbrButtonMaxSpeed.CheckOnClick = true;
             this.tbrButtonMaxSpeed.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonMaxSpeed.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuMaxSpeed_32x32;
+            this.tbrButtonMaxSpeed.Image = global::ZXMAK2.Resources.ResourceImages.EmuMaxSpeed_32x32;
             this.tbrButtonMaxSpeed.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonMaxSpeed.Name = "tbrButtonMaxSpeed";
             this.tbrButtonMaxSpeed.Size = new System.Drawing.Size(36, 36);
@@ -535,7 +535,7 @@
             // tbrButtonWarmReset
             // 
             this.tbrButtonWarmReset.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonWarmReset.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuWarmReset_32x32;
+            this.tbrButtonWarmReset.Image = global::ZXMAK2.Resources.ResourceImages.EmuWarmReset_32x32;
             this.tbrButtonWarmReset.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonWarmReset.Name = "tbrButtonWarmReset";
             this.tbrButtonWarmReset.Size = new System.Drawing.Size(36, 36);
@@ -543,7 +543,7 @@
             // tbrButtonColdReset
             // 
             this.tbrButtonColdReset.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonColdReset.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuColdReset_32x32;
+            this.tbrButtonColdReset.Image = global::ZXMAK2.Resources.ResourceImages.EmuColdReset_32x32;
             this.tbrButtonColdReset.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonColdReset.Name = "tbrButtonColdReset";
             this.tbrButtonColdReset.Size = new System.Drawing.Size(36, 36);
@@ -556,7 +556,7 @@
             // tbrButtonFullScreen
             // 
             this.tbrButtonFullScreen.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonFullScreen.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuFullScreen_32x32;
+            this.tbrButtonFullScreen.Image = global::ZXMAK2.Resources.ResourceImages.EmuFullScreen_32x32;
             this.tbrButtonFullScreen.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonFullScreen.Name = "tbrButtonFullScreen";
             this.tbrButtonFullScreen.Size = new System.Drawing.Size(36, 36);
@@ -564,7 +564,7 @@
             // tbrButtonQuickLoad
             // 
             this.tbrButtonQuickLoad.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonQuickLoad.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuQuickLoad_32x32;
+            this.tbrButtonQuickLoad.Image = global::ZXMAK2.Resources.ResourceImages.EmuQuickLoad_32x32;
             this.tbrButtonQuickLoad.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonQuickLoad.Name = "tbrButtonQuickLoad";
             this.tbrButtonQuickLoad.Size = new System.Drawing.Size(36, 36);
@@ -573,7 +573,7 @@
             // tbrButtonSettings
             // 
             this.tbrButtonSettings.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbrButtonSettings.Image = global::ZXMAK2.Host.WinForms.Properties.Resources.EmuSettings_32x32;
+            this.tbrButtonSettings.Image = global::ZXMAK2.Resources.ResourceImages.EmuSettings_32x32;
             this.tbrButtonSettings.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonSettings.Name = "tbrButtonSettings";
             this.tbrButtonSettings.Size = new System.Drawing.Size(36, 36);

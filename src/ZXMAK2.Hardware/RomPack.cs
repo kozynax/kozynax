@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using ZXMAK2.Engine;
 
+using ZipLib = ICSharpCode.SharpZipLib;
 
 namespace ZXMAK2.Hardware
 {

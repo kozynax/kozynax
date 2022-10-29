@@ -1,4 +1,5 @@
 ﻿using FastColoredTextBoxNS;
+using ZXMAK2.Resources;
 
 namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
 {
@@ -31,7 +32,6 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Assembler));
             System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("noname.asm");
             this.txtAsm = new FastColoredTextBoxNS.FastColoredTextBox();
             this.btnCompile = new System.Windows.Forms.Button();
@@ -131,7 +131,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             this.txtAsm.Name = "txtAsm";
             this.txtAsm.Paddings = new System.Windows.Forms.Padding(0);
             this.txtAsm.SelectionColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            this.txtAsm.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("txtAsm.ServiceColors")));
+            // this.txtAsm.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("txtAsm.ServiceColors")));
             this.txtAsm.Size = new System.Drawing.Size(542, 552);
             this.txtAsm.TabIndex = 0;
             this.txtAsm.WordWrapAutoIndent = false;
@@ -188,7 +188,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             // toolStripNewSource
             // 
             this.toolStripNewSource.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripNewSource.Image = ((System.Drawing.Image)(resources.GetObject("toolStripNewSource.Image")));
+            this.toolStripNewSource.Image = ResourceImages.Adlers_toolStripNewSource;
             this.toolStripNewSource.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripNewSource.Name = "toolStripNewSource";
             this.toolStripNewSource.Size = new System.Drawing.Size(32, 32);
@@ -203,7 +203,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             // compileToolStrip
             // 
             this.compileToolStrip.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.compileToolStrip.Image = ((System.Drawing.Image)(resources.GetObject("compileToolStrip.Image")));
+            this.compileToolStrip.Image = ResourceImages.Adlers_compileToolStrip;
             this.compileToolStrip.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.compileToolStrip.Name = "compileToolStrip";
             this.compileToolStrip.Size = new System.Drawing.Size(32, 32);
@@ -213,7 +213,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             // toolStripButtonReloadFile
             // 
             this.toolStripButtonReloadFile.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButtonReloadFile.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButtonReloadFile.Image")));
+            this.toolStripButtonReloadFile.Image = ResourceImages.Adlers_toolStripButtonReloadFile;
             this.toolStripButtonReloadFile.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonReloadFile.Name = "toolStripButtonReloadFile";
             this.toolStripButtonReloadFile.Size = new System.Drawing.Size(32, 32);
@@ -228,7 +228,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             // openFileStripButton
             // 
             this.openFileStripButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.openFileStripButton.Image = ((System.Drawing.Image)(resources.GetObject("openFileStripButton.Image")));
+            this.openFileStripButton.Image = ResourceImages.Adlers_openFileStripButton;
             this.openFileStripButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.openFileStripButton.Name = "openFileStripButton";
             this.openFileStripButton.Size = new System.Drawing.Size(32, 32);
@@ -238,7 +238,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             // saveFileStripButton
             // 
             this.saveFileStripButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.saveFileStripButton.Image = ((System.Drawing.Image)(resources.GetObject("saveFileStripButton.Image")));
+            this.saveFileStripButton.Image = ResourceImages.Adlers_saveFileStripButton;
             this.saveFileStripButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.saveFileStripButton.Name = "saveFileStripButton";
             this.saveFileStripButton.Size = new System.Drawing.Size(32, 32);
@@ -253,7 +253,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             // settingsToolStrip
             // 
             this.settingsToolStrip.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.settingsToolStrip.Image = ((System.Drawing.Image)(resources.GetObject("settingsToolStrip.Image")));
+            this.settingsToolStrip.Image = ResourceImages.Adlers_settingsToolStrip;
             this.settingsToolStrip.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.settingsToolStrip.Name = "settingsToolStrip";
             this.settingsToolStrip.Size = new System.Drawing.Size(32, 32);
@@ -263,7 +263,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             // toolStripColors
             // 
             this.toolStripColors.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripColors.Image = ((System.Drawing.Image)(resources.GetObject("toolStripColors.Image")));
+            this.toolStripColors.Image = ResourceImages.Adlers_toolStripColors;
             this.toolStripColors.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripColors.Name = "toolStripColors";
             this.toolStripColors.Size = new System.Drawing.Size(32, 32);
@@ -279,7 +279,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             // toolCodeLibrary
             // 
             this.toolCodeLibrary.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolCodeLibrary.Image = ((System.Drawing.Image)(resources.GetObject("toolCodeLibrary.Image")));
+            this.toolCodeLibrary.Image = ResourceImages.Adlers_toolCodeLibrary;
             this.toolCodeLibrary.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolCodeLibrary.Name = "toolCodeLibrary";
             this.toolCodeLibrary.Size = new System.Drawing.Size(32, 32);
@@ -616,7 +616,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.AssemblerView
             this.Controls.Add(this.btnClose);
             this.Controls.Add(this.buttonClearAssemblerLog);
             this.Controls.Add(this.btnCompile);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Icon = ResourceImages.AdlersAsm;
             this.KeyPreview = true;
             this.Name = "Assembler";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
