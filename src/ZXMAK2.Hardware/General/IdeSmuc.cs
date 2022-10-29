@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Xml;
-using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Cpu;
@@ -10,6 +9,7 @@ using ZXMAK2.Hardware.Circuits.Ata;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Resources;
 
+using Utils = ZXMAK2.Engine.Utils;
 
 namespace ZXMAK2.Hardware.General
 {

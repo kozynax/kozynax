@@ -9,6 +9,7 @@ using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Hardware.Adlers.Core;
 using ZXMAK2.Host.Interfaces;
+using ZXMAK2.Resources;
 
 namespace ZXMAK2.Hardware.Adlers.Views.GraphicsEditorView
 {
@@ -31,7 +32,7 @@ namespace ZXMAK2.Hardware.Adlers.Views.GraphicsEditorView
             _spectrum = spectrum;
 
             InitializeComponent();
-            this.Icon = Icon.FromHandle(global::ZXMAK2.Resources.ResourceImages.ImageZxLogo.GetHicon());
+            this.Icon = ResourceImages.ImageZxLogo;
             this.ShowIcon = true;
 
             comboDisplayType.SelectedIndex = 0;

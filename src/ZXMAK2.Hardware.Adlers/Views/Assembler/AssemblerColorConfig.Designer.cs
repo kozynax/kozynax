@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AssemblerColorConfig));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.chcbxStackInstructionsEnabled = new System.Windows.Forms.CheckBox();
             this.checkBoxStackInstructionsUnderline = new System.Windows.Forms.CheckBox();
@@ -390,7 +389,7 @@
             this.fctbxPreview.Paddings = new System.Windows.Forms.Padding(0);
             this.fctbxPreview.ReadOnly = true;
             this.fctbxPreview.SelectionColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(255)))));
-            this.fctbxPreview.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("fctbxPreview.ServiceColors")));
+            //this.fctbxPreview.ServiceColors = ((FastColoredTextBoxNS.ServiceColors)(resources.GetObject("fctbxPreview.ServiceColors")));
             this.fctbxPreview.Size = new System.Drawing.Size(543, 271);
             this.fctbxPreview.TabIndex = 1;
             this.fctbxPreview.Zoom = 100;

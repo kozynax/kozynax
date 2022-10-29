@@ -63,7 +63,7 @@ namespace ZXMAK2.Host.WinForms.Mdx
             form.Deactivate += WndDeactivate;
             TryAcquire();
             _mapper.LoadMapFromString(
-                global::ZXMAK2.Host.WinForms.Properties.Resources.Keyboard_Mdx);
+                global::ZXMAK2.Host.WinForms.Resources.KeyboardMdx);
         }
 
         public void Dispose()

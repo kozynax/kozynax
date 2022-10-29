@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using ZXMAK2.Dependency;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Engine.Interfaces;
-
+using ZipLib = ICSharpCode.SharpZipLib;
 
 
 namespace ZXMAK2.Serializers
