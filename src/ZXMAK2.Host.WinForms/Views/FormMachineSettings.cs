@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Linq;
-using System.Xml;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
-
+using Kozynax.UI;
 using ZXMAK2.Dependency;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Engine;
@@ -14,6 +13,7 @@ using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.WinForms.Views.Configuration.Devices;
 using ZXMAK2.Host.WinForms.Tools;
+using ZXMAK2.Resources;
 
 
 namespace ZXMAK2.Host.WinForms.Views
@@ -53,7 +53,6 @@ namespace ZXMAK2.Host.WinForms.Views
             System.Windows.Forms.ListViewItem listViewItem6 = new System.Windows.Forms.ListViewItem("Sound", 5);
             System.Windows.Forms.ListViewItem listViewItem7 = new System.Windows.Forms.ListViewItem("Tape", 6);
             System.Windows.Forms.ListViewItem listViewItem8 = new System.Windows.Forms.ListViewItem("Display", 7);
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMachineSettings));
             this.lstNavigation = new System.Windows.Forms.ListView();
             this.colDevice = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colSummary = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -110,19 +109,18 @@ namespace ZXMAK2.Host.WinForms.Views
             // 
             // imageList
             // 
-            this.imageList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList.ImageStream")));
             this.imageList.TransparentColor = System.Drawing.Color.Transparent;
-            this.imageList.Images.SetKeyName(0, "RAMx16.png");
-            this.imageList.Images.SetKeyName(1, "PCBx16.png");
-            this.imageList.Images.SetKeyName(2, "ULAx16.png");
-            this.imageList.Images.SetKeyName(3, "FDDx16.png");
-            this.imageList.Images.SetKeyName(4, "BEEPERx16.png");
-            this.imageList.Images.SetKeyName(5, "AY8910x16.png");
-            this.imageList.Images.SetKeyName(6, "TAPEx16.png");
-            this.imageList.Images.SetKeyName(7, "KBDx16.png");
-            this.imageList.Images.SetKeyName(8, "MOUSx16.png");
-            this.imageList.Images.SetKeyName(9, "DISPLAYx16.png");
-            this.imageList.Images.SetKeyName(10, "DEBUGx16.png");
+            this.imageList.Images.Add(ResourceImages.RAM);
+            this.imageList.Images.Add(ResourceImages.PCB);
+            this.imageList.Images.Add(ResourceImages.ULA);
+            this.imageList.Images.Add(ResourceImages.FDD);
+            this.imageList.Images.Add(ResourceImages.BEEPER);
+            this.imageList.Images.Add(ResourceImages.AY8910);
+            this.imageList.Images.Add(ResourceImages.TAPE);
+            this.imageList.Images.Add(ResourceImages.KBD);
+            this.imageList.Images.Add(ResourceImages.MOUS);
+            this.imageList.Images.Add(ResourceImages.DISPLAY);
+            this.imageList.Images.Add(ResourceImages.DEBUG);
             // 
             // pnlSettings
             // 
@@ -204,7 +202,7 @@ namespace ZXMAK2.Host.WinForms.Views
             // btnWizard
             // 
             this.btnWizard.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnWizard.Image = ((System.Drawing.Image)(resources.GetObject("btnWizard.Image")));
+            this.btnWizard.Image = ResourceImages.Wizard;
             this.btnWizard.Location = new System.Drawing.Point(325, 362);
             this.btnWizard.Name = "btnWizard";
             this.btnWizard.Size = new System.Drawing.Size(75, 27);
@@ -277,12 +275,8 @@ namespace ZXMAK2.Host.WinForms.Views
 
         #region private
 
-        private readonly MachinesConfig m_machines = new MachinesConfig();
-        private IHostService m_host;
-        private IVirtualMachine m_vm;
-        private BusManager m_workBus;
-        private List<ConfigScreenControl> m_ctlList = new List<ConfigScreenControl>();
-        private List<BusDeviceBase> m_devList = new List<BusDeviceBase>();
+        private Dictionary<BusDeviceBase, ConfigScreenControl> _deviceConfigurationControls = new Dictionary<BusDeviceBase, ConfigScreenControl>();
+        private MachineSettings _machineSettings = new MachineSettings();
 
         #endregion
 
@@ -290,44 +284,154 @@ namespace ZXMAK2.Host.WinForms.Views
         public FormMachineSettings()
         {
             InitializeComponent();
-            LoadMachines();
-            btnWizard.Enabled = ctxMenuWizard.Items.Count > 0;
+
+            lstNavigation.Items.Clear();
+
+            _machineSettings.Init();
+            
+            _machineSettings.Redraw += machineSettings_Redraw;
+            _machineSettings.ShowWizard += machineSettings_ShowWizard;
+            _machineSettings.Closed += _machineSettings_Closed;
         }
 
-        private void LoadMachines()
+        private void _machineSettings_Closed(object sender, EventArgs e)
+            => Close();
+
+        private void machineSettings_ShowWizard(object sender, IList<MachineSettings.MachineConfiguration> machines)
         {
-            try
+            ctxMenuWizard.Items.Clear();
+
+            foreach (var m in machines)
             {
-                m_machines.Load();
-                foreach (var name in m_machines.GetNames())
+                var item = ctxMenuWizard.Items.Add(m.Name);
+                item.Tag = m;
+                item.Click += new EventHandler(ctxMenuWizardItem_Click);
+            }
+
+            if (ctxMenuWizard.Items.Count < 1)
+                return;
+
+            var p = new Point(btnWizard.Width, 0);
+
+            // fix self collapse on first appearance
+            if (!ctxMenuWizard.Created)
+            {
+                // we needs to show/hide it
+                // temporary set zero height to avoid flicks
+                var height = ctxMenuWizard.Height;
+                ctxMenuWizard.Height = 0;
+                ctxMenuWizard.Show(btnWizard, p);
+                ctxMenuWizard.Hide();
+                ctxMenuWizard.Height = height;
+            }
+            ctxMenuWizard.Show(btnWizard, p);
+        }
+
+        private void machineSettings_Redraw(object sender, EventArgs e)
+        {
+            var devices = _machineSettings.Devices.List;
+            int index = 0;
+
+            lstNavigation.BeginUpdate();
+            lstNavigation.ItemSelectionChanged -= lstNavigation_ItemSelectionChanged;
+
+            while (true)
+            {
+                if (devices.Count <= index)
                 {
-                    var node = m_machines.GetConfig(name);
-                    var item = ctxMenuWizard.Items.Add(name);
-                    item.Tag = node;
-                    item.Click += new EventHandler(ctxMenuWizardItem_Click);
+                    // Source list is over, so we need to delete everything in target after this
+                    for (int i = lstNavigation.Items.Count - 1; i >= index; i--)
+                        lstNavigation.Items.RemoveAt(i);
+                    break;
+                }
+
+                var device = devices[index];
+
+                if (lstNavigation.Items.Count <= index)
+                {
+                    // Target list is empty, so we simply add item
+                    InsertListViewItem(index, device);
+                }
+                else if (lstNavigation.Items[index].Tag != device)
+                {
+                    // Attempt to find list view item for the device
+                    var listItemForDevice = lstNavigation.Items.OfType<ListViewItem>().FirstOrDefault(i => i.Tag == device);
+                    if (listItemForDevice != null)
+                    {
+                        lstNavigation.Items.Remove(listItemForDevice);
+                        lstNavigation.Items.Insert(index, listItemForDevice);
+                    }
+                    else
+                        InsertListViewItem(index, device);
+                }
+
+                index++;
+            }
+
+            lstNavigation.ItemSelectionChanged += lstNavigation_ItemSelectionChanged;
+            lstNavigation.EndUpdate();
+
+            ApplyKozuiButton(_machineSettings.AddDevice, btnAdd);
+            ApplyKozuiButton(_machineSettings.RemoveDevice, btnRemove);
+            ApplyKozuiButton(_machineSettings.Up, btnUp);
+            ApplyKozuiButton(_machineSettings.Down, btnDown);
+            ApplyKozuiButton(_machineSettings.Apply, btnApply);
+            ApplyKozuiButton(_machineSettings.Cancel, btnCancel);
+
+            foreach (var device in devices)
+            {
+                if (!_deviceConfigurationControls.ContainsKey(device))
+                {
+                    var control = ResolveScreenControl(_machineSettings.WorkBus, _machineSettings.Host, device);
+                    _deviceConfigurationControls[device] = control;
+                    pnlSettings.Controls.Add(control);
                 }
             }
-            catch (Exception ex)
+
+            foreach (var device in _deviceConfigurationControls.ToList())
             {
-                Logger.Error(ex);
+                if (!devices.Contains(device.Key))
+                {
+                    pnlSettings.Controls.Remove(device.Value);
+                    _deviceConfigurationControls.Remove(device.Key);
+                    device.Value.Dispose();
+                }
+            }
+
+            foreach (var ctl in _deviceConfigurationControls.Values)
+                ctl.Visible = false;
+
+            index = _machineSettings.Devices.SelectedIndex;
+            if (index >= 0 && index < devices.Count)
+            {
+                var device = devices[index];
+                _deviceConfigurationControls[device].Visible = true;
             }
         }
 
-        private void insertListViewItem(int index, UserControl control, BusDeviceBase device)
+        private void ApplyKozuiButton(Lib.Button button, Button formButton)
         {
-            control.Location = new Point(0, 0);
-            control.Size = pnlSettings.ClientSize;
-            control.Visible = false;
-            pnlSettings.Controls.Add(control);
-            var csc = (ConfigScreenControl)control;
-            m_ctlList.Insert(index, csc);
-            m_devList.Insert(index, device);
+            formButton.Visible = button.Visible;
+            formButton.Enabled = button.Enabled;
+        }
+
+        private void InsertListViewItem(int index, BusDeviceBase device)
+        {
             var lvi = new ListViewItem();
-            lvi.Tag = csc;
+            lvi.Tag = device;
             lvi.Text = device.Category.ToString();
             lvi.SubItems.Add(device.Name);
             lvi.ImageIndex = FindImageIndex(device.Category);
             lstNavigation.Items.Insert(index, lvi);
+        }
+
+        private void insertListViewItem(int index, BusDeviceBase device)
+        {
+            var control = _deviceConfigurationControls[device];
+            control.Location = new Point(0, 0);
+            control.Size = pnlSettings.ClientSize;
+            control.Visible = false;
+            pnlSettings.Controls.Add(control);
         }
 
         public static int FindImageIndex(BusDeviceCategory category)
@@ -360,7 +464,7 @@ namespace ZXMAK2.Host.WinForms.Views
             }
         }
 
-        private UserControl CreateConfigScreenControl(BusManager bmgr, object objTarget)
+        private UserControl CreateConfigScreenControl(BusManager bmgr, IHostService host, BusDeviceBase objTarget)
         {
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -389,7 +493,7 @@ namespace ZXMAK2.Host.WinForms.Views
                                 if (mi == null)
                                     continue;
                                 var obj = (UserControl)Activator.CreateInstance(type);
-                                mi.Invoke(obj, new object[] { bmgr, m_host, objTarget });
+                                mi.Invoke(obj, new object[] { bmgr, host, objTarget });
                                 return obj;
                             }
                         }
@@ -408,28 +512,7 @@ namespace ZXMAK2.Host.WinForms.Views
         }
 
         public void Init(IHostService host, IVirtualMachine vm)
-        {
-            m_host = host;
-            m_vm = vm;
-
-            m_workBus = new BusManager();
-            m_workBus.Init(null, true);
-
-            var xml = new XmlDocument();
-            var root = xml.AppendChild(xml.CreateElement("Bus"));
-            try
-            {
-                m_vm.Bus.SaveConfigXml(root);
-
-                m_workBus.LoadConfigXml(root);
-                m_workBus.Disconnect();
-                initWorkBus();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-            }
-        }
+            => _machineSettings.Init(host, vm);
 
         public DlgResult ShowDialog(object owner)
         {
@@ -444,57 +527,16 @@ namespace ZXMAK2.Host.WinForms.Views
             }
         }
 
-
-        private void initConfig(XmlNode busNode)
+        private ConfigScreenControl ResolveScreenControl(BusManager workBus, IHostService host, BusDeviceBase device)
         {
-            m_workBus.Disconnect();
-            m_workBus.Clear();
-            m_workBus.LoadConfigXml(busNode);
-            m_workBus.Disconnect();
-            initWorkBus();
-        }
-
-        private void initWorkBus()
-        {
-            lstNavigation.Items.Clear();
-            foreach (var ctl in m_ctlList)
-            {
-                Controls.Remove(ctl);
-                ctl.Dispose();
-            }
-            m_ctlList.Clear();
-            m_devList.Clear();
-            foreach (var device in m_workBus.FindDevices<BusDeviceBase>())
-            {
-                try
-                {
-                    var control = ResolveScreenControl(m_workBus, m_host, device);
-                    insertListViewItem(lstNavigation.Items.Count, control, device);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex);
-                    Locator.Resolve<IUserMessage>().Error(
-                        "The following device was failed to initialize and will be removed:\n{0}", 
-                        device.GetType());
-                    m_workBus.Remove(device);
-                }
-            }
-
-            lstNavigation.SelectedItems.Clear();
-            lstNavigation.Items[0].Selected = true;
-        }
-
-        private UserControl ResolveScreenControl(BusManager workBus, IHostService host, BusDeviceBase device)
-        {
-            var control = CreateConfigScreenControl(workBus, device);
+            var control = (ConfigScreenControl)CreateConfigScreenControl(workBus, host, device);
             try
             {
                 if (control != null)
                 {
                     return control;
                 }
-                return CreateGenericScreenControl(workBus, host, device);
+                return (ConfigScreenControl)CreateGenericScreenControl(workBus, host, device);
             }
             catch
             {
@@ -523,168 +565,19 @@ namespace ZXMAK2.Host.WinForms.Views
 
         private void lstNavigation_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
         {
-            for (int i = 0; i < m_ctlList.Count; i++)
-            {
-                var ctl = (UserControl)m_ctlList[i];
-                ctl.Visible = e.ItemIndex == i && e.IsSelected;
-            }
-
-            bool allowRemove = e.IsSelected &&
-                e.ItemIndex >= 0 &&
-                e.ItemIndex < m_ctlList.Count;
-            btnAdd.Enabled = true;
-            btnRemove.Enabled = allowRemove;
-            btnUp.Enabled = IsMoveUpAllowed();
-            btnDown.Enabled = IsMoveDownAllowed();
-        }
-
-        private bool IsMoveUpAllowed()
-        {
-            int index = getSelectedIndex();
-            if (index <= 0 || index >= m_devList.Count - 1)
-                return false;
-            var device = index < lstNavigation.Items.Count - 1 ?
-                m_devList[index] :
-                null;
-            if (device == null)
-                return false;
-            if (device is IUlaDevice)
-                return false;
-            if (device is IMemoryDevice)
-                return false;
-            index = index - 1;
-            if (index <= 0 || index >= m_devList.Count - 1)
-                return false;
-            device = index < lstNavigation.Items.Count - 1 ?
-                m_devList[index] :
-                null;
-            if (device == null)
-                return false;
-            if (device is IUlaDevice)
-                return false;
-            if (device is IMemoryDevice)
-                return false;
-            return true;
-        }
-
-        private bool IsMoveDownAllowed()
-        {
-            int index = getSelectedIndex();
-            if (index <= 0 || index >= m_devList.Count - 1)
-                return false;
-            var device = index < lstNavigation.Items.Count - 1 ?
-                m_devList[index] :
-                null;
-            if (device == null)
-                return false;
-            if (device is IUlaDevice)
-                return false;
-            if (device is IMemoryDevice)
-                return false;
-            index = index + 1;
-            if (index <= 0 || index >= m_devList.Count - 1)
-                return false;
-            device = index < lstNavigation.Items.Count - 1 ?
-                m_devList[index] :
-                null;
-            if (device == null)
-                return false;
-            if (device is IUlaDevice)
-                return false;
-            if (device is IMemoryDevice)
-                return false;
-            return true;
+            _machineSettings.Devices.SelectedIndex = e.IsSelected ? e.ItemIndex : -1;
         }
 
         private void btnApply_Click(object sender, EventArgs e)
         {
-            try
-            {
-                foreach (var csc in m_ctlList)
-                {
-                    csc.Apply();
-                }
-                if (m_workBus.FindDevice<IUlaDevice>() == null)
-                {
-                    Locator.Resolve<IUserMessage>()
-                        .Error("Bad configuration!\n\nPease add ULA device!");
-                    return;
-                }
-                if (m_workBus.FindDevice<IMemoryDevice>() == null)
-                {
-                    Locator.Resolve<IUserMessage>()
-                        .Error("Bad configuration!\n\nPease add Memory device!");
-                    return;
-                }
+            foreach (var csc in _deviceConfigurationControls)
+                csc.Value.Apply();
 
-                if (!m_workBus.Connect())
-                {
-                    Locator.Resolve<IUserMessage>()
-                        .Error("Apply failed!\n\nThere is a problem in your machine configuration!\nSee logs for details");
-                    m_workBus.Disconnect();
-                    return;
-                }
-
-                XmlDocument xml = new XmlDocument();
-                XmlNode root = xml.AppendChild(xml.CreateElement("Bus"));
-                m_workBus.SaveConfigXml(root);
-
-                bool running = m_vm.IsRunning;
-                m_vm.DoStop();
-
-
-                var bmgr = m_vm.Bus;
-
-                // workaround to save border color + Reset in case when memory changed
-                var ula = bmgr.FindDevice<IUlaDevice>();
-                var oldMemory = bmgr.FindDevice<IMemoryDevice>();
-                int portFE = ula != null ? ula.PortFE : 0x00;
-                bmgr.LoadConfigXml(root);
-                ula = bmgr.FindDevice<IUlaDevice>();
-                ula.PortFE = (byte)portFE;
-                var memory = bmgr.FindDevice<IMemoryDevice>();
-                if (memory != oldMemory)
-                    m_vm.DoReset();
-
-                m_vm.SaveConfig();
-                if (running)
-                    m_vm.DoRun();
-                GC.Collect();
-                Close();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-                m_workBus.Disconnect();
-                Locator.Resolve<IUserMessage>()
-                    .Error("Apply failed!\n\n{0}", ex.Message);
-            }
+            _machineSettings.Apply.Click(sender, e);
         }
 
         private void btnRemove_Click(object sender, EventArgs e)
-        {
-            int index = getSelectedIndex();
-            if (index >= 0 && index < m_devList.Count)
-            {
-                m_workBus.Remove(m_devList[index]);
-                var control = (UserControl)m_ctlList[index];
-                Controls.Remove(control);
-                control.Dispose();
-                m_ctlList.RemoveAt(index);
-                m_devList.RemoveAt(index);
-                lstNavigation.Items.RemoveAt(index);
-                lstNavigation.Refresh();
-                if (lstNavigation.Items.Count > index)
-                    lstNavigation.SelectedIndices.Add(index);
-            }
-        }
-
-        private int getSelectedIndex()
-        {
-            foreach (int index in lstNavigation.SelectedIndices)
-                return index;
-            return -1;
-        }
+            => _machineSettings.RemoveDevice.Click(sender, e);
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
@@ -692,23 +585,18 @@ namespace ZXMAK2.Host.WinForms.Views
             {
                 using (var wizard = new FormAddDeviceWizard())
                 {
-                    wizard.IgnoreList = m_devList;
+                    wizard.IgnoreList = _machineSettings.Devices.List.ToList();
                     if (wizard.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                     {
                         return;
                     }
 
                     // apply to avoid loss ULA & MEMORY TYPE
-                    foreach (var csc in m_ctlList)
-                    {
-                        csc.Apply();
-                    }
+                    foreach (var csc in _deviceConfigurationControls)
+                        csc.Value.Apply();
 
                     var device = wizard.Device;
-                    m_workBus.Add(device);
-
-                    m_workBus.Sort();
-                    initWorkBus();
+                    _machineSettings.AddNewDevice(device);
                 }
             }
             catch (Exception ex)
@@ -720,135 +608,15 @@ namespace ZXMAK2.Host.WinForms.Views
         }
 
         private void btnUp_Click(object sender, EventArgs e)
-        {
-            int indexFrom = getSelectedIndex();
-            var deviceFrom = indexFrom < lstNavigation.Items.Count - 1 ?
-                m_devList[indexFrom] :
-                null;
-            if (deviceFrom is IUlaDevice)
-                return;
-            if (deviceFrom is IMemoryDevice)
-                return;
-            int indexTo = indexFrom - 1;
-            if (indexTo < 0)
-                return;
-            var deviceTo = indexTo < lstNavigation.Items.Count - 1 ?
-                m_devList[indexTo] :
-                null;
-            if (deviceTo is IUlaDevice)
-                return;
-            if (deviceTo is IMemoryDevice)
-                return;
-            int tmp = deviceFrom.BusOrder;
-            deviceFrom.BusOrder = deviceTo.BusOrder;
-            deviceTo.BusOrder = tmp;
-
-            var device = m_devList[indexFrom];
-            m_devList.RemoveAt(indexFrom);
-            m_devList.Insert(indexTo, device);
-            var ctl = m_ctlList[indexFrom];
-            m_ctlList.RemoveAt(indexFrom);
-            m_ctlList.Insert(indexTo, ctl);
-            var lvi = lstNavigation.Items[indexFrom];
-            lstNavigation.BeginUpdate();
-            lstNavigation.Items.RemoveAt(indexFrom);
-            lstNavigation.Items.Insert(indexTo, lvi);
-            lstNavigation.EndUpdate();
-            btnUp.Enabled = IsMoveUpAllowed();
-            btnDown.Enabled = IsMoveDownAllowed();
-        }
+           => _machineSettings.Up.Click(sender, e);
 
         private void btnDown_Click(object sender, EventArgs e)
-        {
-            int indexFrom = getSelectedIndex();
-            var deviceFrom = indexFrom < lstNavigation.Items.Count - 1 ?
-                m_devList[indexFrom] :
-                null;
-            if (deviceFrom == null)
-                return;
-            if (deviceFrom is IUlaDevice)
-                return;
-            if (deviceFrom is IMemoryDevice)
-                return;
-            int indexTo = indexFrom + 1;
-            if (indexTo > lstNavigation.Items.Count - 1)
-                return;
-            var deviceTo = indexTo < lstNavigation.Items.Count - 1 ?
-                m_devList[indexTo] :
-                null;
-            if (deviceTo == null)
-                return;
-            if (deviceTo is IUlaDevice)
-                return;
-            if (deviceTo is IMemoryDevice)
-                return;
-            int tmp = deviceFrom.BusOrder;
-            deviceFrom.BusOrder = deviceTo.BusOrder;
-            deviceTo.BusOrder = tmp;
-
-            var device = m_devList[indexTo];
-            m_devList.RemoveAt(indexTo);
-            m_devList.Insert(indexFrom, device);
-            var ctl = m_ctlList[indexTo];
-            m_ctlList.RemoveAt(indexTo);
-            m_ctlList.Insert(indexFrom, ctl);
-            var lvi = lstNavigation.Items[indexTo];
-            lstNavigation.BeginUpdate();
-            lstNavigation.Items.RemoveAt(indexTo);
-            lstNavigation.Items.Insert(indexFrom, lvi);
-            lstNavigation.EndUpdate();
-            btnUp.Enabled = IsMoveUpAllowed();
-            btnDown.Enabled = IsMoveDownAllowed();
-        }
+           => _machineSettings.Down.Click(sender, e);
 
         private void btnWizard_Click(object sender, EventArgs e)
-        {
-            if (ctxMenuWizard.Items.Count < 1)
-                return;
-            var p = new Point(btnWizard.Width, 0);
+            => _machineSettings.Wizard.Click(sender, e);
 
-            // fix self collapse on first appearance
-            if (!ctxMenuWizard.Created)
-            {
-                // we needs to show/hide it
-                // temporary set zero height to avoid flicks
-                var height = ctxMenuWizard.Height;
-                ctxMenuWizard.Height = 0;           
-                ctxMenuWizard.Show(btnWizard, p);
-                ctxMenuWizard.Hide();
-                ctxMenuWizard.Height = height;
-            }
-            ctxMenuWizard.Show(btnWizard, p);
-        }
-
-        public static Control FindFocusedControl(Control control)
-        {
-            var container = control as IContainerControl;
-            while (container != null)
-            {
-                control = container.ActiveControl;
-                container = control as IContainerControl;
-            }
-            return control;
-        }
         private void ctxMenuWizardItem_Click(object sender, EventArgs e)
-        {
-            var item = sender as ToolStripMenuItem;
-            if (item == null)
-            {
-                return;
-            }
-            var busNode = item.Tag as XmlNode;
-
-            if (busNode != null)
-            {
-                initConfig(busNode);
-            }
-            else
-            {
-                Locator.Resolve<IUserMessage>()
-                    .Error("Invalid Configuration File!");
-            }
-        }
+            => _machineSettings.CreateMachine((MachineSettings.MachineConfiguration)(sender as ToolStripItem).Tag);
     }
 }
