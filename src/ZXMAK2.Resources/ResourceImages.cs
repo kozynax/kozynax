@@ -40,8 +40,8 @@ namespace ZXMAK2.Resources
         public static Image KeyboardHelp => Image.FromFile("Icons/KeyboardHelp.png");
         public static Icon IconDebugger => new Icon("Icons/IconDebugger.ico");
         public static Icon IconApp => new Icon("Icons/IconApp.ico");
-        public static Icon ImageZxLogo => new Icon("Icons/ImageZxLogo.png");
-        public static Image ImageKeyboardHelp => Image.FromFile("Icons/ImageKeyboardHelp.png");
+        public static Icon ImageZxLogo => new Icon("Pictures/ZxLogo.png");
+        public static Image ImageKeyboardHelp => Image.FromFile("Pictures/KeyboardHelp.png");
         public static Image Wizard => Image.FromFile("Icons/Wizard.png");
         public static Image RAM => Image.FromFile("DeviceIcons/RAM.png");
         public static Image PCB => Image.FromFile("DeviceIcons/PCB.png");
