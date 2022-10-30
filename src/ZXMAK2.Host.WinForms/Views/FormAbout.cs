@@ -9,7 +9,35 @@ using ZXMAK2.Host.Presentation.Interfaces;
 namespace ZXMAK2.Host.WinForms.Views
 {
     public class FormAbout : FormView, IAboutView
-	{
+    {
+	    private const string AboutText = @"Copyright 2001 - 2018 Alex Makeev
+ 
+ZXMAK2 is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+ZXMAK2 is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with ZXMAK2.  If not, see <http://www.gnu.org/licenses/>.
+
+***
+
+Portions of this software are copyright © Amstrad Consumer Electronics plc. Amstrad
+have kindly given their permission for the redistribution of their copyrighted material but
+retain that copyright.
+
+***
+
+Portions of this software are copyright © SMT (author of UnrealSpeccy emulator)
+Portions of this software are copyright © Hard/WCG (Дмитрий Михальченков)
+Portions of this software are copyright © ZEK (Демьяненко Дмитрий)
+Portions of this software are copyright © Eltaron (Alexander Tsidaev)";
+		
 		#region Windows Form Designer generated code
 
         private System.Windows.Forms.Label labelVersionText;
@@ -26,7 +54,6 @@ namespace ZXMAK2.Host.WinForms.Views
 		/// </summary>
 		private void InitializeComponent()
 		{
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormAbout));
             this.buttonOk = new System.Windows.Forms.Button();
             this.buttonUpdate = new System.Windows.Forms.Button();
             this.labelVersionText = new System.Windows.Forms.Label();
@@ -109,7 +136,7 @@ namespace ZXMAK2.Host.WinForms.Views
             this.textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.textBox1.Size = new System.Drawing.Size(469, 138);
             this.textBox1.TabIndex = 14;
-            this.textBox1.Text = resources.GetString("textBox1.Text");
+            this.textBox1.Text = AboutText;
             this.textBox1.WordWrap = false;
             // 
             // FormAbout

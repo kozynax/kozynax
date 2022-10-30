@@ -20,6 +20,9 @@
     <Reference Include="AForge.Video.FFMPEG, Version=2.2.5.0, Culture=neutral, PublicKeyToken=03563089b1be05dd">
       <HintPath>..\musor\Libraries\AForge.Video.FFMPEG.dll</HintPath>
     </Reference>
+    <Reference Include="FastColoredTextBox">
+      <HintPath>..\musor\Libraries\FastColoredTextBox.dll</HintPath>
+    </Reference>
     <Reference Include="log4net, Version=1.2.13.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a">
       <HintPath>..\musor\Libraries\log4net\log4net.dll</HintPath>
     </Reference>

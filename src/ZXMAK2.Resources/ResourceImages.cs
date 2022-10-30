@@ -40,7 +40,31 @@ namespace ZXMAK2.Resources
         public static Image KeyboardHelp => Image.FromFile("Icons/KeyboardHelp.png");
         public static Icon IconDebugger => new Icon("Icons/IconDebugger.ico");
         public static Icon IconApp => new Icon("Icons/IconApp.ico");
-        public static Image ImageZxLogo => Image.FromFile("Icons/ImageZxLogo.png");
+        public static Icon ImageZxLogo => new Icon("Icons/ImageZxLogo.png");
         public static Image ImageKeyboardHelp => Image.FromFile("Icons/ImageKeyboardHelp.png");
+        public static Image Wizard => Image.FromFile("Icons/Wizard.png");
+        public static Image RAM => Image.FromFile("DeviceIcons/RAM.png");
+        public static Image PCB => Image.FromFile("DeviceIcons/PCB.png");
+        public static Image ULA => Image.FromFile("DeviceIcons/ULA.png");
+        public static Image FDD => Image.FromFile("DeviceIcons/FDD.png");
+        public static Image BEEPER => Image.FromFile("DeviceIcons/BEEPER.png");
+        public static Image AY8910 => Image.FromFile("DeviceIcons/AY8910.png");
+        public static Image TAPE => Image.FromFile("DeviceIcons/TAPE.png");
+        public static Image KBD => Image.FromFile("DeviceIcons/KBD.png");
+        public static Image MOUS => Image.FromFile("DeviceIcons/MOUS.png");
+        public static Image DEBUG => Image.FromFile("DeviceIcons/DEBUG.png");
+        public static Image DISPLAY => Image.FromFile("DeviceIcons/DISPLAY.png");
+        
+        // Adlers debugger resources
+        public static Icon AdlersAsm => new Icon("Adlers/Asm.ico");
+        public static Icon AdlersAsmSettings => new Icon("Adlers/AsmSettings.ico");
+        public static Image Adlers_compileToolStrip => Image.FromFile("compileToolStrip.png");
+        public static Image Adlers_openFileStripButton => Image.FromFile("openFileStripButton.png");
+        public static Image Adlers_saveFileStripButton => Image.FromFile("saveFileStripButton.png");
+        public static Image Adlers_settingsToolStrip => Image.FromFile("settingsToolStrip.png");
+        public static Image Adlers_toolCodeLibrary => Image.FromFile("toolCodeLibrary.png");
+        public static Image Adlers_toolStripButtonReloadFile => Image.FromFile("toolStripButtonReloadFile.png");
+        public static Image Adlers_toolStripColors => Image.FromFile("toolStripColors.png");
+        public static Image Adlers_toolStripNewSource => Image.FromFile("toolStripNewSource.png");
     }
 }
