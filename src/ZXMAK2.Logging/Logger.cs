@@ -1,24 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Globalization;
-using log4net;
-
+using ZXMAK2.Logging;
 
 namespace ZXMAK2
 {
     public static class Logger
     {
-        private static readonly ILog _logger = LogManager.GetLogger("ZXMAK2");
-        
-        public static void Start()
-        {
-        }
-
-        public static void Finish()
-        {
-            LogManager.Shutdown();
-        }
-
+        private static readonly ILog _logger;// = LogManager.GetLogger("ZXMAK2");
 
         #region Redirect
 
@@ -26,7 +15,7 @@ namespace ZXMAK2
         {
             try
             {
-                _logger.DebugFormat(CultureInfo.InvariantCulture, fmt, args);
+                _logger.DebugFormat(fmt, args);
             }
             catch (Exception ex)
             {
@@ -38,7 +27,7 @@ namespace ZXMAK2
         {
             try
             {
-                _logger.InfoFormat(CultureInfo.InvariantCulture, fmt, args);
+                _logger.InfoFormat(fmt, args);
             }
             catch (Exception ex)
             {
@@ -50,7 +39,7 @@ namespace ZXMAK2
         {
             try
             {
-                _logger.WarnFormat(CultureInfo.InvariantCulture, fmt, args);
+                _logger.WarnFormat(fmt, args);
             }
             catch (Exception ex)
             {
@@ -62,7 +51,7 @@ namespace ZXMAK2
         {
             try
             {
-                _logger.ErrorFormat(CultureInfo.InvariantCulture, fmt, args);
+                _logger.ErrorFormat(fmt, args);
             }
             catch (Exception ex)
             {
@@ -74,7 +63,7 @@ namespace ZXMAK2
         {
             try
             {
-                _logger.FatalFormat(CultureInfo.InvariantCulture, fmt, args);
+                _logger.FatalFormat(fmt, args);
             }
             catch (Exception ex)
             {

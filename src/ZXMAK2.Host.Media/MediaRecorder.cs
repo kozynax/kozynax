@@ -9,7 +9,6 @@ using System.Collections.Concurrent;
 using AForge.Video.FFMPEG;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Media.Tools;
-using ZXMAK2.Logging;
 using System.Reflection;
 using ZXMAK2.Host.Media.Audio;
 

@@ -13,7 +13,6 @@ namespace ZXMAK2
         [STAThread]
         static void Main(string[] args)
         {
-            Logger.Start();
             try
             {
                 AppDomain.CurrentDomain.UnhandledException +=
@@ -25,10 +24,6 @@ namespace ZXMAK2
             catch (Exception ex)
             {
                 Logger.Error(ex);
-            }
-            finally
-            {
-                Logger.Finish();
             }
         }
 
