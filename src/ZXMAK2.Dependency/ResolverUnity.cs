@@ -17,13 +17,6 @@ namespace ZXMAK2.Dependency
             _container.RegisterInstance<IResolver>(this);
         }
 
-        public ResolverUnity(string containerName)
-        {
-            _container = new UnityContainer();
-            _container.LoadConfiguration(containerName);
-            _container.RegisterInstance<IResolver>(this);
-        }
-
         public void Dispose()
         {
             if (_isDisposed)
@@ -36,27 +29,9 @@ namespace ZXMAK2.Dependency
             _container.Dispose();
         }
 
-        public T Resolve<T>(params Argument[] args)
-        {
-            if (args.Length > 0)
-            {
-                var poArgs = args.Select(arg => new ParameterOverride(arg.Name, arg.Value));
-                return _container.Resolve<T>(poArgs.ToArray());
-            }
-            return _container.Resolve<T>();
-        }
+        public T Resolve<T>() => _container.Resolve<T>();
 
-        public T Resolve<T>(string name, params Argument[] args)
-        {
-            if (args.Length > 0)
-            {
-                var poArgs = args.Select(arg => new ParameterOverride(arg.Name, arg.Value));
-                return _container.Resolve<T>(name, poArgs.ToArray());
-            }
-            return _container.Resolve<T>(name);
-        }
-
-        public T TryResolve<T>(params Argument[] args)
+        public T TryResolve<T>()
         {
             try
             {
@@ -64,7 +39,7 @@ namespace ZXMAK2.Dependency
                 {
                     return default(T);
                 }
-                return Resolve<T>(args);
+                return Resolve<T>();
             }
             catch (Exception ex)
             {
@@ -73,31 +48,9 @@ namespace ZXMAK2.Dependency
             }
         }
 
-        public T TryResolve<T>(string name, params Argument[] args)
-        {
-            try
-            {
-                if (!CheckAvailable<T>(name))
-                {
-                    return default(T);
-                }
-                return Resolve<T>(name, args);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-                return default(T);
-            }
-        }
-
-        public bool CheckAvailable<T>(params Argument[] args)
+        public bool CheckAvailable<T>()
         {
             return _container.IsRegistered<T>();
-        }
-
-        public bool CheckAvailable<T>(string name, params Argument[] args)
-        {
-            return _container.IsRegistered<T>(name);
         }
 
         public void RegisterInstance<T>(T instance)

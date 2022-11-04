@@ -38,8 +38,10 @@ namespace ZXMAK2.Host.Presentation
                     var list = new List<Argument>();
                     list.Add(new Argument("view", view));
                     list.Add(new Argument("args", args));
-                    using (var viewModel = m_resolver.Resolve<IMainViewModel>(list.ToArray()))
+                    using (var viewModel = m_resolver.Resolve<IMainViewModel>())
                     {
+                        viewModel.Init(view, args);
+
                         var synchronizeInvoke = view as ISynchronizeInvoke;
                         if (synchronizeInvoke != null)
                         {
