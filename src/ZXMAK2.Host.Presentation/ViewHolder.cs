@@ -59,7 +59,7 @@ namespace ZXMAK2.Host.Presentation
         private void CreateTargetForm()
         {
             m_canClose = false;
-            var viewResolver = Locator.Resolve<IResolver>("View");
+            var viewResolver = Locator.Resolve<IResolver>();
             if (m_args != null && m_args.Length > 0)
             {
                 m_view = viewResolver.Resolve<T>(m_args);
@@ -88,7 +88,7 @@ namespace ZXMAK2.Host.Presentation
 
         private bool Command_OnCanExecute(Object arg)
         {
-            var viewResolver = Locator.Resolve<IResolver>("View");
+            var viewResolver = Locator.Resolve<IResolver>();
             if (!viewResolver.CheckAvailable<T>())
             {
                 return false;

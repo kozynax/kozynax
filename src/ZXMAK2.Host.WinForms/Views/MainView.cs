@@ -309,16 +309,11 @@ namespace ZXMAK2.Host.WinForms.Views
 
         private IHostService CreateHost()
         {
-            var viewResolver = Locator.TryResolve<IResolver>("View");
-            if (viewResolver == null)
-            {
-                return new HostService(renderVideo, null, null, null, null);
-            }
-            var arg = new Argument("form", this);
-            var sound = viewResolver.TryResolve<IHostSound>(arg);
-            var keyboard = viewResolver.TryResolve<IHostKeyboard>(arg);
-            var mouse = viewResolver.TryResolve<IHostMouse>(arg);
-            var joystick = viewResolver.TryResolve<IHostJoystick>(arg);
+            var sound = new DirectSound(this, 44100, 4);
+            var keyboard = new DirectKeyboard(this);
+            var mouse = new DirectMouse(this);
+            var joystick = new DirectJoystick(this);
+            
             return new HostService(renderVideo, sound, keyboard, mouse, joystick);
         }
 
