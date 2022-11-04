@@ -22,8 +22,8 @@ namespace ZXMAK2.Host.Presentation
         private readonly IResolver m_resolver;
         private readonly ISettingService m_settingService;
         private readonly IUserMessage m_userMessage;
-        private readonly IMainView m_view;
-        private readonly string m_startupImage;
+        private IMainView m_view;
+        private string m_startupImage;
         private ISynchronizeInvoke m_synchronizeInvoke;
         private VirtualMachine m_vm;
         
@@ -31,18 +31,21 @@ namespace ZXMAK2.Host.Presentation
         public MainViewModel(
             IResolver resolver,
             ISettingService settingService,
-            IUserMessage userMessage,
-            IMainView view, 
-            params string[] args)
+            IUserMessage userMessage)
         {
             m_resolver = resolver;
             m_settingService = settingService;
             m_userMessage = userMessage;
+        }
+
+        public void Init(IMainView view, string[] args)
+        {
             m_view = view;
             if (args.Length > 0 && File.Exists(args[0]))
             {
                 m_startupImage = Path.GetFullPath(args[0]);
             }
+            
             m_view.ViewOpened += MainView_OnViewOpened;
             m_view.ViewClosed += MainView_OnViewClosed;
             m_view.RequestFrame += MainView_OnRequestFrame;

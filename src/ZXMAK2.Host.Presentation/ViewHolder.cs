@@ -60,14 +60,7 @@ namespace ZXMAK2.Host.Presentation
         {
             m_canClose = false;
             var viewResolver = Locator.Resolve<IResolver>();
-            if (m_args != null && m_args.Length > 0)
-            {
-                m_view = viewResolver.Resolve<T>(m_args);
-            }
-            else
-            {
-                m_view = viewResolver.Resolve<T>();
-            }
+            m_view = viewResolver.Resolve<T>();
             m_view.ViewClosed += (s, e) =>
             {
                 m_view = default(T);
