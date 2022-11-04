@@ -7,5 +7,6 @@ namespace ZXMAK2.Host.WinForms.Lib
 {
     public class Placeholder : KozuiControl
     {
+        public KozuiControl Content { get; set; }
     }
 }

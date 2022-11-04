@@ -10,12 +10,10 @@ namespace ZXMAK2.Dependency
     {
         private readonly IUnityContainer _container;
         private bool _isDisposed;
-
-
+        
         public ResolverUnity()
         {
             _container = new UnityContainer();
-            _container.LoadConfiguration();
             _container.RegisterInstance<IResolver>(this);
         }
 
@@ -102,9 +100,17 @@ namespace ZXMAK2.Dependency
             return _container.IsRegistered<T>(name);
         }
 
-        public void RegisterInstance<T>(string name, T instance)
+        public void RegisterInstance<T>(T instance)
         {
-            _container.RegisterInstance<T>(name, instance);
+            _container.RegisterInstance<T>(instance);
+        }
+
+        public void RegisterType<TBase, TConcrete>(bool singleton = false) where TConcrete : TBase
+        {
+            if (singleton)
+                _container.RegisterType<TBase, TConcrete>(new TransientLifetimeManager());
+            else                
+                _container.RegisterType<TBase, TConcrete>();
         }
     }
 }

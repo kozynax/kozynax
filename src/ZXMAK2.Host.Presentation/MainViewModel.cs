@@ -514,13 +514,13 @@ namespace ZXMAK2.Host.Presentation
 
         private bool CheckViewAvailable<T>()
         {
-            var viewResolver = m_resolver.Resolve<IResolver>("View");
+            var viewResolver = m_resolver.Resolve<IResolver>();
             return viewResolver.CheckAvailable<T>();
         }
         
         private T GetView<T>()
         {
-            var viewResolver = m_resolver.Resolve<IResolver>("View");
+            var viewResolver = m_resolver.Resolve<IResolver>();
             return viewResolver.TryResolve<T>();
         }
 

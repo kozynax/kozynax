@@ -193,7 +193,7 @@ namespace ZXMAK2.Hardware.Evo
 
         private bool CommandUi_OnCanExecute(Object arg)
         {
-            var viewResolver = Locator.Resolve<IResolver>("View");
+            var viewResolver = Locator.Resolve<IResolver>();
             return viewResolver.CheckAvailable<IOpenFileDialog>();
         }
 
@@ -205,7 +205,7 @@ namespace ZXMAK2.Hardware.Evo
             }
             try
             {
-                var viewResolver = Locator.Resolve<IResolver>("View");
+                var viewResolver = Locator.Resolve<IResolver>();
                 var dlg = viewResolver.TryResolve<IOpenFileDialog>();
                 if (dlg == null)
                 {
