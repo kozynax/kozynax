@@ -74,7 +74,7 @@ namespace ZXMAK2.Hardware.Circuits.Network
                             IPHostEntry remoteHost = Dns.GetHostEntry(arguments[1].Replace("\"", ""));
                             remoteIpAddress = remoteHost.AddressList[0];
                         }
-                        catch (SocketException ex)
+                        catch (SocketException)
                         {
                             return GetResponse("DNS Fail\r\n\r\nERROR");
                         }
