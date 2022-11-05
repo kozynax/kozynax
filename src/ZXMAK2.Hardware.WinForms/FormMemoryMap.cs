@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using ZXMAK2.Dependency;
+using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.WinForms.Tools;
@@ -16,10 +17,15 @@ namespace ZXMAK2.Hardware.WinForms
         private const string CS_UNKNOWN = "???";
         private MemoryBase m_memory = null;
         
-        public FormMemoryMap(MemoryBase memory)
+        public FormMemoryMap()
+        {
+            InitializeComponent();
+        }
+
+        public void Init(MemoryBase memory)
         {
             m_memory = memory;
-            InitializeComponent();
+
             propGrid.SelectedObject = new BusDeviceProxy(m_memory);
             var tc = TypeDescriptor.GetConverter(typeof(BusDeviceProxy));
             var propCount = tc

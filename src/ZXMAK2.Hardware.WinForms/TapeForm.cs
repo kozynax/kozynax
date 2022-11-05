@@ -7,6 +7,7 @@ using ZXMAK2.Resources;
 using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.WinForms.Views;
 using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Hardware.General;
 
 
 namespace ZXMAK2.Hardware.WinForms
@@ -209,15 +210,19 @@ namespace ZXMAK2.Hardware.WinForms
 
         private ITapeDevice m_tape;
 
-        public TapeForm(ITapeDevice tapeDevice)
+        public TapeForm()
+        {
+            InitializeComponent();
+        }
+        
+        public void Init(TapeDevice tapeDevice)
         {
             m_tape = tapeDevice;
-            InitializeComponent();
             tapeDevice.TapeStateChanged += new EventHandler(OnTapeStateChanged);
             OnTapeStateChanged(null, null);
             OnTapeStateChanged(null, null);
         }
-
+        
         private void TapeForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             m_tape.TapeStateChanged -= new EventHandler(OnTapeStateChanged);

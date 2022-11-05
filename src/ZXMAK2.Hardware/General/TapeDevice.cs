@@ -623,9 +623,7 @@ namespace ZXMAK2.Hardware.General
         {
             try
             {
-                m_viewHolder = new ViewHolder<ITapeView>(
-                    "Tape",
-                    new Argument("tapeDevice", this));
+                m_viewHolder = new ViewHolder<ITapeView>("Tape", t => t.Init(this));
             }
             catch (Exception ex)
             {
