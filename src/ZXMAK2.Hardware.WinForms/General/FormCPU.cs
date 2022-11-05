@@ -23,13 +23,12 @@ namespace ZXMAK2.Hardware.WinForms.General
         private DasmTool m_dasmTool;
         private TimingTool m_timingTool;
 
-        public FormCpu(IDebuggable debugTarget)
+        public FormCpu()
         {
             InitializeComponent();
-            Init(debugTarget);
         }
 
-        private void Init(IDebuggable debugTarget)
+        public void Init(IDebuggable debugTarget)
         {
             if (debugTarget == m_spectrum)
                 return;

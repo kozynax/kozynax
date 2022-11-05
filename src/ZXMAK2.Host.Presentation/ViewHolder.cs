@@ -11,27 +11,22 @@ namespace ZXMAK2.Host.Presentation
         where T : IView
     {
         private readonly string m_name;
-        private Argument[] m_args;
         private IMainView m_hostView;
         private ICommand m_command;
         private T m_view;
         private bool m_canClose;
 
+        public Action<T> SetupView { get; set; }
 
         public ViewHolder(
-            string name, 
-            params Argument[] args)
+            string name,
+            Action<T> setupView)
         {
             m_name = name;
-            m_args = args;
+            SetupView = setupView;
         }
 
-        public Argument[] Arguments
-        {
-            get { return m_args; }
-            set { m_args = value; }
-        }
-
+        
         public ICommand CommandOpen
         {
             get
@@ -77,6 +72,7 @@ namespace ZXMAK2.Host.Presentation
                     }
                 }
             };
+            SetupView(m_view);
         }
 
         private bool Command_OnCanExecute(Object arg)

@@ -35,9 +35,6 @@ namespace ZXMAK2.Host.Presentation
                 }
                 using (view)
                 {
-                    var list = new List<Argument>();
-                    list.Add(new Argument("view", view));
-                    list.Add(new Argument("args", args));
                     using (var viewModel = m_resolver.Resolve<IMainViewModel>())
                     {
                         viewModel.Init(view, args);

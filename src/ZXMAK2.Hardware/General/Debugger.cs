@@ -21,7 +21,7 @@ namespace ZXMAK2.Hardware.General
         
         #region BusDeviceBase
 
-        private IViewHolder m_viewHolder;
+        private ViewHolder<IDebuggerGeneralView> m_viewHolder;
 
 
         public override void BusInit(IBusManager bmgr)
@@ -52,10 +52,7 @@ namespace ZXMAK2.Hardware.General
         {
             if (m_viewHolder != null && dbg != null)
             {
-                m_viewHolder.Arguments = new [] 
-                { 
-                    new Argument("debugTarget", dbg), 
-                };
+                m_viewHolder.SetupView = d => d.Init(dbg);
             }
         }
 
@@ -64,7 +61,7 @@ namespace ZXMAK2.Hardware.General
             if (m_viewHolder != null)
             {
                 m_viewHolder.Close();
-                m_viewHolder.Arguments = null;
+                m_viewHolder.SetupView = _ => { };
             }
         }
 
@@ -77,7 +74,7 @@ namespace ZXMAK2.Hardware.General
         {
             try
             {
-                m_viewHolder = new ViewHolder<IDebuggerGeneralView>("Debugger");
+                m_viewHolder = new ViewHolder<IDebuggerGeneralView>("Debugger", _ => { });
             }
             catch (Exception ex)
             {

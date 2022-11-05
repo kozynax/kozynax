@@ -33,10 +33,9 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
         // ZEK ---
 
 
-        public DebugForm(IDebuggable debugTarget)
+        public DebugForm()
         {
             InitializeComponent();
-            Init(debugTarget);
         }
 
         private void ChangeReg(ref ushort p, string reg)
@@ -293,7 +292,7 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             base.Select();
         }
 
-        private void Init(IDebuggable debugTarget)
+        public void Init(IDebuggable debugTarget)
         {
             if (debugTarget != m_spectrum)
             {

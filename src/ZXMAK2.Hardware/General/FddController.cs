@@ -186,8 +186,8 @@ namespace ZXMAK2.Hardware.General
             try
             {
                 m_viewHolder = new ViewHolder<IFddDebugView>(
-                    "WD1793", 
-                    new Argument("debugTarget", m_wd));
+                    "WD1793",
+                    d => d.Init(m_wd));
             }
             catch (Exception ex)
             {

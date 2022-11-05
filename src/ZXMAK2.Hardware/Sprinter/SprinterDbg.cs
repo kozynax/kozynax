@@ -11,8 +11,7 @@ namespace ZXMAK2.Hardware.Sprinter
 {
     public class SprinterDebugger : BusDeviceBase, IJtagDevice
     {
-        private IViewHolder m_viewHolder;
-
+        private ViewHolder<IDebuggerSprinterView> m_viewHolder;
 
         public SprinterDebugger()
         {
@@ -28,9 +27,7 @@ namespace ZXMAK2.Hardware.Sprinter
         public void Attach(IDebuggable dbg)
         {
             if (m_viewHolder != null && dbg != null)
-            {
-                m_viewHolder.Arguments = new [] { new Argument("debugTarget", dbg) };
-            }
+                m_viewHolder.SetupView = d => d.Init(dbg);
         }
 
         public void Detach()
@@ -38,7 +35,7 @@ namespace ZXMAK2.Hardware.Sprinter
             if (m_viewHolder != null)
             {
                 m_viewHolder.Close();
-                m_viewHolder.Arguments = null;
+                m_viewHolder.SetupView = null;
             }
         }
 
@@ -77,7 +74,7 @@ namespace ZXMAK2.Hardware.Sprinter
         {
             try
             {
-                m_viewHolder = new ViewHolder<IDebuggerSprinterView>("Debugger");
+                m_viewHolder = new ViewHolder<IDebuggerSprinterView>("Debugger", _ => { });
             }
             catch (Exception ex)
             {

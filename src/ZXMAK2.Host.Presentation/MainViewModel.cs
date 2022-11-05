@@ -431,7 +431,7 @@ namespace ZXMAK2.Host.Presentation
         private ICommand CreateViewHolderCommand<T>()
             where T : IView
         {
-            var viewHolder = new ViewHolder<T>(null);
+            var viewHolder = new ViewHolder<T>(null, _ => { });
             return viewHolder.CommandOpen;
         }
 
