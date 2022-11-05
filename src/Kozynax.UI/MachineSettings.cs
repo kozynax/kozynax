@@ -2,17 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
+using Kozui.Abstract;
 using ZXMAK2;
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
 
 namespace Kozynax.UI
 {
-    public class MachineSettings
+    public class MachineSettings : ViewDescription<MachineSettings>
     {
         public class MachineConfiguration
         {
@@ -53,6 +55,7 @@ namespace Kozynax.UI
             Down.Clicked += Down_Clicked;
 
             AddDevice = new Button();
+            AddDevice.Clicked += AddDevice_Clicked;
 
             RemoveDevice = new Button();
             RemoveDevice.Clicked += RemoveDevice_Clicked;
@@ -68,6 +71,24 @@ namespace Kozynax.UI
 
             Devices = new ListView<BusDeviceBase>();
             Devices.SelectedIndexChanged += Devices_SelectedIndexChanged;
+        }
+
+        private void AddDevice_Clicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var dialogUi = new AddDeviceDialog(Devices.List.ToList());
+                if (dialogUi.ShowDialog(ViewHandle) == DlgResult.OK)
+                {
+                    var device = dialogUi.Result;
+                    AddNewDevice(device);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                Locator.Resolve<IUserMessage>().Error("Add failed!\n\n{0}", ex.Message);
+            }
         }
 
         private void Cancel_Clicked(object sender, EventArgs e)

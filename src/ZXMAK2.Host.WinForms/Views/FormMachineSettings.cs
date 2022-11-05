@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using Kozynax.UI;
-using ZXMAK2.Dependency;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
@@ -276,7 +275,7 @@ namespace ZXMAK2.Host.WinForms.Views
         #region private
 
         private Dictionary<BusDeviceBase, ConfigScreenControl> _deviceConfigurationControls = new Dictionary<BusDeviceBase, ConfigScreenControl>();
-        private MachineSettings _machineSettings = new MachineSettings();
+        private MachineSettings _machineSettings;
 
         #endregion
 
@@ -284,11 +283,14 @@ namespace ZXMAK2.Host.WinForms.Views
         public FormMachineSettings()
         {
             InitializeComponent();
-
             lstNavigation.Items.Clear();
+        }
 
+        public void Init(MachineSettings machineSettings)
+        {
+            _machineSettings = machineSettings;
             _machineSettings.Init();
-            
+
             _machineSettings.Redraw += machineSettings_Redraw;
             _machineSettings.ShowWizard += machineSettings_ShowWizard;
             _machineSettings.Closed += _machineSettings_Closed;
@@ -423,15 +425,6 @@ namespace ZXMAK2.Host.WinForms.Views
             lvi.SubItems.Add(device.Name);
             lvi.ImageIndex = FindImageIndex(device.Category);
             lstNavigation.Items.Insert(index, lvi);
-        }
-
-        private void insertListViewItem(int index, BusDeviceBase device)
-        {
-            var control = _deviceConfigurationControls[device];
-            control.Location = new Point(0, 0);
-            control.Size = pnlSettings.ClientSize;
-            control.Visible = false;
-            pnlSettings.Controls.Add(control);
         }
 
         public static int FindImageIndex(BusDeviceCategory category)
@@ -580,32 +573,7 @@ namespace ZXMAK2.Host.WinForms.Views
             => _machineSettings.RemoveDevice.Click(sender, e);
 
         private void btnAdd_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                using (var wizard = new FormAddDeviceWizard())
-                {
-                    wizard.IgnoreList = _machineSettings.Devices.List.ToList();
-                    if (wizard.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                    {
-                        return;
-                    }
-
-                    // apply to avoid loss ULA & MEMORY TYPE
-                    foreach (var csc in _deviceConfigurationControls)
-                        csc.Value.Apply();
-
-                    var device = wizard.Device;
-                    _machineSettings.AddNewDevice(device);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-                Locator.Resolve<IUserMessage>()
-                    .Error("Add failed!\n\n{0}", ex.Message);
-            }
-        }
+            => _machineSettings.AddDevice.Click(sender, e);
 
         private void btnUp_Click(object sender, EventArgs e)
            => _machineSettings.Up.Click(sender, e);

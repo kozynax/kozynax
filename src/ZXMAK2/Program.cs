@@ -1,4 +1,6 @@
 ﻿using System;
+using Kozui.Interfaces;
+using Kozynax.UI;
 using ZXMAK2.Dependency;
 using ZXMAK2.Hardware.Circuits.Sound;
 using ZXMAK2.Hardware.Sprinter;
@@ -64,6 +66,9 @@ namespace ZXMAK2
             resolver.RegisterType<ILauncher, Launcher>(true);
             resolver.RegisterType<IMainViewModel, MainViewModel>();
             resolver.RegisterType<IPsgChip, PsgChip>();
+
+            resolver.RegisterType<IViewImplementation<MachineSettings>, FormMachineSettings>();
+            resolver.RegisterType<IViewImplementation<AddDeviceDialog>, FormAddDeviceWizard>();
             
             Locator.Init(resolver);
             var launcher = Locator.Resolve<ILauncher>();

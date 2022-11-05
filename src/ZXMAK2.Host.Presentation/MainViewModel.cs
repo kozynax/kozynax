@@ -11,6 +11,7 @@ using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Presentation.Tools;
 using ZXMAK2.Mvvm;
 using System.Drawing;
+using Kozynax.UI;
 using ZXMAK2.Mvvm.Attributes;
 
 
@@ -774,19 +775,14 @@ namespace ZXMAK2.Host.Presentation
                 {
                     return;
                 }
-                var viewSettings = GetView<IMachineSettingsView>();
-                if (viewSettings == null)
-                {
-                    return;
-                }
-                using (viewSettings)
-                {
-                    viewSettings.Init(m_view.Host, m_vm);
-                    viewSettings.ShowDialog(m_view);
-                    m_vm.RequestFrame();
-                    
-                    CommandTapePause.Update();
-                }
+
+                var machineSettings = new MachineSettings();
+                machineSettings.ShowDialog<IMachineSettingsView>(
+                    m_view,
+                    v => v.Init(m_view.Host, m_vm));
+                
+                m_vm.RequestFrame();
+                CommandTapePause.Update();
             }
             catch (Exception ex)
             {
