@@ -113,7 +113,6 @@ namespace ZXMAK2.Host.WinForms.Views
             this.btnBack.TabIndex = 2;
             this.btnBack.Text = "< Back";
             this.btnBack.UseVisualStyleBackColor = true;
-            this.btnBack.Click += new System.EventHandler(this.btnBack_Click);
             // 
             // btnNext
             // 
