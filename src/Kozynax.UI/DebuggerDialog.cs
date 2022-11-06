@@ -20,7 +20,7 @@ namespace Kozynax.UI
         public delegate void OnRunningStateChange(bool isRunning);
         public event OnRunningStateChange RunningStateChanged;
         
-        private IDebuggable m_spectrum;
+        protected IDebuggable m_spectrum;
         private DasmTool m_dasmTool;
         private TimingTool m_timingTool;
         
@@ -47,7 +47,7 @@ namespace Kozynax.UI
             StatesList = new ListView<string>();
         }
         
-        public void Init(IDebuggable debugTarget)
+        public virtual void Init(IDebuggable debugTarget)
         {
             if (debugTarget == m_spectrum)
                 return;
@@ -89,7 +89,7 @@ namespace Kozynax.UI
             UpdateDATA();
         }
         
-        private void UpdateREGS()
+        protected virtual void UpdateREGS()
         {
             RegistersList.List.Clear();
             RegistersList.List.Add(" PC = " + m_spectrum.CPU.regs.PC.ToString("X4"));
@@ -137,7 +137,7 @@ namespace Kozynax.UI
             CpuDetailsUpdated?.Invoke(this, EventArgs.Empty);
         }
 
-        private void UpdateDASM(bool updatePC)
+        protected void UpdateDASM(bool updatePC)
         {
             if (!m_spectrum.IsRunning && updatePC)
                 DasmPanel.ActiveAddress = m_spectrum.CPU.regs.PC;
@@ -148,7 +148,7 @@ namespace Kozynax.UI
             }
         }
 
-        private void UpdateDATA()
+        protected void UpdateDATA()
         {
             DataPanel.UpdateLines();
             DataPanel.Update();

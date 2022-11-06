@@ -41,7 +41,7 @@ namespace ZXMAK2.Host.Presentation.Interfaces
     {
     }
 
-    public interface IDebuggerSprinterView : IDebuggerBaseView, IViewImplementation<DebuggerDialog>
+    public interface IDebuggerSprinterView : IDebuggerBaseView, IViewImplementation<SprinterDebuggerDialog>
     {
     }
 }
