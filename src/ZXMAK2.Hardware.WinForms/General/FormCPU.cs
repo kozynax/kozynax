@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Drawing;
 using System.Windows.Forms;
-
+using Kozynax.UI;
 using ZXMAK2.Engine.Cpu.Tools;
 using ZXMAK2.Dependency;
 using ZXMAK2.Host.Interfaces;
@@ -23,9 +23,17 @@ namespace ZXMAK2.Hardware.WinForms.General
         private DasmTool m_dasmTool;
         private TimingTool m_timingTool;
 
+        private DataPanelComponent _dataPanelComponent;
+        
         public FormCpu()
         {
             InitializeComponent();
+
+            _dataPanelComponent = new DataPanelComponent();
+            _dataPanelComponent.GetData += dasmPanel_GetData;
+            _dataPanelComponent.DataClick += dataPanel_DataClick;
+            
+            dataPanel._component = _dataPanelComponent;
         }
 
         public void Init(IDebuggable debugTarget)
@@ -158,8 +166,8 @@ namespace ZXMAK2.Hardware.WinForms.General
 
         private void UpdateDATA()
         {
-            dataPanel.UpdateLines();
-            dataPanel.Refresh();
+            _dataPanelComponent.UpdateLines();
+            _dataPanelComponent.Update();
         }
 
         private bool dasmPanel_CheckExecuting(object Sender, ushort ADDR)
@@ -398,32 +406,33 @@ namespace ZXMAK2.Hardware.WinForms.General
 
         private void menuItemDataGotoADDR_Click(object sender, EventArgs e)
         {
-            int adr = dataPanel.TopAddress;
+            int adr = _dataPanelComponent.TopAddress;
             var service = Locator.Resolve<IUserQuery>();
             if (service == null)
             {
                 return;
             }
             if (!service.QueryValue("Data Panel Address", "New Address:", "#{0:X4}", ref adr, 0, 0xFFFF)) return;
-            dataPanel.TopAddress = (ushort)adr;
+            _dataPanelComponent.TopAddress = (ushort)adr;
         }
 
         private void menuItemDataRefresh_Click(object sender, EventArgs e)
         {
-            dataPanel.UpdateLines();
+            _dataPanelComponent.UpdateLines();
+            _dataPanelComponent.Update();
             Refresh();
         }
 
         private void menuItemDataSetColumnCount_Click(object sender, EventArgs e)
         {
-            int cols = dataPanel.ColCount;
+            int cols = _dataPanelComponent.ColCount;
             var service = Locator.Resolve<IUserQuery>();
             if (service == null)
             {
                 return;
             }
             if (!service.QueryValue("Data Panel Columns", "Column Count:", "{0}", ref cols, 1, 32)) return;
-            dataPanel.ColCount = cols;
+            _dataPanelComponent.ColCount = cols;
         }
 
         private void dasmPanel_MouseClick(object sender, MouseEventArgs e)

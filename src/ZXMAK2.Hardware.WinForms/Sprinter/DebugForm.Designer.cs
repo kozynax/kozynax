@@ -239,7 +239,6 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             // 
             // dataPanel
             // 
-            this.dataPanel.ColCount = 8;
             this.dataPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataPanel.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.dataPanel.Location = new System.Drawing.Point(0, 0);
@@ -247,9 +246,6 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             this.dataPanel.Size = new System.Drawing.Size(526, 118);
             this.dataPanel.TabIndex = 0;
             this.dataPanel.Text = "dataPanel1";
-            this.dataPanel.TopAddress = ((ushort)(0));
-            this.dataPanel.GetData += this.dasmPanel_GetData;
-            this.dataPanel.DataClick += this.dataPanel_DataClick;
             this.dataPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dataPanel_MouseClick);
             // 
             // splitter2
