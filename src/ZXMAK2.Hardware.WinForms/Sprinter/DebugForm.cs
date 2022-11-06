@@ -2,7 +2,7 @@
 using System.IO;
 using System.Drawing;
 using System.Windows.Forms;
-
+using Kozynax.UI;
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
@@ -32,10 +32,17 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
         //private BDI pevo_bdi;
         // ZEK ---
 
-
+        private DataPanelComponent _dataPanelComponent;
+        
         public DebugForm()
         {
             InitializeComponent();
+
+            _dataPanelComponent = new DataPanelComponent();
+            _dataPanelComponent.GetData += dasmPanel_GetData;
+            _dataPanelComponent.DataClick += dataPanel_DataClick;
+            
+            dataPanel._component = _dataPanelComponent;
         }
 
         private void ChangeReg(ref ushort p, string reg)
@@ -419,7 +426,7 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
 
         private void menuItemDataGotoADDR_Click(object sender, EventArgs e)
         {
-            int topAddress = dataPanel.TopAddress;
+            int topAddress = _dataPanelComponent.TopAddress;
             var service = Locator.Resolve<IUserQuery>();
             if (service == null)
             {
@@ -427,19 +434,19 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             }
             if (service.QueryValue("Data Panel Address", "New Address:", "#{0:X4}", ref topAddress, 0, 0xffff))
             {
-                dataPanel.TopAddress = (ushort)topAddress;
+                _dataPanelComponent.TopAddress = (ushort)topAddress;
             }
         }
 
         private void menuItemDataRefresh_Click(object sender, EventArgs e)
         {
-            dataPanel.UpdateLines();
+            _dataPanelComponent.UpdateLines();
             Refresh();
         }
 
         private void menuItemDataSetColumnCount_Click(object sender, EventArgs e)
         {
-            int colCount = dataPanel.ColCount;
+            int colCount = _dataPanelComponent.ColCount;
             var service = Locator.Resolve<IUserQuery>();
             if (service == null)
             {
@@ -447,7 +454,7 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             }
             if (service.QueryValue("Data Panel Columns", "Column Count:", "{0}", ref colCount, 1, 0x20))
             {
-                dataPanel.ColCount = colCount;
+                _dataPanelComponent.ColCount = colCount;
             }
         }
 
@@ -572,8 +579,8 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
 
         private void UpdateDATA()
         {
-            dataPanel.UpdateLines();
-            dataPanel.Refresh();
+            _dataPanelComponent.UpdateLines();
+            _dataPanelComponent.Update();
         }
 
         private void UpdateREGS()
