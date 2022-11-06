@@ -1,47 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using Kozynax.UI.Base;
 
 namespace Kozynax.UI
 {
-    public class DataPanelComponent
+    public class DataPanelComponent : DebugPanelComponent
     {
         private ushort _topAddress;
         private int _colCount;
 
-        public class LineElement
-        {
-            public LineElement(string text, int firstCol, bool selected = false)
-            {
-                Text = text;
-                FirstCol = firstCol;
-                Selected = selected;
-            }
-
-            public bool Selected { get; }
-            public string Text { get; }
-            public int FirstCol { get; }
-        }
-        public class Line
-        {
-            public Line(List<LineElement> lineElements, bool selected = false)
-            {
-                LineElements = lineElements;
-                Selected = selected;
-            }
-
-            public bool Selected { get; }
-            public IReadOnlyList<LineElement> LineElements { get; }
-        }
-        
         public delegate void ONCLICKCPU(object Sender, ushort Addr);
         public delegate void ONGETDATACPU(object Sender, ushort ADDR, int len, out byte[] data);
 
         public event ONCLICKCPU DataClick = null;
         public event ONGETDATACPU GetData = null;
-        public event EventHandler Redraw;
         
-        ushort[] fADDRS = null;
-        byte[][] fBytesDATAS = null;
+        ushort[] fADDRS;
+        byte[][] fBytesDATAS;
         
         public int VisibleLineCount {get; set; }
 
@@ -68,8 +43,6 @@ namespace Kozynax.UI
             }
         }
 
-        public void Update() => Redraw?.Invoke(this, EventArgs.Empty);
-
         private int fLineCount => VisibleLineCount;
         
         public int ActiveLine { get; set; }
@@ -91,7 +64,7 @@ namespace Kozynax.UI
         {
             const int addrWidth = 4;
             const int blockGap = 2;
-
+            
             var lines = new List<Line>();
 
             for (int line = 0; line < VisibleLineCount; line++)

@@ -30,10 +30,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             mouseTimer.Tick += OnMouseTimer;
 
             fLineHeight = 1;
-            
-            _component = new DataPanelComponent();
-            _component.Redraw += (sender, args) => Invalidate(); 
-            _component.UpdateLines();
         }
 
         // private...
@@ -363,6 +359,12 @@ namespace ZXMAK2.Hardware.WinForms.General
             }
 
             DrawLines(e.Graphics, 0, 0, ClientRectangle.Width, ClientRectangle.Height);// Width - 2, Height - 2);
+        }
+
+        public void Init(DataPanelComponent component)
+        {
+            _component = component;
+            component.Redraw += (sender, args) => Invalidate(); 
         }
     }
 }
