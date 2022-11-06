@@ -33,6 +33,7 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
         // ZEK ---
 
         private DataPanelComponent _dataPanelComponent;
+        private DasmPanelComponent _dasmPanelComponent;
         
         public DebugForm()
         {
@@ -41,6 +42,13 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             _dataPanelComponent = new DataPanelComponent();
             _dataPanelComponent.GetData += dasmPanel_GetData;
             _dataPanelComponent.DataClick += dataPanel_DataClick;
+
+            _dasmPanelComponent = new DasmPanelComponent();
+            _dasmPanelComponent.CheckBreakpoint += dasmPanel_CheckBreakpoint;
+            _dasmPanelComponent.CheckExecuting += dasmPanel_CheckExecuting;
+            _dasmPanelComponent.GetData += dasmPanel_GetData;
+            _dasmPanelComponent.GetDasm += dasmPanel_GetDasm;
+            _dasmPanelComponent.BreakpointClick += dasmPanel_SetBreakpoint;
             
             dataPanel._component = _dataPanelComponent;
         }
@@ -407,21 +415,21 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             }
             if (service.QueryValue("Disassembly Address", "New Address:", "#{0:X4}", ref num, 0, 0xffff))
             {
-                dasmPanel.TopAddress = (ushort)num;
+                _dasmPanelComponent.TopAddress = (ushort)num;
             }
         }
 
         private void menuItemDasmGotoPC_Click(object sender, EventArgs e)
         {
-            dasmPanel.ActiveAddress = m_spectrum.CPU.regs.PC;
-            dasmPanel.UpdateLines();
-            Refresh();
+            _dasmPanelComponent.ActiveAddress = m_spectrum.CPU.regs.PC;
+            _dasmPanelComponent.UpdateLines();
+            _dasmPanelComponent.Update();
         }
 
         private void menuItemDasmRefresh_Click(object sender, EventArgs e)
         {
-            dasmPanel.UpdateLines();
-            Refresh();
+            _dasmPanelComponent.UpdateLines();
+            _dasmPanelComponent.Update();
         }
 
         private void menuItemDataGotoADDR_Click(object sender, EventArgs e)
@@ -568,12 +576,12 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
         {
             if (!m_spectrum.IsRunning && updatePC)
             {
-                dasmPanel.ActiveAddress = m_spectrum.CPU.regs.PC;
+                _dasmPanelComponent.ActiveAddress = m_spectrum.CPU.regs.PC;
             }
             else
             {
-                dasmPanel.UpdateLines();
-                dasmPanel.Refresh();
+                _dasmPanelComponent.UpdateLines();
+                _dasmPanelComponent.Update();
             }
         }
 

@@ -269,9 +269,6 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             // 
             // dasmPanel
             // 
-            this.dasmPanel.ActiveAddress = ((ushort)(0));
-            this.dasmPanel.BreakpointColor = System.Drawing.Color.Red;
-            this.dasmPanel.BreakpointForeColor = System.Drawing.Color.Black;
             this.dasmPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dasmPanel.Font = new System.Drawing.Font("Courier New", 9F);
             this.dasmPanel.ForeColor = System.Drawing.SystemColors.ControlText;
@@ -280,12 +277,6 @@ namespace ZXMAK2.Hardware.WinForms.Sprinter
             this.dasmPanel.Size = new System.Drawing.Size(526, 287);
             this.dasmPanel.TabIndex = 0;
             this.dasmPanel.Text = "dasmPanel1";
-            this.dasmPanel.TopAddress = ((ushort)(0));
-            this.dasmPanel.CheckBreakpoint += this.dasmPanel_CheckBreakpoint;
-            this.dasmPanel.CheckExecuting += this.dasmPanel_CheckExecuting;
-            this.dasmPanel.GetData += this.dasmPanel_GetData;
-            this.dasmPanel.GetDasm += this.dasmPanel_GetDasm;
-            this.dasmPanel.BreakpointClick += this.dasmPanel_SetBreakpoint;
             this.dasmPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dasmPanel_MouseClick);
             // 
             // contextMenuDasm

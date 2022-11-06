@@ -260,9 +260,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             // 
             // dasmPanel
             // 
-            this.dasmPanel.ActiveAddress = ((ushort)(0));
-            this.dasmPanel.BreakpointColor = System.Drawing.Color.Red;
-            this.dasmPanel.BreakpointForeColor = System.Drawing.Color.Black;
             this.dasmPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dasmPanel.Font = new System.Drawing.Font("Courier New", 9F);
             this.dasmPanel.ForeColor = System.Drawing.SystemColors.ControlText;
@@ -271,12 +268,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             this.dasmPanel.Size = new System.Drawing.Size(449, 242);
             this.dasmPanel.TabIndex = 0;
             this.dasmPanel.Text = "dasmPanel1";
-            this.dasmPanel.TopAddress = ((ushort)(0));
-            this.dasmPanel.CheckBreakpoint += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONCHECKCPU(this.dasmPanel_CheckBreakpoint);
-            this.dasmPanel.CheckExecuting += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONCHECKCPU(this.dasmPanel_CheckExecuting);
-            this.dasmPanel.GetData += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONGETDATACPU(this.dasmPanel_GetData);
-            this.dasmPanel.GetDasm += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONGETDASMCPU(this.dasmPanel_GetDasm);
-            this.dasmPanel.BreakpointClick += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONCLICKCPU(this.dasmPanel_BreakpointClick);
             this.dasmPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dasmPanel_MouseClick);
             // 
             // contextMenuDasm

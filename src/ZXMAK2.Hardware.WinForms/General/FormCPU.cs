@@ -25,6 +25,7 @@ namespace ZXMAK2.Hardware.WinForms.General
         private TimingTool m_timingTool;
 
         private DataPanelComponent _dataPanelComponent;
+        private DasmPanelComponent _dasmPanelComponent;
         
         public FormCpu()
         {
@@ -46,8 +47,15 @@ namespace ZXMAK2.Hardware.WinForms.General
             _dataPanelComponent = new DataPanelComponent();
             _dataPanelComponent.GetData += dasmPanel_GetData;
             _dataPanelComponent.DataClick += dataPanel_DataClick;
+            dataPanel.Init(_dataPanelComponent);
             
-            dataPanel._component = _dataPanelComponent;
+            _dasmPanelComponent = new DasmPanelComponent();
+            _dasmPanelComponent.CheckBreakpoint += dasmPanel_CheckBreakpoint;
+            _dasmPanelComponent.CheckExecuting += dasmPanel_CheckExecuting;
+            _dasmPanelComponent.GetData += dasmPanel_GetData;
+            _dasmPanelComponent.GetDasm += dasmPanel_GetDasm;
+            _dasmPanelComponent.BreakpointClick += dasmPanel_SetBreakpoint;
+            dasmPanel.Init(_dasmPanelComponent);
         }
 
         private void LoadImages()
@@ -203,12 +211,12 @@ namespace ZXMAK2.Hardware.WinForms.General
         {
             if (updateAddress)
             {
-                dasmPanel.ActiveAddress = m_spectrum.CPU.regs.PC;
+                _dasmPanelComponent.ActiveAddress = m_spectrum.CPU.regs.PC;
             }
             else
             {
-                dasmPanel.UpdateLines();
-                dasmPanel.Refresh();
+                _dasmPanelComponent.UpdateLines();
+                _dasmPanelComponent.Update();
             }
         }
 
@@ -331,14 +339,14 @@ namespace ZXMAK2.Hardware.WinForms.General
             {
                 return;
             }
-            dasmPanel.TopAddress = (ushort)ToAddr;
+            _dasmPanelComponent.TopAddress = (ushort)ToAddr;
         }
 
         private void menuItemDasmGotoPC_Click(object sender, EventArgs e)
         {
-            dasmPanel.ActiveAddress = m_spectrum.CPU.regs.PC;
-            dasmPanel.UpdateLines();
-            Refresh();
+            _dasmPanelComponent.ActiveAddress = m_spectrum.CPU.regs.PC;
+            _dasmPanelComponent.UpdateLines();
+            _dasmPanelComponent.Update();
         }
 
         private void menuItemDasmClearBP_Click(object sender, EventArgs e)
@@ -349,8 +357,8 @@ namespace ZXMAK2.Hardware.WinForms.General
 
         private void menuItemDasmRefresh_Click(object sender, EventArgs e)
         {
-            dasmPanel.UpdateLines();
-            Refresh();
+            _dasmPanelComponent.UpdateLines();
+            _dasmPanelComponent.Update();
         }
 
         private void listF_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -657,9 +665,9 @@ namespace ZXMAK2.Hardware.WinForms.General
 
         private void toolStripShowNext_Click(object sender, EventArgs e)
         {
-            dasmPanel.ActiveAddress = m_spectrum.CPU.regs.PC;
-            dasmPanel.UpdateLines();
-            Refresh();
+            _dasmPanelComponent.ActiveAddress = m_spectrum.CPU.regs.PC;
+            _dasmPanelComponent.UpdateLines();
+            _dasmPanelComponent.Update();
         }
 
         #endregion Toolstrip handlers
