@@ -30,7 +30,7 @@ namespace ZXMAK2.Hardware.WinForms.General
             InitializeComponent();
         }
 
-        private void Dialog_CpuDetailsUpdated(object sender, EventArgs e)
+        protected virtual void Dialog_CpuDetailsUpdated(object sender, EventArgs e)
         {
             listREGS.Items.Clear();
             foreach (var line in _dialog.RegistersList.List)

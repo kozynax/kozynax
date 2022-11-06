@@ -5,7 +5,7 @@ using ZXMAK2.Host.Entities;
 
 namespace Kozui.Abstract
 {
-	public class ViewDescription<T> where T : ViewDescription<T>
+	public class ViewDescription<T> : IViewDescription<T> where T : ViewDescription<T>
 	{
 		public object ViewHandle { get; private set; }
 		public DlgResult ShowDialog(object owner)

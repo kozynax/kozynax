@@ -26,7 +26,7 @@ namespace ZXMAK2.Hardware.WinForms.General
       /// Required method for Designer support - do not modify
       /// the contents of this method with the code editor.
       /// </summary>
-      private void InitializeComponent()
+      protected virtual void InitializeComponent()
       {
           this.panelStatus = new System.Windows.Forms.Panel();
           this.panelState = new System.Windows.Forms.Panel();
@@ -388,38 +388,38 @@ namespace ZXMAK2.Hardware.WinForms.General
 
       #endregion
 
-      private System.Windows.Forms.Panel panelStatus;
-      private System.Windows.Forms.Splitter splitter1;
-      private System.Windows.Forms.Panel panelMem;
-      private System.Windows.Forms.Splitter splitter2;
-      private System.Windows.Forms.Panel panelDasm;
-      private System.Windows.Forms.Panel panelRegs;
-      private System.Windows.Forms.Panel panelState;
-      private System.Windows.Forms.Splitter splitter3;
-      private System.Windows.Forms.ListBox listREGS;
-      private System.Windows.Forms.ListBox listF;
-      private System.Windows.Forms.Splitter splitter4;
-      private System.Windows.Forms.ListBox listState;
+      protected System.Windows.Forms.Panel panelStatus;
+      protected System.Windows.Forms.Splitter splitter1;
+      protected System.Windows.Forms.Panel panelMem;
+      protected System.Windows.Forms.Splitter splitter2;
+      protected System.Windows.Forms.Panel panelDasm;
+      protected System.Windows.Forms.Panel panelRegs;
+      protected System.Windows.Forms.Panel panelState;
+      protected System.Windows.Forms.Splitter splitter3;
+      protected System.Windows.Forms.ListBox listREGS;
+      protected System.Windows.Forms.ListBox listF;
+      protected System.Windows.Forms.Splitter splitter4;
+      protected System.Windows.Forms.ListBox listState;
       protected ZXMAK2.Hardware.WinForms.General.DasmPanel dasmPanel;
       protected ZXMAK2.Hardware.WinForms.General.DataPanel dataPanel;
-      private System.Windows.Forms.ContextMenu contextMenuDasm;
-      private System.Windows.Forms.MenuItem menuItemDasmGotoADDR;
-      private System.Windows.Forms.MenuItem menuItem2;
-      private System.Windows.Forms.MenuItem menuItemDasmClearBreakpoints;
-      private System.Windows.Forms.MenuItem menuItem4;
-      private System.Windows.Forms.MenuItem menuItemDasmRefresh;
-      private System.Windows.Forms.MenuItem menuItemDasmGotoPC;
-      private System.Windows.Forms.ContextMenu contextMenuData;
-      private System.Windows.Forms.MenuItem menuItemDataGotoADDR;
-      private System.Windows.Forms.MenuItem menuItemDataSetColumnCount;
-      private System.Windows.Forms.MenuItem menuItem5;
-      private System.Windows.Forms.MenuItem menuItemDataRefresh;
-      private System.Windows.Forms.MenuItem menuDasmLoadBlock;
-      private System.Windows.Forms.MenuItem menuDasmSaveBlock;
-      private System.Windows.Forms.MenuItem menuItem1;
-      private System.Windows.Forms.MenuItem menuDataLoadBlock;
-      private System.Windows.Forms.MenuItem menuDataSaveBlock;
-      private System.Windows.Forms.MenuItem menuItem3;
+      protected System.Windows.Forms.ContextMenu contextMenuDasm;
+      protected System.Windows.Forms.MenuItem menuItemDasmGotoADDR;
+      protected System.Windows.Forms.MenuItem menuItem2;
+      protected System.Windows.Forms.MenuItem menuItemDasmClearBreakpoints;
+      protected System.Windows.Forms.MenuItem menuItem4;
+      protected System.Windows.Forms.MenuItem menuItemDasmRefresh;
+      protected System.Windows.Forms.MenuItem menuItemDasmGotoPC;
+      protected System.Windows.Forms.ContextMenu contextMenuData;
+      protected System.Windows.Forms.MenuItem menuItemDataGotoADDR;
+      protected System.Windows.Forms.MenuItem menuItemDataSetColumnCount;
+      protected System.Windows.Forms.MenuItem menuItem5;
+      protected System.Windows.Forms.MenuItem menuItemDataRefresh;
+      protected System.Windows.Forms.MenuItem menuDasmLoadBlock;
+      protected System.Windows.Forms.MenuItem menuDasmSaveBlock;
+      protected System.Windows.Forms.MenuItem menuItem1;
+      protected System.Windows.Forms.MenuItem menuDataLoadBlock;
+      protected System.Windows.Forms.MenuItem menuDataSaveBlock;
+      protected System.Windows.Forms.MenuItem menuItem3;
  
    }
 }

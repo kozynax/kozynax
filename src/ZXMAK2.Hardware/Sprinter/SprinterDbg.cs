@@ -1,5 +1,5 @@
 ﻿using System;
-
+using Kozynax.UI;
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
@@ -12,7 +12,7 @@ namespace ZXMAK2.Hardware.Sprinter
     public class SprinterDebugger : BusDeviceBase, IJtagDevice
     {
         private ViewHolder<IDebuggerSprinterView> m_viewHolder;
-
+        private SprinterDebuggerDialog _debuggerDialog = new SprinterDebuggerDialog();
         public SprinterDebugger()
         {
             Category = BusDeviceCategory.Debugger;
@@ -27,7 +27,11 @@ namespace ZXMAK2.Hardware.Sprinter
         public void Attach(IDebuggable dbg)
         {
             if (m_viewHolder != null && dbg != null)
-                m_viewHolder.SetupView = d => d.Init(dbg);
+                m_viewHolder.SetupView = d =>
+                {
+                    d.Init(_debuggerDialog);
+                    d.Init(dbg);
+                };
         }
 
         public void Detach()
