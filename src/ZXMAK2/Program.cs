@@ -69,6 +69,7 @@ namespace ZXMAK2
 
             resolver.RegisterType<IViewImplementation<MachineSettings>, FormMachineSettings>();
             resolver.RegisterType<IViewImplementation<AddDeviceDialog>, FormAddDeviceWizard>();
+            resolver.RegisterType<IViewImplementation<DebuggerDialog>, FormCpu>();
             
             Locator.Init(resolver);
             var launcher = Locator.Resolve<ILauncher>();

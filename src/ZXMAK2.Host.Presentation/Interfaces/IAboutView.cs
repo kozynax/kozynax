@@ -1,5 +1,7 @@
 ﻿
 
+using Kozui.Interfaces;
+using Kozynax.UI;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Hardware;
 using ZXMAK2.Hardware.Circuits.Fdd;
@@ -30,12 +32,16 @@ namespace ZXMAK2.Host.Presentation.Interfaces
         void Init(Wd1793 debugTarget);
     }
 
-    public interface IDebuggerGeneralView : IView
+    public interface IDebuggerBaseView : IView
     {
         void Init(IDebuggable dbg);
     }
+    
+    public interface IDebuggerGeneralView : IDebuggerBaseView, IViewImplementation<DebuggerDialog>
+    {
+    }
 
-    public interface IDebuggerSprinterView : IDebuggerGeneralView
+    public interface IDebuggerSprinterView : IDebuggerBaseView, IViewImplementation<DebuggerDialog>
     {
     }
 }
