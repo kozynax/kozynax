@@ -279,7 +279,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             this.menuItemDasmClearBreakpoints,
             this.menuItem4,
             this.menuItemDasmRefresh});
-            this.contextMenuDasm.Popup += new System.EventHandler(this.contextMenuDasm_Popup);
             // 
             // menuItemDasmGotoADDR
             // 
@@ -635,8 +634,8 @@ namespace ZXMAK2.Hardware.WinForms.General
       private System.Windows.Forms.ListBox listF;
       private System.Windows.Forms.Splitter splitter4;
       private System.Windows.Forms.ListBox listState;
-      private ZXMAK2.Hardware.WinForms.General.DasmPanel dasmPanel;
-      private ZXMAK2.Hardware.WinForms.General.DataPanel dataPanel;
+      protected ZXMAK2.Hardware.WinForms.General.DasmPanel dasmPanel;
+      protected ZXMAK2.Hardware.WinForms.General.DataPanel dataPanel;
       private System.Windows.Forms.ContextMenu contextMenuDasm;
       private System.Windows.Forms.MenuItem menuItemDasmGotoADDR;
       private System.Windows.Forms.MenuItem menuItem2;

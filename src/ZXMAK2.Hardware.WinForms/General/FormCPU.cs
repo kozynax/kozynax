@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Drawing;
 using System.Windows.Forms;
+using Kozui.Interfaces;
 using Kozynax.UI;
 using ZXMAK2.Engine.Cpu.Tools;
 using ZXMAK2.Dependency;
@@ -13,6 +14,7 @@ using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.WinForms.Views;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Resources;
 
 
@@ -21,21 +23,18 @@ namespace ZXMAK2.Hardware.WinForms.General
     public partial class FormCpu : FormView, IDebuggerGeneralView
     {
         private IDebuggable m_spectrum;
-        private DasmTool m_dasmTool;
-        private TimingTool m_timingTool;
+        private DebuggerDialog _dialog;
+        private IViewImplementation<DebuggerDialog> _viewImplementationImplementation;
 
-        private DataPanelComponent _dataPanelComponent;
-        private DasmPanelComponent _dasmPanelComponent;
-        
         public FormCpu()
         {
             InitializeComponent();
-            
+
             // remove gap from the sizing-grip
             statusStrip.Padding = new Padding(
                 statusStrip.Padding.Left,
-                statusStrip.Padding.Top, 
-                statusStrip.Padding.Left, 
+                statusStrip.Padding.Top,
+                statusStrip.Padding.Left,
                 statusStrip.Padding.Bottom);
             LoadImages();
 
@@ -43,19 +42,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             toolStripBreak.ToolTipText += " (F5)";
             toolStripStepInto.ToolTipText += " (F7)";
             toolStripStepOver.ToolTipText += " (F8)";
-
-            _dataPanelComponent = new DataPanelComponent();
-            _dataPanelComponent.GetData += dasmPanel_GetData;
-            _dataPanelComponent.DataClick += dataPanel_DataClick;
-            dataPanel.Init(_dataPanelComponent);
-            
-            _dasmPanelComponent = new DasmPanelComponent();
-            _dasmPanelComponent.CheckBreakpoint += dasmPanel_CheckBreakpoint;
-            _dasmPanelComponent.CheckExecuting += dasmPanel_CheckExecuting;
-            _dasmPanelComponent.GetData += dasmPanel_GetData;
-            _dasmPanelComponent.GetDasm += dasmPanel_GetDasm;
-            _dasmPanelComponent.BreakpointClick += dasmPanel_SetBreakpoint;
-            dasmPanel.Init(_dasmPanelComponent);
         }
 
         private void LoadImages()
@@ -77,53 +63,84 @@ namespace ZXMAK2.Hardware.WinForms.General
             menuDebugShowNext.Image = ResourceImages.DebuggerShowNext;
         }
 
+        private void Dialog_CpuDetailsUpdated(object sender, EventArgs e)
+        {
+            listREGS.Items.Clear();
+            foreach (var line in _dialog.RegistersList.List)
+                listREGS.Items.Add(line);
+
+            listF.Items.Clear();
+            foreach (var line in _dialog.FlagsList.List)
+                listF.Items.Add(line);
+            
+            listState.Items.Clear();
+            foreach (var line in _dialog.StatesList.List)
+                listState.Items.Add(line);
+        }
+
+        public void Init(DebuggerDialog ui)
+        {
+            _dialog = ui;
+            
+            dataPanel.Init(_dialog.DataPanel);
+            dasmPanel.Init(_dialog.DasmPanel);
+
+            _dialog.Breakpoint += spectrum_OnBreakpoint;
+            _dialog.UpdateState += spectrum_OnUpdateState;
+            _dialog.DataPanel.DataClick += dataPanel_DataClick;
+            _dialog.RunningStateChanged += isRunning =>
+            {
+                dasmPanel.ForeColor = isRunning ? SystemColors.ControlDarkDark : SystemColors.ControlText;
+                statusStrip.BackColor = isRunning ? ColorTranslator.FromHtml("#cc6600") : ColorTranslator.FromHtml("#0077cc");
+                statusStrip.ForeColor = ColorTranslator.FromHtml("#ffffff");
+                toolStripStatus.Text = isRunning ? "Running" : "Ready";
+                toolStripStatusTact.Text = isRunning
+                    ? string.Format("T: - / {0}", m_spectrum.FrameTactCount)
+                    : string.Format("T: {0} / {1}", m_spectrum.GetFrameTact(), m_spectrum.FrameTactCount);
+                toolStripStatusTact.Enabled = !isRunning;
+                toolStripContinue.Enabled = !isRunning;
+                toolStripBreak.Enabled = isRunning;
+                toolStripStepInto.Enabled = !isRunning;
+                toolStripStepOver.Enabled = !isRunning;
+                toolStripStepOut.Enabled = false;
+                toolStripShowNext.Enabled = !isRunning;
+                toolStripBreakpoints.Enabled = false;
+            };
+            _dialog.CpuDetailsUpdated += Dialog_CpuDetailsUpdated;
+        }
+        
         public void Init(IDebuggable debugTarget)
         {
-            if (debugTarget == m_spectrum)
-                return;
-            if (m_spectrum != null)
-            {
-                m_spectrum.UpdateState -= spectrum_OnUpdateState;
-                m_spectrum.Breakpoint -= spectrum_OnBreakpoint;
-                m_dasmTool = null;
-                m_timingTool = null;
-            }
             if (debugTarget != null)
-            {
                 m_spectrum = debugTarget;
-                m_dasmTool = new DasmTool(debugTarget.ReadMemory);
-                m_timingTool = new TimingTool(m_spectrum.CPU, debugTarget.ReadMemory);
-                m_spectrum.UpdateState += spectrum_OnUpdateState;
-                m_spectrum.Breakpoint += spectrum_OnBreakpoint;
-            }
+            
+            _dialog.Init(debugTarget);
+        }
+        
+        protected void FormCPU_FormClosed(object sender, FormClosedEventArgs e)
+            => _dialog.Close();
+
+        protected void FormCPU_Load(object sender, EventArgs e)
+        {
+            _dialog.UpdateCPU(true);
         }
 
-        private void FormCPU_FormClosed(object sender, FormClosedEventArgs e)
+        protected void FormCPU_Shown(object sender, EventArgs e)
         {
-            Init(null);
-        }
-
-        private void FormCPU_Shown(object sender, EventArgs e)
-        {
+            Show();
+            _dialog.UpdateCPU(false);
             dasmPanel.Focus();
             Select();
         }
 
-        private void FormCpu_VisibleChanged(object sender, EventArgs e)
+        protected void spectrum_OnUpdateState(object sender, EventArgs args)
         {
-            if (!Visible) return;
-            UpdateCPU(!m_spectrum.IsRunning);
-        }
-
-
-        private void spectrum_OnUpdateState(object sender, EventArgs args)
-        {
-            if (!Created || !Visible)
+            if (!Created)
                 return;
-            BeginInvoke(new Action(() => UpdateCPU(true)), null);
+            BeginInvoke(new Action(() => _dialog.UpdateCPU(true)), null);
         }
 
-        private void spectrum_OnBreakpoint(object sender, EventArgs args)
+        protected void spectrum_OnBreakpoint(object sender, EventArgs args)
         {
             //LogAgent.Info("spectrum_OnBreakpoint {0}", sender);
             if (!Created)
@@ -131,154 +148,13 @@ namespace ZXMAK2.Hardware.WinForms.General
             BeginInvoke(new Action(() =>
             {
                 Show();
-                UpdateCPU(true);
+                _dialog.UpdateCPU(true);
                 dasmPanel.Focus();
                 Select();
             }), null);
         }
 
-        private void UpdateCPU(bool updatePC)
-        {
-            var isRunning = m_spectrum.IsRunning;
-
-            statusStrip.BackColor = isRunning ? ColorTranslator.FromHtml("#cc6600") : ColorTranslator.FromHtml("#0077cc");
-            statusStrip.ForeColor = isRunning ? ColorTranslator.FromHtml("#ffffff") : ColorTranslator.FromHtml("#ffffff");
-            toolStripStatus.Text = isRunning ? "Running" : "Ready";
-            toolStripStatusTact.Text = isRunning ? string.Format("T: - / {0}", m_spectrum.FrameTactCount) :
-                string.Format("T: {0} / {1}", m_spectrum.GetFrameTact(), m_spectrum.FrameTactCount);
-            toolStripStatusTact.Enabled = !isRunning;
-
-            toolStripContinue.Enabled = !isRunning;
-            toolStripBreak.Enabled = isRunning;
-            toolStripStepInto.Enabled = !isRunning;
-            toolStripStepOver.Enabled = !isRunning;
-            toolStripStepOut.Enabled = false;// !isRunning;
-            toolStripShowNext.Enabled = !isRunning;
-            toolStripBreakpoints.Enabled = false;
-
-
-            dasmPanel.ForeColor = isRunning ? SystemColors.ControlDarkDark : SystemColors.ControlText;
-            UpdateREGS();
-            UpdateDASM(updatePC && !isRunning);
-            UpdateDATA();
-        }
-
-        private void UpdateREGS()
-        {
-            listREGS.Items.Clear();
-            listREGS.Items.Add(" PC = " + m_spectrum.CPU.regs.PC.ToString("X4"));
-            listREGS.Items.Add(" IR = " + m_spectrum.CPU.regs.IR.ToString("X4"));
-            listREGS.Items.Add(" SP = " + m_spectrum.CPU.regs.SP.ToString("X4"));
-            listREGS.Items.Add(" AF = " + m_spectrum.CPU.regs.AF.ToString("X4"));
-            listREGS.Items.Add(" HL = " + m_spectrum.CPU.regs.HL.ToString("X4"));
-            listREGS.Items.Add(" DE = " + m_spectrum.CPU.regs.DE.ToString("X4"));
-            listREGS.Items.Add(" BC = " + m_spectrum.CPU.regs.BC.ToString("X4"));
-            listREGS.Items.Add(" IX = " + m_spectrum.CPU.regs.IX.ToString("X4"));
-            listREGS.Items.Add(" IY = " + m_spectrum.CPU.regs.IY.ToString("X4"));
-            listREGS.Items.Add(" AF'= " + m_spectrum.CPU.regs._AF.ToString("X4"));
-            listREGS.Items.Add(" HL'= " + m_spectrum.CPU.regs._HL.ToString("X4"));
-            listREGS.Items.Add(" DE'= " + m_spectrum.CPU.regs._DE.ToString("X4"));
-            listREGS.Items.Add(" BC'= " + m_spectrum.CPU.regs._BC.ToString("X4"));
-            listREGS.Items.Add(" MW = " + m_spectrum.CPU.regs.MW.ToString("X4"));
-            listF.Items.Clear();
-            listF.Items.Add("  S = " + (((m_spectrum.CPU.regs.F & 0x80) != 0) ? "1" : "0"));
-            listF.Items.Add("  Z = " + (((m_spectrum.CPU.regs.F & 0x40) != 0) ? "1" : "0"));
-            listF.Items.Add(" F5 = " + (((m_spectrum.CPU.regs.F & 0x20) != 0) ? "1" : "0"));
-            listF.Items.Add("  H = " + (((m_spectrum.CPU.regs.F & 0x10) != 0) ? "1" : "0"));
-            listF.Items.Add(" F3 = " + (((m_spectrum.CPU.regs.F & 0x08) != 0) ? "1" : "0"));
-            listF.Items.Add("P/V = " + (((m_spectrum.CPU.regs.F & 0x04) != 0) ? "1" : "0"));
-            listF.Items.Add("  N = " + (((m_spectrum.CPU.regs.F & 0x02) != 0) ? "1" : "0"));
-            listF.Items.Add("  C = " + (((m_spectrum.CPU.regs.F & 0x01) != 0) ? "1" : "0"));
-
-            listState.Items.Clear();
-            listState.Items.Add("IFF1=" + (m_spectrum.CPU.IFF1 ? "1" : "0") + " IFF2=" + (m_spectrum.CPU.IFF2 ? "1" : "0"));
-            listState.Items.Add("HALT=" + (m_spectrum.CPU.HALTED ? "1" : "0"));
-            listState.Items.Add("BINT=" + (m_spectrum.CPU.BINT ? "1" : "0"));
-            listState.Items.Add("  IM=" + m_spectrum.CPU.IM.ToString());
-            listState.Items.Add("  FX=" + m_spectrum.CPU.FX.ToString());
-            listState.Items.Add(" XFX=" + m_spectrum.CPU.XFX.ToString());
-            listState.Items.Add(" LPC=#" + m_spectrum.CPU.LPC.ToString("X4"));
-            listState.Items.Add("Tact=" + m_spectrum.CPU.Tact.ToString());
-            if (m_spectrum.RzxState.IsPlayback)
-            {
-                listState.Items.Add(string.Format("rzxm={0}/{1}", m_spectrum.RzxState.Fetch, m_spectrum.RzxState.FetchCount));
-                listState.Items.Add(string.Format("rzxi={0}/{1}", m_spectrum.RzxState.Input, m_spectrum.RzxState.InputCount));
-                listState.Items.Add(string.Format("rzff={0}/{1}", m_spectrum.RzxState.Frame, m_spectrum.RzxState.FrameCount));
-            }
-        }
-
-        private void UpdateDASM(bool updateAddress)
-        {
-            if (updateAddress)
-            {
-                _dasmPanelComponent.ActiveAddress = m_spectrum.CPU.regs.PC;
-            }
-            else
-            {
-                _dasmPanelComponent.UpdateLines();
-                _dasmPanelComponent.Update();
-            }
-        }
-
-        private void UpdateDATA()
-        {
-            _dataPanelComponent.UpdateLines();
-            _dataPanelComponent.Update();
-        }
-
-        private bool dasmPanel_CheckExecuting(object Sender, ushort ADDR)
-        {
-            if (m_spectrum.IsRunning) return false;
-            if (ADDR == m_spectrum.CPU.regs.PC) return true;
-            return false;
-        }
-
-        private void dasmPanel_GetDasm(object Sender, ushort ADDR, out string DASM, out int len)
-        {
-            var mnemonic = m_dasmTool.GetMnemonic(ADDR, out len);
-            var timing = m_timingTool.GetTimingString(ADDR);
-
-            DASM = string.Format("{0,-24} ; {1}", mnemonic, timing);
-        }
-
-        private void dasmPanel_GetData(object Sender, ushort ADDR, int len, out byte[] data)
-        {
-            data = new byte[len];
-            for (int i = 0; i < len; i++)
-            {
-                data[i] = m_spectrum.ReadMemory((ushort)(ADDR + i));
-            }
-        }
-
-        private bool dasmPanel_CheckBreakpoint(object sender, ushort addr)
-        {
-            foreach (var bp in m_spectrum.GetBreakpointList())
-            {
-                if (bp.Address.HasValue && bp.Address == addr)
-                    return true;
-            }
-            return false;
-        }
-
-        private void dasmPanel_BreakpointClick(object sender, ushort addr)
-        {
-            bool found = false;
-            foreach (var bp in m_spectrum.GetBreakpointList())
-            {
-                if (bp.Address.HasValue && bp.Address == addr)
-                {
-                    m_spectrum.RemoveBreakpoint(bp);
-                    found = true;
-                }
-            }
-            if (!found)
-            {
-                var bp = new Breakpoint(addr);
-                m_spectrum.AddBreakpoint(bp);
-            }
-        }
-
-        private void FormCPU_KeyDown(object sender, KeyEventArgs e)
+        protected void FormCPU_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode)
             {
@@ -286,7 +162,7 @@ namespace ZXMAK2.Hardware.WinForms.General
                     if (m_spectrum.IsRunning)
                         break;
                     m_spectrum.DoReset();
-                    UpdateCPU(true);
+                    _dialog.UpdateCPU(true);
                     break;
                 case Keys.F7:              // StepInto
                     if (m_spectrum.IsRunning)
@@ -300,7 +176,7 @@ namespace ZXMAK2.Hardware.WinForms.General
                         Logger.Error(ex);
                         Locator.Resolve<IUserMessage>().ErrorDetails(ex);
                     }
-                    UpdateCPU(true);
+                    _dialog.UpdateCPU(true);
                     break;
                 case Keys.F8:              // StepOver
                     if (m_spectrum.IsRunning)
@@ -314,20 +190,20 @@ namespace ZXMAK2.Hardware.WinForms.General
                         Logger.Error(ex);
                         Locator.Resolve<IUserMessage>().ErrorDetails(ex);
                     }
-                    UpdateCPU(true);
+                    _dialog.UpdateCPU(true);
                     break;
                 case Keys.F9:              // Run
                     m_spectrum.DoRun();
-                    UpdateCPU(false);
+                    _dialog.UpdateCPU(false);
                     break;
                 case Keys.F5:              // Stop
                     m_spectrum.DoStop();
-                    UpdateCPU(true);
+                    _dialog.UpdateCPU(true);
                     break;
             }
         }
 
-        private void menuItemDasmGotoADDR_Click(object sender, EventArgs e)
+        protected void menuItemDasmGotoADDR_Click(object sender, EventArgs e)
         {
             int ToAddr = 0;
             var service = Locator.Resolve<IUserQuery>();
@@ -339,93 +215,32 @@ namespace ZXMAK2.Hardware.WinForms.General
             {
                 return;
             }
-            _dasmPanelComponent.TopAddress = (ushort)ToAddr;
+            _dialog.DasmPanel.TopAddress = (ushort)ToAddr;
         }
 
-        private void menuItemDasmGotoPC_Click(object sender, EventArgs e)
-        {
-            _dasmPanelComponent.ActiveAddress = m_spectrum.CPU.regs.PC;
-            _dasmPanelComponent.UpdateLines();
-            _dasmPanelComponent.Update();
-        }
+        protected void menuItemDasmGotoPC_Click(object sender, EventArgs e)
+            => _dialog.DasmGoToPC();
 
-        private void menuItemDasmClearBP_Click(object sender, EventArgs e)
-        {
-            m_spectrum.ClearBreakpoints();
-            UpdateCPU(false);
-        }
+        protected void menuItemDasmClearBP_Click(object sender, EventArgs e)
+            => _dialog.ClearBreakpoints();
 
-        private void menuItemDasmRefresh_Click(object sender, EventArgs e)
-        {
-            _dasmPanelComponent.UpdateLines();
-            _dasmPanelComponent.Update();
-        }
+        protected void menuItemDasmRefresh_Click(object sender, EventArgs e)
+            => _dialog.DasmRefresh();
 
-        private void listF_MouseDoubleClick(object sender, MouseEventArgs e)
+        protected void listF_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (listF.SelectedIndex < 0) return;
-            if (m_spectrum.IsRunning) return;
-            m_spectrum.CPU.regs.F ^= (byte)(0x80 >> listF.SelectedIndex);
-            UpdateREGS();
+            _dialog.ToggleFlag(listF.SelectedIndex);
         }
 
-        private void listREGS_MouseDoubleClick(object sender, MouseEventArgs e)
+        protected void listREGS_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (listREGS.SelectedIndex < 0) return;
             if (m_spectrum.IsRunning) return;
-            ChangeRegByIndex(listREGS.SelectedIndex);
+            _dialog.ChangeRegByIndex(listREGS.SelectedIndex, ChangeReg);
         }
 
-        private void ChangeRegByIndex(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    ChangeReg(ref m_spectrum.CPU.regs.PC, "PC");
-                    break;
-                case 1:
-                    ChangeReg(ref m_spectrum.CPU.regs.IR, "IR");
-                    break;
-                case 2:
-                    ChangeReg(ref m_spectrum.CPU.regs.SP, "SP");
-                    break;
-                case 3:
-                    ChangeReg(ref m_spectrum.CPU.regs.AF, "AF");
-                    break;
-                case 4:
-                    ChangeReg(ref m_spectrum.CPU.regs.HL, "HL");
-                    break;
-                case 5:
-                    ChangeReg(ref m_spectrum.CPU.regs.DE, "DE");
-                    break;
-                case 6:
-                    ChangeReg(ref m_spectrum.CPU.regs.BC, "BC");
-                    break;
-                case 7:
-                    ChangeReg(ref m_spectrum.CPU.regs.IX, "IX");
-                    break;
-                case 8:
-                    ChangeReg(ref m_spectrum.CPU.regs.IY, "IY");
-                    break;
-                case 9:
-                    ChangeReg(ref m_spectrum.CPU.regs._AF, "AF'");
-                    break;
-                case 10:
-                    ChangeReg(ref m_spectrum.CPU.regs._HL, "HL'");
-                    break;
-                case 11:
-                    ChangeReg(ref m_spectrum.CPU.regs._DE, "DE'");
-                    break;
-                case 12:
-                    ChangeReg(ref m_spectrum.CPU.regs._BC, "BC'");
-                    break;
-                case 13:
-                    ChangeReg(ref m_spectrum.CPU.regs.MW, "MW (Memptr Word)");
-                    break;
-            }
-        }
-
-        private void ChangeReg(ref ushort p, string reg)
+        protected void ChangeReg(ref ushort p, string reg)
         {
             int val = p;
             var service = Locator.Resolve<IUserQuery>();
@@ -435,18 +250,11 @@ namespace ZXMAK2.Hardware.WinForms.General
             }
             if (!service.QueryValue("Change Register " + reg, "New value:", "#{0:X4}", ref val, 0, 0xFFFF)) return;
             p = (ushort)val;
-            UpdateCPU(false);
-        }
-
-
-        private void contextMenuDasm_Popup(object sender, EventArgs e)
-        {
-            //if (m_spectrum.IsRunning) menuItemDasmClearBreakpoints.Enabled = false;
-            //else menuItemDasmClearBreakpoints.Enabled = true;
+            _dialog.UpdateCPU(false);
         }
 
         // dbg funs
-        private void dataPanel_DataClick(object Sender, ushort Addr)
+        protected void dataPanel_DataClick(object Sender, ushort Addr)
         {
             int poked;
             poked = m_spectrum.ReadMemory((ushort)Addr);
@@ -457,79 +265,113 @@ namespace ZXMAK2.Hardware.WinForms.General
             }
             if (!service.QueryValue("POKE #" + Addr.ToString("X4"), "Value:", "#{0:X2}", ref poked, 0, 0xFF)) return;
             m_spectrum.WriteMemory((ushort)Addr, (byte)poked);
-            UpdateCPU(false);
+            _dialog.UpdateCPU(false);
         }
 
-        private void menuItemDataGotoADDR_Click(object sender, EventArgs e)
+        protected void menuItemDataGotoADDR_Click(object sender, EventArgs e)
         {
-            int adr = _dataPanelComponent.TopAddress;
+            int adr = _dialog.DataPanel.TopAddress;
             var service = Locator.Resolve<IUserQuery>();
             if (service == null)
             {
                 return;
             }
             if (!service.QueryValue("Data Panel Address", "New Address:", "#{0:X4}", ref adr, 0, 0xFFFF)) return;
-            _dataPanelComponent.TopAddress = (ushort)adr;
+            _dialog.DataPanel.TopAddress = (ushort)adr;
         }
 
-        private void menuItemDataRefresh_Click(object sender, EventArgs e)
+        protected void menuItemDataRefresh_Click(object sender, EventArgs e)
         {
-            _dataPanelComponent.UpdateLines();
-            _dataPanelComponent.Update();
+            _dialog.DataRefresh();
             Refresh();
         }
 
-        private void menuItemDataSetColumnCount_Click(object sender, EventArgs e)
+        protected void menuItemDataSetColumnCount_Click(object sender, EventArgs e)
         {
-            int cols = _dataPanelComponent.ColCount;
+            int cols = _dialog.DataPanel.ColCount;
             var service = Locator.Resolve<IUserQuery>();
             if (service == null)
             {
                 return;
             }
             if (!service.QueryValue("Data Panel Columns", "Column Count:", "{0}", ref cols, 1, 32)) return;
-            _dataPanelComponent.ColCount = cols;
+            _dialog.DataPanel.ColCount = cols;
         }
 
-        private void dasmPanel_MouseClick(object sender, MouseEventArgs e)
+        protected void dasmPanel_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
                 contextMenuDasm.Show(dasmPanel, e.Location);
         }
 
-        private void dataPanel_MouseClick(object sender, MouseEventArgs e)
+        protected void dataPanel_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
                 contextMenuData.Show(dataPanel, e.Location);
         }
 
-        private void listState_DoubleClick(object sender, EventArgs e)
+        protected void listState_DoubleClick(object sender, EventArgs e)
         {
             if (listState.SelectedIndex < 0) return;
             if (m_spectrum.IsRunning)
                 return;
-            switch (listState.SelectedIndex)
+            if (listState.SelectedIndex == 8) //frmT
             {
-                case 0:     //iff
-                    m_spectrum.CPU.IFF1 = m_spectrum.CPU.IFF2 = !m_spectrum.CPU.IFF1;
-                    break;
-                case 1:     //halt
-                    m_spectrum.CPU.HALTED = !m_spectrum.CPU.HALTED;
-                    break;
-                case 3:     //im
-                    m_spectrum.CPU.IM++;
-                    if (m_spectrum.CPU.IM > 2)
-                        m_spectrum.CPU.IM = 0;
-                    break;
+                int frameTact = m_spectrum.GetFrameTact();
+                var service = Locator.Resolve<IUserQuery>();
+                if (service.QueryValue("Frame Tact", "New Frame Tact:", "{0}", ref frameTact, 0,
+                        m_spectrum.FrameTactCount))
+                {
+                    int delta = frameTact - m_spectrum.GetFrameTact();
+                    if (delta < 0)
+                        delta += m_spectrum.FrameTactCount;
+                    m_spectrum.CPU.Tact += delta;
+                }
             }
-            UpdateCPU(false);
+            
+            _dialog.ResetCpuState(listState.SelectedIndex);
         }
+
+        protected void menuLoadBlock_Click(object sender, EventArgs e)
+        {
+            _dialog.SaveDataToFile((title, filter) =>
+            {
+                using (var loadDialog = new OpenFileDialog())
+                {
+                    loadDialog.SupportMultiDottedExtensions = true;
+                    loadDialog.Title = title;
+                    loadDialog.Filter = filter;
+                    loadDialog.DefaultExt = string.Empty;
+                    loadDialog.FileName = null;
+                    loadDialog.ShowReadOnly = false;
+                    loadDialog.CheckFileExists = true;
+                    if (loadDialog.ShowDialog() != DialogResult.OK)
+                        return null;
+
+                    return loadDialog.FileName;
+                }
+            });
+        }
+
+        protected void menuSaveBlock_Click(object sender, EventArgs e)
+            => _dialog.ReadDataFromFile((title, filter) =>
+            {
+                using (var saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.SupportMultiDottedExtensions = true;
+                    saveDialog.Title = title;
+                    saveDialog.Filter = filter;
+                    saveDialog.DefaultExt = "";
+                    saveDialog.FileName = "";
+                    saveDialog.OverwritePrompt = true;
+                    if (saveDialog.ShowDialog() != DialogResult.OK)
+                        return null;
+                    return saveDialog.FileName;
+                }
+            });
 
 
         #region Toolstrip handlers
-
-        private static int s_addr = 0x4000;
-        private static int s_len = 6912;
 
         private void menuFileClose_Click(object sender, EventArgs e)
         {
@@ -538,65 +380,12 @@ namespace ZXMAK2.Hardware.WinForms.General
 
         private void menuFileLoad_Click(object sender, EventArgs e)
         {
-            using (var loadDialog = new OpenFileDialog())
-            {
-                loadDialog.SupportMultiDottedExtensions = true;
-                loadDialog.Title = "Load Block...";
-                loadDialog.Filter = "All files (*.*)|*.*";
-                loadDialog.DefaultExt = string.Empty;
-                loadDialog.FileName = null;
-                loadDialog.ShowReadOnly = false;
-                loadDialog.CheckFileExists = true;
-                if (loadDialog.ShowDialog() != DialogResult.OK)
-                {
-                    return;
-                }
-
-                FileInfo fileInfo = new FileInfo(loadDialog.FileName);
-                s_len = (int)fileInfo.Length;
-
-                if (s_len < 1)
-                    return;
-                var service = Locator.Resolve<IUserQuery>();
-                if (!service.QueryValue("Load Block", "Memory Address:", "#{0:X4}", ref s_addr, 0, 0xFFFF))
-                    return;
-                if (!service.QueryValue("Load Block", "Block Length:", "#{0:X4}", ref s_len, 0, 0x10000))
-                    return;
-
-                byte[] data = new byte[s_len];
-                using (FileStream fs = new FileStream(loadDialog.FileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    fs.Read(data, 0, data.Length);
-                m_spectrum.WriteMemory((ushort)s_addr, data, 0, s_len);
-            }
+            menuLoadBlock_Click(sender, e);
         }
 
         private void menuFileSave_Click(object sender, EventArgs e)
         {
-            var service = Locator.Resolve<IUserQuery>();
-            if (!service.QueryValue("Save Block", "Memory Address:", "#{0:X4}", ref s_addr, 0, 0xFFFF))
-                return;
-            if (!service.QueryValue("Save Block", "Block Length:", "#{0:X4}", ref s_len, 0, 0x10000))
-                return;
-
-            using (var saveDialog = new SaveFileDialog())
-            {
-                saveDialog.SupportMultiDottedExtensions = true;
-                saveDialog.Title = "Save Block...";
-                saveDialog.Filter = "Binary Files (*.bin)|*.bin|All files (*.*)|*.*";
-                saveDialog.DefaultExt = "";
-                saveDialog.FileName = "";
-                saveDialog.OverwritePrompt = true;
-                if (saveDialog.ShowDialog() != DialogResult.OK)
-                {
-                    return;
-                }
-
-                byte[] data = new byte[s_len];
-                m_spectrum.ReadMemory((ushort)s_addr, data, 0, s_len);
-
-                using (FileStream fs = new FileStream(saveDialog.FileName, FileMode.Create, FileAccess.Write, FileShare.Read))
-                    fs.Write(data, 0, data.Length);
-            }
+            menuSaveBlock_Click(sender, e);
         }
 
         private void toolStripStatusTact_DoubleClick(object sender, EventArgs e)
@@ -611,19 +400,19 @@ namespace ZXMAK2.Hardware.WinForms.General
                     delta += m_spectrum.FrameTactCount;
                 m_spectrum.CPU.Tact += delta;
             }
-            UpdateCPU(false);
+            _dialog.UpdateCPU(false);
         }
 
         private void toolStripContinue_Click(object sender, EventArgs e)
         {
             m_spectrum.DoRun();
-            UpdateCPU(false);
+            _dialog.UpdateCPU(false);
         }
 
         private void toolStripBreak_Click(object sender, EventArgs e)
         {
             m_spectrum.DoStop();
-            UpdateCPU(true);
+            _dialog.UpdateCPU(true);
         }
 
         private void toolStripStepInto_Click(object sender, EventArgs e)
@@ -639,7 +428,7 @@ namespace ZXMAK2.Hardware.WinForms.General
                 Logger.Error(ex);
                 Locator.Resolve<IUserMessage>().ErrorDetails(ex);
             }
-            UpdateCPU(true);
+            _dialog.UpdateCPU(true);
         }
 
         private void toolStripStepOver_Click(object sender, EventArgs e)
@@ -655,7 +444,7 @@ namespace ZXMAK2.Hardware.WinForms.General
                 Logger.Error(ex);
                 Locator.Resolve<IUserMessage>().ErrorDetails(ex);
             }
-            UpdateCPU(true);
+            _dialog.UpdateCPU(true);
         }
 
         private void toolStripStepOut_Click(object sender, EventArgs e)
@@ -665,11 +454,17 @@ namespace ZXMAK2.Hardware.WinForms.General
 
         private void toolStripShowNext_Click(object sender, EventArgs e)
         {
-            _dasmPanelComponent.ActiveAddress = m_spectrum.CPU.regs.PC;
-            _dasmPanelComponent.UpdateLines();
-            _dasmPanelComponent.Update();
+            _dialog.DasmPanel.ActiveAddress = m_spectrum.CPU.regs.PC;
+            _dialog.DasmGoToPC();
         }
 
         #endregion Toolstrip handlers
+
+        DlgResult IViewImplementation<DebuggerDialog>.ShowDialog(object owner)
+        {
+            if (ShowDialog((IWin32Window)owner) == DialogResult.OK)
+                return DlgResult.OK;
+            return DlgResult.Cancel;
+        }
     }
 }

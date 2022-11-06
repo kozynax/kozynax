@@ -1,4 +1,5 @@
 ﻿using System;
+using Kozynax.UI;
 using ZXMAK2.Dependency;
 using ZXMAK2.Host.Presentation;
 using ZXMAK2.Host.Presentation.Interfaces;
@@ -22,7 +23,7 @@ namespace ZXMAK2.Hardware.General
         #region BusDeviceBase
 
         private ViewHolder<IDebuggerGeneralView> m_viewHolder;
-
+        private DebuggerDialog _debuggerDialog = new DebuggerDialog();
 
         public override void BusInit(IBusManager bmgr)
         {
@@ -52,7 +53,11 @@ namespace ZXMAK2.Hardware.General
         {
             if (m_viewHolder != null && dbg != null)
             {
-                m_viewHolder.SetupView = d => d.Init(dbg);
+                m_viewHolder.SetupView = d =>
+                {
+                    d.Init(_debuggerDialog);
+                    d.Init(dbg);
+                };
             }
         }
 
