@@ -1,70 +1,86 @@
 using System.Drawing;
+using System.IO;
+using System.Reflection;
 
 namespace ZXMAK2.Resources
 {
     public class ResourceImages
     {
-        public static Image EmuFileOpen_32x32 => Image.FromFile("Icons/EmuFileOpen_32x32.png");
-        public static Image EmuFileSave_32x32 => Image.FromFile("Icons/EmuFileSave_32x32.png");
-        public static Image EmuResume_32x32 => Image.FromFile("Icons/EmuResume_32x32.png");
-        public static Image EmuMaxSpeed_32x32 => Image.FromFile("Icons/EmuMaxSpeed_32x32.png");
-        public static Image EmuWarmReset_32x32 => Image.FromFile("Icons/EmuWarmReset_32x32.png");
-        public static Image EmuColdReset_32x32 => Image.FromFile("Icons/EmuColdReset_32x32.png");
-        public static Image EmuFullScreen_32x32 => Image.FromFile("Icons/EmuFullScreen_32x32.png");
-        public static Image EmuQuickLoad_32x32 => Image.FromFile("Icons/EmuQuickLoad_32x32.png");
-        public static Image EmuSettings_32x32 => Image.FromFile("Icons/EmuSettings_32x32.png");
-        public static Image EmuWindowed_32x32 => Image.FromFile("Icons/EmuWindowed_32x32.png");
-        public static Image EmuPause_32x32 => Image.FromFile("Icons/EmuPause_32x32.png");
-        public static Image DebuggerClose => Image.FromFile("Icons/DebuggerClose.png");
-        public static Image HardwareTapeAutoplay => Image.FromFile("Icons/HardwareTapeAutoplay.png");
-        public static Image DebuggerBreak => Image.FromFile("Icons/DebuggerBreak.png");
-        public static Image DebuggerContinue => Image.FromFile("Icons/DebuggerContinue.png");
-        public static Image DebuggerShowBreakpoints => Image.FromFile("Icons/DebuggerShowBreakpoints.png");
-        public static Image DebuggerShowNext => Image.FromFile("Icons/DebuggerShowNext.png");
-        public static Image DebuggerStepInto => Image.FromFile("Icons/DebuggerStepInto.png");
-        public static Image DebuggerStepOut => Image.FromFile("Icons/DebuggerStepOut.png");
-        public static Image DebuggerStepOver => Image.FromFile("Icons/DebuggerStepOver.png");
-        public static Image OsdFddRd => Image.FromFile("Icons/OsdFddRd.png");
-        public static Image OsdFddWr => Image.FromFile("Icons/OsdFddWr.png");
-        public static Image OsdHddRd => Image.FromFile("Icons/OsdHddRd.png");
-        public static Image HardwareTapeNext => Image.FromFile("Icons/HardwareTapeNext.png");
-        public static Image OsdPause => Image.FromFile("Icons/OsdPause.png");
-        public static Image HardwareTapePlay => Image.FromFile("Icons/HardwareTapePlay.png");
-        public static Image HardwareTapePrev => Image.FromFile("Icons/HardwareTapePrev.png");
-        public static Image HardwareTapeRecord => Image.FromFile("Icons/HardwareTapeRecord.png");
-        public static Image HardwareTapeRewind => Image.FromFile("Icons/HardwareTapeRewind.png");
-        public static Image HardwareTapeTraps => Image.FromFile("Icons/HardwareTapeTraps.png");
-        public static Image HardwareTapePause => Image.FromFile("Icons/HardwareTapePause.png");
-        public static Image Stop_real_16x16 => Image.FromFile("Icons/Stop_real_16x16.png");
-        public static Image OsdTapeRd => Image.FromFile("Icons/OsdTapeRd.png");
-        public static Image KeyboardHelp => Image.FromFile("Icons/KeyboardHelp.png");
-        public static Icon IconDebugger => new Icon("Icons/IconDebugger.ico");
-        public static Icon IconApp => new Icon("Icons/IconApp.ico");
-        public static Icon ImageZxLogo => new Icon("Pictures/ZxLogo.png");
-        public static Image ImageKeyboardHelp => Image.FromFile("Pictures/KeyboardHelp.png");
-        public static Image Wizard => Image.FromFile("Icons/Wizard.png");
-        public static Image RAM => Image.FromFile("DeviceIcons/RAM.png");
-        public static Image PCB => Image.FromFile("DeviceIcons/PCB.png");
-        public static Image ULA => Image.FromFile("DeviceIcons/ULA.png");
-        public static Image FDD => Image.FromFile("DeviceIcons/FDD.png");
-        public static Image BEEPER => Image.FromFile("DeviceIcons/BEEPER.png");
-        public static Image AY8910 => Image.FromFile("DeviceIcons/AY8910.png");
-        public static Image TAPE => Image.FromFile("DeviceIcons/TAPE.png");
-        public static Image KBD => Image.FromFile("DeviceIcons/KBD.png");
-        public static Image MOUS => Image.FromFile("DeviceIcons/MOUS.png");
-        public static Image DEBUG => Image.FromFile("DeviceIcons/DEBUG.png");
-        public static Image DISPLAY => Image.FromFile("DeviceIcons/DISPLAY.png");
+        public static Image EmuFileOpen_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuFileOpen_32x32.png");
+        public static Image EmuFileSave_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuFileSave_32x32.png");
+        public static Image EmuResume_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuResume_32x32.png");
+        public static Image EmuMaxSpeed_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuMaxSpeed_32x32.png");
+        public static Image EmuWarmReset_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuWarmReset_32x32.png");
+        public static Image EmuColdReset_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuColdReset_32x32.png");
+        public static Image EmuFullScreen_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuFullScreen_32x32.png");
+        public static Image EmuQuickLoad_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuQuickLoad_32x32.png");
+        public static Image EmuSettings_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuSettings_32x32.png");
+        public static Image EmuWindowed_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuWindowed_32x32.png");
+        public static Image EmuPause_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuPause_32x32.png");
+        public static Image DebuggerClose => LoadImage("ZXMAK2.Resources.Icons.DebuggerClose.png");
+        public static Image HardwareTapeAutoplay => LoadImage("ZXMAK2.Resources.Icons.HardwareTapeAutoplay.png");
+        public static Image DebuggerBreak => LoadImage("ZXMAK2.Resources.Icons.DebuggerBreak.png");
+        public static Image DebuggerContinue => LoadImage("ZXMAK2.Resources.Icons.DebuggerContinue.png");
+        public static Image DebuggerShowBreakpoints => LoadImage("ZXMAK2.Resources.Icons.DebuggerShowBreakpoints.png");
+        public static Image DebuggerShowNext => LoadImage("ZXMAK2.Resources.Icons.DebuggerShowNext.png");
+        public static Image DebuggerStepInto => LoadImage("ZXMAK2.Resources.Icons.DebuggerStepInto.png");
+        public static Image DebuggerStepOut => LoadImage("ZXMAK2.Resources.Icons.DebuggerStepOut.png");
+        public static Image DebuggerStepOver => LoadImage("ZXMAK2.Resources.Icons.DebuggerStepOver.png");
+        public static Image OsdFddRd => LoadImage("ZXMAK2.Resources.Icons.OsdFddRd.png");
+        public static Image OsdFddWr => LoadImage("ZXMAK2.Resources.Icons.OsdFddWr.png");
+        public static Image OsdHddRd => LoadImage("ZXMAK2.Resources.Icons.OsdHddRd.png");
+        public static Image HardwareTapeNext => LoadImage("ZXMAK2.Resources.Icons.HardwareTapeNext.png");
+        public static Image OsdPause => LoadImage("ZXMAK2.Resources.Icons.OsdPause.png");
+        public static Image HardwareTapePlay => LoadImage("ZXMAK2.Resources.Icons.HardwareTapePlay.png");
+        public static Image HardwareTapePrev => LoadImage("ZXMAK2.Resources.Icons.HardwareTapePrev.png");
+        public static Image HardwareTapeRecord => LoadImage("ZXMAK2.Resources.Icons.HardwareTapeRecord.png");
+        public static Image HardwareTapeRewind => LoadImage("ZXMAK2.Resources.Icons.HardwareTapeRewind.png");
+        public static Image HardwareTapeTraps => LoadImage("ZXMAK2.Resources.Icons.HardwareTapeTraps.png");
+        public static Image HardwareTapePause => LoadImage("ZXMAK2.Resources.Icons.HardwareTapePause.png");
+        public static Image Stop_real_16x16 => LoadImage("ZXMAK2.Resources.Icons.Stop_real_16x16.png");
+        public static Image OsdTapeRd => LoadImage("ZXMAK2.Resources.Icons.OsdTapeRd.png");
+        public static Image KeyboardHelp => LoadImage("ZXMAK2.Resources.Icons.KeyboardHelp.png");
+        public static Icon IconDebugger => LoadIcon("ZXMAK2.Resources.Icons.IconDebugger.ico");
+        public static Icon IconApp => LoadIcon("ZXMAK2.Resources.Icons.IconApp.ico");
+        public static Icon ImageZxLogo => LoadIcon("ZXMAK2.Resources.Pictures.ZxLogo.png");
+        public static Image ImageKeyboardHelp => LoadImage("ZXMAK2.Resources.Pictures.KeyboardHelp.png");
+        public static Image Wizard => LoadImage("ZXMAK2.Resources.Icons.Wizard.png");
+        public static Image RAM => LoadImage("ZXMAK2.Resources.DeviceIcons.RAM.png");
+        public static Image PCB => LoadImage("ZXMAK2.Resources.DeviceIcons.PCB.png");
+        public static Image ULA => LoadImage("ZXMAK2.Resources.DeviceIcons.ULA.png");
+        public static Image FDD => LoadImage("ZXMAK2.Resources.DeviceIcons.FDD.png");
+        public static Image BEEPER => LoadImage("ZXMAK2.Resources.DeviceIcons.BEEPER.png");
+        public static Image AY8910 => LoadImage("ZXMAK2.Resources.DeviceIcons.AY8910.png");
+        public static Image TAPE => LoadImage("ZXMAK2.Resources.DeviceIcons.TAPE.png");
+        public static Image KBD => LoadImage("ZXMAK2.Resources.DeviceIcons.KBD.png");
+        public static Image MOUS => LoadImage("ZXMAK2.Resources.DeviceIcons.MOUS.png");
+        public static Image DEBUG => LoadImage("ZXMAK2.Resources.DeviceIcons.DEBUG.png");
+        public static Image DISPLAY => LoadImage("ZXMAK2.Resources.DeviceIcons.DISPLAY.png");
         
         // Adlers debugger resources
-        public static Icon AdlersAsm => new Icon("Adlers/Asm.ico");
-        public static Icon AdlersAsmSettings => new Icon("Adlers/AsmSettings.ico");
-        public static Image Adlers_compileToolStrip => Image.FromFile("compileToolStrip.png");
-        public static Image Adlers_openFileStripButton => Image.FromFile("openFileStripButton.png");
-        public static Image Adlers_saveFileStripButton => Image.FromFile("saveFileStripButton.png");
-        public static Image Adlers_settingsToolStrip => Image.FromFile("settingsToolStrip.png");
-        public static Image Adlers_toolCodeLibrary => Image.FromFile("toolCodeLibrary.png");
-        public static Image Adlers_toolStripButtonReloadFile => Image.FromFile("toolStripButtonReloadFile.png");
-        public static Image Adlers_toolStripColors => Image.FromFile("toolStripColors.png");
-        public static Image Adlers_toolStripNewSource => Image.FromFile("toolStripNewSource.png");
+        public static Icon AdlersAsm => LoadIcon("ZXMAK2.Resources.Adlers.Asm.ico");
+        public static Icon AdlersAsmSettings => LoadIcon("ZXMAK2.Resources.Adlers.AsmSettings.ico");
+        public static Image Adlers_compileToolStrip => LoadImage("ZXMAK2.Resources.compileToolStrip.png");
+        public static Image Adlers_openFileStripButton => LoadImage("ZXMAK2.Resources.openFileStripButton.png");
+        public static Image Adlers_saveFileStripButton => LoadImage("ZXMAK2.Resources.saveFileStripButton.png");
+        public static Image Adlers_settingsToolStrip => LoadImage("ZXMAK2.Resources.settingsToolStrip.png");
+        public static Image Adlers_toolCodeLibrary => LoadImage("ZXMAK2.Resources.toolCodeLibrary.png");
+        public static Image Adlers_toolStripButtonReloadFile => LoadImage("ZXMAK2.Resources.toolStripButtonReloadFile.png");
+        public static Image Adlers_toolStripColors => LoadImage("ZXMAK2.Resources.toolStripColors.png");
+        public static Image Adlers_toolStripNewSource => LoadImage("ZXMAK2.Resources.toolStripNewSource.png");
+
+        private static readonly Assembly Assembly = typeof(ResourceImages).GetTypeInfo().Assembly;
+        
+        private static Image LoadImage(string name)
+        {
+            Stream resource = Assembly.GetManifestResourceStream(name);
+            return Image.FromStream(resource);
+        }
+        
+        private static Icon LoadIcon(string name)
+        {
+            Stream resource = Assembly.GetManifestResourceStream(name);
+            return new Icon(resource);
+        }
     }
 }
