@@ -93,16 +93,5 @@
     <EmbeddedResource Include="ZXMAK2.Resources\DeviceIcons\RAM.png" />
     <EmbeddedResource Include="ZXMAK2.Resources\DeviceIcons\TAPE.png" />
     <EmbeddedResource Include="ZXMAK2.Resources\DeviceIcons\ULA.png" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\Asaaam.ico" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\Asm.ico" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\AsmSettings.ico" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\compileToolStrip.png" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\openFileStripButton.png" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\saveFileStripButton.png" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\settingsToolStrip.png" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\toolCodeLibrary.png" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\toolStripButtonReloadFile.png" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\toolStripColors.png" />
-    <EmbeddedResource Include="ZXMAK2.Resources\Adlers\toolStripNewSource.png" />
   </ItemGroup>
 </Project>
