@@ -22,9 +22,8 @@ namespace ZXMAK2.Host.Presentation.Interfaces
         void Init(MemoryBase mem);
     }
 
-    public interface ITapeView : IView
+    public interface ITapeView : IView, IViewImplementation<TapeSettings>
     {
-        void Init(TapeDevice tapeDevice);
     }
 
     public interface IFddDebugView : IView
