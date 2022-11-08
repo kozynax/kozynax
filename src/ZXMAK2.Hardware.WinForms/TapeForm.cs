@@ -1,13 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
-
+using Kozui.Interfaces;
+using Kozynax.UI;
+using ZXMAK2.Engine.Entities;
 using ZXMAK2.Model.Tape.Interfaces;
 using ZXMAK2.Resources;
 using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.WinForms.Views;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Hardware.General;
+using ZXMAK2.Host.Entities;
 
 
 namespace ZXMAK2.Hardware.WinForms
@@ -178,8 +182,6 @@ namespace ZXMAK2.Hardware.WinForms
             // 
             // timerProgress
             // 
-            this.timerProgress.Enabled = true;
-            this.timerProgress.Interval = 200;
             this.timerProgress.Tick += new System.EventHandler(this.timerProgress_Tick);
             // 
             // TapeForm
@@ -207,145 +209,89 @@ namespace ZXMAK2.Hardware.WinForms
 
         #endregion
 
-
-        private ITapeDevice m_tape;
+        
+        private TapeSettings _tapeSettings;
 
         public TapeForm()
         {
             InitializeComponent();
         }
-        
-        public void Init(TapeDevice tapeDevice)
-        {
-            m_tape = tapeDevice;
-            tapeDevice.TapeStateChanged += new EventHandler(OnTapeStateChanged);
-            OnTapeStateChanged(null, null);
-            OnTapeStateChanged(null, null);
-        }
-        
+
         private void TapeForm_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            m_tape.TapeStateChanged -= new EventHandler(OnTapeStateChanged);
-        }
-
-
+            => _tapeSettings.Close();
         private void toolButtonRewind_Click(object sender, EventArgs e)
-        {
-            m_tape.Rewind();
-        }
-
+            => _tapeSettings.Rewind.Click(sender, e);
         private void toolButtonPrev_Click(object sender, EventArgs e)
-        {
-            m_tape.CurrentBlock--;
-        }
-
+            => _tapeSettings.Prev.Click(sender, e);
         private void toolButtonPlay_Click(object sender, EventArgs e)
-        {
-            if (m_tape.IsPlay)
-                m_tape.Stop();
-            else
-                m_tape.Play();
-        }
+            => _tapeSettings.Play.Click(sender, e);
 
         private void toolButtonNext_Click(object sender, EventArgs e)
-        {
-            m_tape.CurrentBlock++;
-        }
+            => _tapeSettings.Next.Click(sender, e);
 
-        private void OnTapeStateChanged(object sender, EventArgs args)
+        private void TapeDialog_Redraw(object sender, EventArgs args)
         {
-            if (InvokeRequired)
+            btnNext.Enabled = btnPrev.Enabled = !_tapeSettings.IsTapePlaying;
+            btnRewind.Enabled = btnPlay.Enabled = true;
+
+            if (!Enumerable.SequenceEqual(
+                    _tapeSettings.Blocks.List.Select(b => b.Description),
+                    blockList.Items.Cast<string>()))
             {
-                BeginInvoke(new EventHandler(OnTapeStateChanged), sender, args);
-                return;
+                blockList.Items.Clear();
+                foreach (var tb in _tapeSettings.Blocks.List)
+                    blockList.Items.Add(tb.Description);
             }
-            if (m_tape.Blocks.Count <= 0)
-            {
-                btnRewind.Enabled =
-                   btnPrev.Enabled =
-                   btnPlay.Enabled =
-                   btnNext.Enabled = false;
-                blockList.SelectedIndex = -1;
-            }
+            
+            blockList.SelectedIndex = _tapeSettings.Blocks.SelectedIndex;
+            
+            blockList.Enabled = _tapeSettings.Blocks.Enabled;
+            btnUseTraps.Checked = _tapeSettings.UseTraps.Checked;
+            btnUseAutoPlay.Checked = _tapeSettings.UseAutoPlay.Checked;
+            btnPlay.Enabled = _tapeSettings.Play.Enabled;
+
+            toolProgressBar.Minimum = _tapeSettings.ProgressBar.Minimum;
+            toolProgressBar.Maximum = _tapeSettings.ProgressBar.Maximum;
+            toolProgressBar.Value = _tapeSettings.ProgressBar.Value;
+            
+            if (_tapeSettings.IsTapePlaying)
+                btnPlay.Image = ResourceImages.HardwareTapePause;
             else
-            {
-                btnNext.Enabled = btnPrev.Enabled = !m_tape.IsPlay;
-                btnRewind.Enabled = btnPlay.Enabled = true;
-                if (m_tape.IsPlay)
-                    btnPlay.Image = ResourceImages.HardwareTapePause;
-                else
-                    btnPlay.Image = ResourceImages.HardwareTapePlay;
-                if (checkContentDifferent(blockList.Items, m_tape.Blocks))
-                {
-                    blockList.Items.Clear();
-                    foreach (var tb in m_tape.Blocks)
-                        blockList.Items.Add(tb.Description);
-                }
-                blockList.SelectedIndex = m_tape.CurrentBlock;
-            }
-            blockList.Enabled = !m_tape.IsPlay;
-            btnUseTraps.Checked = m_tape.UseTraps;
-            btnUseAutoPlay.Checked = m_tape.UseAutoPlay;
-            btnPlay.Enabled = !btnUseAutoPlay.Checked;
-        }
-
-        private bool checkContentDifferent(ListBox.ObjectCollection itemList, List<ITapeBlock> list)
-        {
-            if (itemList.Count != list.Count)
-                return true;
-            for (int i = 0; i < list.Count; i++)
-                if ((string)itemList[i] != list[i].Description)
-                    return true;
-            return false;
+                btnPlay.Image = ResourceImages.HardwareTapePlay;
         }
 
         private void timerProgress_Tick(object sender, EventArgs e)
-        {
-            toolProgressBar.Minimum = 0;
-
-            int blockCount = m_tape.Blocks.Count;
-            int curBlock, position, maximum;
-            do
-            {
-                curBlock = m_tape.CurrentBlock;
-                if (curBlock >= 0 && curBlock < blockCount)
-                {
-                    maximum = m_tape.Blocks[curBlock].Count;
-                    position = m_tape.Position;
-                }
-                else
-                {
-                    maximum = 65535;
-                    position = 0;
-                }
-            } while (position > maximum);
-
-            toolProgressBar.Maximum = maximum;
-            toolProgressBar.Value = position;
-        }
+            => _tapeSettings.ProgressTimer.Tick();
 
         private void blockList_Click(object sender, EventArgs e)
         {
-            if (!blockList.Enabled || m_tape.IsPlay) return;
-            m_tape.CurrentBlock = blockList.SelectedIndex;
+            if (!blockList.Enabled || _tapeSettings.IsTapePlaying) return;
+            _tapeSettings.Blocks.SelectedIndex = blockList.SelectedIndex;
         }
 
         private void blockList_DoubleClick(object sender, EventArgs e)
         {
-            if (!blockList.Enabled || m_tape.IsPlay) return;
-            m_tape.CurrentBlock = blockList.SelectedIndex;
-            m_tape.Play();
+            if (!blockList.Enabled || _tapeSettings.IsTapePlaying) return;
+            _tapeSettings.Blocks.SelectedIndex = blockList.SelectedIndex;
+            _tapeSettings.Play.Click(sender, e);
         }
 
         private void btnTraps_Click(object sender, EventArgs e)
-        {
-            m_tape.UseTraps = btnUseTraps.Checked;
-        }
+            => _tapeSettings.UseTraps.Checked = btnUseTraps.Checked;
 
         private void btnAutoPlay_Click(object sender, EventArgs e)
+            => _tapeSettings.UseAutoPlay.Checked = btnUseAutoPlay.Checked;
+
+        public void Init(TapeSettings tapeSettings)
         {
-            m_tape.UseAutoPlay = btnUseAutoPlay.Checked;
-            btnPlay.Enabled = !btnUseAutoPlay.Checked;
+            _tapeSettings = tapeSettings;
+            _tapeSettings.Redraw += TapeDialog_Redraw;
+
+            timerProgress.Interval = _tapeSettings.ProgressTimer.IntervalMs;
+            timerProgress.Enabled = _tapeSettings.ProgressTimer.Enabled;
         }
+
+        public DlgResult ShowDialog(object owner)
+            => (this as IViewImplementation<TapeSettings>).ShowDialog(owner);
     }
 }
