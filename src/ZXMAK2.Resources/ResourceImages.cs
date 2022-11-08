@@ -56,18 +56,6 @@ namespace ZXMAK2.Resources
         public static Image MOUS => LoadImage("ZXMAK2.Resources.DeviceIcons.MOUS.png");
         public static Image DEBUG => LoadImage("ZXMAK2.Resources.DeviceIcons.DEBUG.png");
         public static Image DISPLAY => LoadImage("ZXMAK2.Resources.DeviceIcons.DISPLAY.png");
-        
-        // Adlers debugger resources
-        public static Icon AdlersAsm => LoadIcon("ZXMAK2.Resources.Adlers.Asm.ico");
-        public static Icon AdlersAsmSettings => LoadIcon("ZXMAK2.Resources.Adlers.AsmSettings.ico");
-        public static Image Adlers_compileToolStrip => LoadImage("ZXMAK2.Resources.compileToolStrip.png");
-        public static Image Adlers_openFileStripButton => LoadImage("ZXMAK2.Resources.openFileStripButton.png");
-        public static Image Adlers_saveFileStripButton => LoadImage("ZXMAK2.Resources.saveFileStripButton.png");
-        public static Image Adlers_settingsToolStrip => LoadImage("ZXMAK2.Resources.settingsToolStrip.png");
-        public static Image Adlers_toolCodeLibrary => LoadImage("ZXMAK2.Resources.toolCodeLibrary.png");
-        public static Image Adlers_toolStripButtonReloadFile => LoadImage("ZXMAK2.Resources.toolStripButtonReloadFile.png");
-        public static Image Adlers_toolStripColors => LoadImage("ZXMAK2.Resources.toolStripColors.png");
-        public static Image Adlers_toolStripNewSource => LoadImage("ZXMAK2.Resources.toolStripNewSource.png");
 
         private static readonly Assembly Assembly = typeof(ResourceImages).GetTypeInfo().Assembly;
         
