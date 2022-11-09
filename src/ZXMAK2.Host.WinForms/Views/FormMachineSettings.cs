@@ -3,6 +3,8 @@ using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Reflection;
+using Kozui.Interfaces;
 using Kozynax.UI;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Engine;
@@ -472,36 +474,74 @@ namespace ZXMAK2.Host.WinForms.Views
                         // skip assemblies without reference on assembly which contains ConfigScreenControl 
                         continue;
                     }
-                    foreach (Type type in asm.GetTypes())
-                    {
-                        try
-                        {
-                            if (type.IsClass &&
-                                !type.IsAbstract &&
-                                type != typeof(CtlSettingsGenericDevice) &&
-                                typeof(ConfigScreenControl).IsAssignableFrom(type) &&
-                                typeof(UserControl).IsAssignableFrom(type))
-                            {
-                                var mi = type.GetMethod("Init", new Type[] { typeof(BusManager), typeof(IHostService), objTarget.GetType() });
-                                if (mi == null)
-                                    continue;
-                                var obj = (UserControl)Activator.CreateInstance(type);
-                                mi.Invoke(obj, new object[] { bmgr, host, objTarget });
-                                return obj;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Error(ex, type.FullName);
-                        }
-                    }
+                    
+                    var deviceType = FindGenericType(typeof(DeviceSettings<>), objTarget.GetType(), asm);
+                    var componentType = FindGenericType(typeof(IComponentImplementation<>), deviceType, asm);
+
+                    var mi = deviceType.GetMethod("Init", new Type[] { typeof(BusManager), typeof(IHostService), objTarget.GetType() });
+                    if (mi == null)
+                        continue;
+                    var deviceSettings = Activator.CreateInstance(deviceType);
+                    mi.Invoke(deviceSettings, new object[] { bmgr, host, objTarget });
+
+                    var component = (ConfigScreenControl)Activator.CreateInstance(componentType);
+                    mi = componentType.GetMethod("Init", new Type[] { deviceType });
+                    if (mi == null)
+                        continue;
+                    mi.Invoke(component, new[] { deviceSettings });
+
+                    return component;
+                    /* foreach (Type type in asm.GetTypes())
+                     {
+                         try
+                         {
+                             if (type.IsClass &&
+                                 !type.IsAbstract &&
+                                 type != typeof(CtlSettingsGenericDevice) &&
+                                 typeof(ConfigScreenControl).IsAssignableFrom(type) &&
+                                 typeof(UserControl).IsAssignableFrom(type))
+                             {
+                                 var mi = type.GetMethod("Init", new Type[] { typeof(BusManager), typeof(IHostService), objTarget.GetType() });
+                                 if (mi == null)
+                                     continue;
+                                 var obj = (UserControl)Activator.CreateInstance(type);
+                                 mi.Invoke(obj, new object[] { bmgr, host, objTarget });
+                                 return obj;
+                             }
+                         }
+                         catch (Exception ex)
+                         {
+                             Logger.Error(ex, type.FullName);
+                         }
+                     }*/
                 }
                 catch (Exception ex)
                 {
                     Logger.Error(ex, asm.FullName);
+                    return null;
                 }
             }
             return null;
+        }
+
+        private static Type FindGenericType(Type target, Type argumentType, Assembly assembly)
+        {
+            var types = assembly.GetTypes();
+            var deviceTypeGeneric = target;
+            var objType = argumentType;
+            Type deviceType;
+
+            while (true)
+            {
+                deviceType = deviceTypeGeneric.MakeGenericType(objType);
+                var deviceSettingsType = types.FirstOrDefault(t => deviceType.IsAssignableFrom(t));
+                if (deviceSettingsType != null)
+                    return deviceSettingsType;
+
+                objType = objType.BaseType;
+                if (deviceType == typeof(object))
+                    throw new Exception();
+            }
         }
 
         public void Init(IHostService host, IVirtualMachine vm)

@@ -22,7 +22,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             m_bmgr = bmgr;
             m_device = device;
             txtDevice.Text = device.Name;
-            txtDescription.Text = device.Description.Replace("\n", Environment.NewLine);
+            txtDescription.Text = device.Description?.Replace("\n", Environment.NewLine);
         }
 
         public string DeviceName { get { return m_device.Description; } }
