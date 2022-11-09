@@ -1,15 +1,17 @@
 ﻿using System;
+using Kozui.Interfaces;
 using Kozynax.UI;
 using ZXMAK2.Engine;
 using ZXMAK2.Hardware;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
+using ZXMAK2.Host.Entities;
 
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsUla : ConfigScreenControl<UlaDeviceBase>
+    public partial class CtlSettingsUla : ConfigScreenControl<UlaDeviceBase>, IComponentImplementation<UlaSettings>
     {
         private BusManager m_bmgr;
         private IHostService m_host;
@@ -22,11 +24,16 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
 
             cbxType.SelectedIndexChanged += CbxType_SelectedIndexChanged;
-            
-            _ula = new UlaSettings();
-            _ula.Redraw += Ula_Redraw;
         }
 
+        public void Init(UlaSettings ulaSettings)
+        {
+            _ula = ulaSettings;
+            _ula.Redraw += Ula_Redraw;
+            
+            Ula_Redraw(this, EventArgs.Empty);
+        }
+        
         private void CbxType_SelectedIndexChanged(object sender, EventArgs e)
             => _ula.Devices.SelectedIndex = cbxType.SelectedIndex;
 

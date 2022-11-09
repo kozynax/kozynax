@@ -3,9 +3,8 @@ using ZXMAK2.Host.Entities;
 
 namespace Kozui.Interfaces
 {
-	public interface IViewImplementation<T> : IDisposable
+	public interface IViewImplementation<T> : IUiImplementation<T>
 	{
-		void Init(T ui);
 		DlgResult ShowDialog(object owner);
 	}
 }

@@ -14,6 +14,7 @@ using ZXMAK2.Host.Services;
 using ZXMAK2.Host.WinForms.Mdx;
 using ZXMAK2.Host.WinForms.Services;
 using ZXMAK2.Host.WinForms.Views;
+using ZXMAK2.Host.WinForms.Views.Configuration.Devices;
 
 
 namespace ZXMAK2
@@ -72,6 +73,8 @@ namespace ZXMAK2
             resolver.RegisterType<IViewImplementation<DebuggerDialog>, FormCpu>();
             resolver.RegisterType<IViewImplementation<SprinterDebuggerDialog>, DebugForm>();
             resolver.RegisterType<IViewImplementation<TapeSettings>, TapeForm>();
+            
+            resolver.RegisterType<IComponentImplementation<UlaSettings>, CtlSettingsUla>();
             
             Locator.Init(resolver);
             var launcher = Locator.Resolve<ILauncher>();

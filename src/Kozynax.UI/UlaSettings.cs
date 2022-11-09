@@ -9,7 +9,7 @@ using ZXMAK2.Host.WinForms.Lib;
 
 namespace Kozynax.UI
 {
-    public class UlaSettings : DeviceSettings
+    public class UlaSettings : DeviceSettings<UlaDeviceBase>
     {
         public event EventHandler Redraw;
         
@@ -26,7 +26,7 @@ namespace Kozynax.UI
                 Devices.List.Add(device);
         }
 
-        public void Init(BusManager bmgr, IHostService host, UlaDeviceBase device)
+        public override void Init(BusManager bmgr, IHostService host, UlaDeviceBase device)
         {
             _bmgr = bmgr;
             _host = host;
