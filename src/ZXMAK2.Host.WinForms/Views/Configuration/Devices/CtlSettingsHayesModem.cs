@@ -1,4 +1,5 @@
 ﻿using ZXMAK2.Engine;
+using ZXMAK2.Engine.Entities;
 using ZXMAK2.Hardware.General;
 using ZXMAK2.Host.Interfaces;
 
@@ -15,10 +16,10 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public void Init(BusManager bmgr, IHostService host, HayesModem modem)
+        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase modem)
         {
             m_bmgr = bmgr;
-            m_modem = modem;
+            m_modem = (HayesModem)modem;
 
             BindComPorts();
         }

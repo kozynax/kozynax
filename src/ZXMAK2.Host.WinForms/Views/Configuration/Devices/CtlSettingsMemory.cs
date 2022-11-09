@@ -37,11 +37,11 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             cbxRomSet.Sorted = true;
         }
 
-        public void Init(BusManager bmgr, IHostService host, IMemoryDevice device)
+        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
         {
             m_bmgr = bmgr;
             m_host = host;
-            m_device = device;
+            m_device = (IMemoryDevice)device;
 
             var busDevice = (BusDeviceBase)device;
             cbxType.SelectedIndex = -1;
@@ -77,7 +77,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             {
                 memoryBase.RomSetName = (String)cbxRomSet.SelectedItem;
             }
-            Init(m_bmgr, m_host, memory);
+            Init(m_bmgr, m_host, (BusDeviceBase)memory);
         }
 
         private void cbxType_SelectedIndexChanged(object sender, EventArgs e)

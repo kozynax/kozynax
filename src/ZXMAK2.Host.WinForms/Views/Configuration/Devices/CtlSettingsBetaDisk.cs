@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using ZXMAK2.Model.Disk;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Engine;
+using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Interfaces;
 
 
@@ -22,10 +23,10 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public void Init(BusManager bmgr, IHostService host, IBetaDiskDevice device)
+        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
         {
             m_bmgr = bmgr;
-            m_device = device;
+            m_device = (IBetaDiskDevice)device;
             chkNoDelay.Checked = m_device.NoDelay;
             chkLogIO.Checked = m_device.LogIo;
             initDrive(GetImage(0), chkPresentA, txtPathA, chkProtectA, btnBrowseA);

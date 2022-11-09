@@ -2,6 +2,7 @@
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Engine;
 using ZXMAK2.Engine.Entities;
+using ZXMAK2.Hardware;
 
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
@@ -16,7 +17,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
+        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
         {
             m_bmgr = bmgr;
             m_device = device;
