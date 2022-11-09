@@ -8,7 +8,7 @@ using ZXMAK2.Engine.Entities;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsGenericSound : ConfigScreenControl
+    public partial class CtlSettingsGenericSound : ConfigScreenControl<ISoundRenderer>
     {
         private BusManager m_bmgr;
         private ISoundRenderer m_device;
@@ -19,11 +19,11 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
+        public override void Init(BusManager bmgr, IHostService host, ISoundRenderer device)
         {
             m_bmgr = bmgr;
-            m_device = (ISoundRenderer)device;
-            var busDevice = device;
+            m_device = device;
+            var busDevice = (BusDeviceBase)device;
             txtDevice.Text = busDevice.Name;
             txtDescription.Text = busDevice.Description.Replace("\n", Environment.NewLine);
 

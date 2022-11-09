@@ -7,7 +7,7 @@ using ZXMAK2.Engine.Entities;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsJoystick : ConfigScreenControl
+    public partial class CtlSettingsJoystick : ConfigScreenControl<IJoystickDevice>
     {
         private BusManager m_bmgr;
         private IHostService m_host;
@@ -18,11 +18,11 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
+        public override void Init(BusManager bmgr, IHostService host, IJoystickDevice device)
         {
             m_bmgr = bmgr;
             m_host = host;
-            m_device = (IJoystickDevice)device;
+            m_device = device;
             var busDevice = (BusDeviceBase)device;
             //txtDevice.Text = busDevice.Name;
             txtDescription.Text = busDevice.Description.Replace("\n", Environment.NewLine);
@@ -61,7 +61,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             {
                 m_device.HostId = string.Empty;
             }
-            Init(m_bmgr, m_host, (BusDeviceBase)m_device);
+            Init(m_bmgr, m_host, m_device);
         }
 
         private void cbxType_SelectedIndexChanged(object sender, EventArgs e)

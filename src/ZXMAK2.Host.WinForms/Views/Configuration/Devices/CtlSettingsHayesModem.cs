@@ -6,7 +6,7 @@ using ZXMAK2.Host.Interfaces;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsHayesModem : ConfigScreenControl
+    public partial class CtlSettingsHayesModem : ConfigScreenControl<HayesModem>
     {
         private BusManager m_bmgr;
         private HayesModem m_modem;
@@ -16,10 +16,10 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase modem)
+        public override void Init(BusManager bmgr, IHostService host, HayesModem modem)
         {
             m_bmgr = bmgr;
-            m_modem = (HayesModem)modem;
+            m_modem = modem;
 
             BindComPorts();
         }

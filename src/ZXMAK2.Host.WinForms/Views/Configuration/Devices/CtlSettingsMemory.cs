@@ -8,7 +8,7 @@ using ZXMAK2.Engine.Entities;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsMemory : ConfigScreenControl
+    public partial class CtlSettingsMemory : ConfigScreenControl<IMemoryDevice>
     {
         private BusManager m_bmgr;
         private IHostService m_host;
@@ -37,11 +37,11 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             cbxRomSet.Sorted = true;
         }
 
-        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
+        public override void Init(BusManager bmgr, IHostService host, IMemoryDevice device)
         {
             m_bmgr = bmgr;
             m_host = host;
-            m_device = (IMemoryDevice)device;
+            m_device = device;
 
             var busDevice = (BusDeviceBase)device;
             cbxType.SelectedIndex = -1;
@@ -77,7 +77,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             {
                 memoryBase.RomSetName = (String)cbxRomSet.SelectedItem;
             }
-            Init(m_bmgr, m_host, (BusDeviceBase)memory);
+            Init(m_bmgr, m_host, memory);
         }
 
         private void cbxType_SelectedIndexChanged(object sender, EventArgs e)
