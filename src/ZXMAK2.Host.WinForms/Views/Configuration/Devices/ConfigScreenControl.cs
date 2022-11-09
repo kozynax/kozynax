@@ -7,9 +7,12 @@ using ZXMAK2.Host.Interfaces;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
+    public abstract class ConfigScreenControl<T> : ConfigScreenControl
+    {
+        public abstract void Init(BusManager bmgr, IHostService host, T device);
+    }
     public abstract class ConfigScreenControl : UserControl
     {
-        public abstract void Init(BusManager bmgr, IHostService host, BusDeviceBase device);
         public abstract void Apply();
     }
 }

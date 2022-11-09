@@ -13,7 +13,7 @@ using ZXMAK2.Engine.Interfaces;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsBetaDisk : ConfigScreenControl
+    public partial class CtlSettingsBetaDisk : ConfigScreenControl<IBetaDiskDevice>
     {
         private BusManager m_bmgr;
         private IBetaDiskDevice m_device;
@@ -23,10 +23,10 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
+        public override void Init(BusManager bmgr, IHostService host, IBetaDiskDevice device)
         {
             m_bmgr = bmgr;
-            m_device = (IBetaDiskDevice)device;
+            m_device = device;
             chkNoDelay.Checked = m_device.NoDelay;
             chkLogIO.Checked = m_device.LogIo;
             initDrive(GetImage(0), chkPresentA, txtPathA, chkProtectA, btnBrowseA);

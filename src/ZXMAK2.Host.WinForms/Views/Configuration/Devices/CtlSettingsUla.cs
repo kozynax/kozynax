@@ -9,7 +9,7 @@ using ZXMAK2.Engine.Entities;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsUla : ConfigScreenControl
+    public partial class CtlSettingsUla : ConfigScreenControl<UlaDeviceBase>
     {
         private BusManager m_bmgr;
         private IHostService m_host;
@@ -30,8 +30,8 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
         private void CbxType_SelectedIndexChanged(object sender, EventArgs e)
             => _ula.Devices.SelectedIndex = cbxType.SelectedIndex;
 
-        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
-            => _ula.Init(bmgr, host, (UlaDeviceBase)device);
+        public override void Init(BusManager bmgr, IHostService host, UlaDeviceBase device)
+            => _ula.Init(bmgr, host, device);
         
         private void Ula_Redraw(object sender, EventArgs e)
         {
