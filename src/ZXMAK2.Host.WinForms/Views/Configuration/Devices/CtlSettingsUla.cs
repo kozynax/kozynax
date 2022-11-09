@@ -1,5 +1,5 @@
 ﻿using System;
-
+using Kozynax.UI;
 using ZXMAK2.Engine;
 using ZXMAK2.Hardware;
 using ZXMAK2.Host.Interfaces;
@@ -15,61 +15,33 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
         private IHostService m_host;
         private UlaDeviceBase m_device;
 
+        private UlaSettings _ula;
+        
         public CtlSettingsUla()
         {
             InitializeComponent();
-            BindTypeList();
+
+            cbxType.SelectedIndexChanged += CbxType_SelectedIndexChanged;
+            
+            _ula = new UlaSettings();
+            _ula.Redraw += Ula_Redraw;
         }
 
-        private void BindTypeList()
+        private void CbxType_SelectedIndexChanged(object sender, EventArgs e)
+            => _ula.Devices.SelectedIndex = cbxType.SelectedIndex;
+
+        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
+            => _ula.Init(bmgr, host, (UlaDeviceBase)device);
+        
+        private void Ula_Redraw(object sender, EventArgs e)
         {
             cbxType.Items.Clear();
-            foreach (var bdd in DeviceEnumerator.SelectByType<IUlaDevice>())
-            {
-                cbxType.Items.Add(bdd);
-            }
-            cbxType.Sorted = true;
-        }
-
-        public void Init(BusManager bmgr, IHostService host, UlaDeviceBase device)
-        {
-            m_bmgr = bmgr;
-            m_host = host;
-            m_device = device;
-
-            cbxType.SelectedIndex = -1;
-            if (m_device != null)
-            {
-                for (int i = 0; i < cbxType.Items.Count; i++)
-                {
-                    var bdd = (BusDeviceDescriptor)cbxType.Items[i];
-                    if (m_device.GetType() == bdd.Type)
-                    {
-                        cbxType.SelectedIndex = i;
-                        break;
-                    }
-                }
-            }
+            foreach (var bdb in _ula.Devices.List)
+                cbxType.Items.Add(bdb);
+            cbxType.SelectedIndex = _ula.Devices.SelectedIndex;
         }
 
         public override void Apply()
-        {
-            var bdd = (BusDeviceDescriptor)cbxType.SelectedItem;
-
-            var ula = (IUlaDevice)Activator.CreateInstance(bdd.Type);
-            var oldUla = m_bmgr.FindDevice<IUlaDevice>();
-            if (oldUla != null && oldUla.GetType() != ula.GetType())
-            {
-                var busOldUla = (BusDeviceBase)oldUla;
-                var busNewUla = (BusDeviceBase)ula;
-                if (busOldUla != null)
-                {
-                    m_bmgr.Remove(busOldUla);
-                    ula.PortFE = oldUla.PortFE;
-                }
-                m_bmgr.Add(busNewUla);
-            }
-            Init(m_bmgr, m_host, (UlaDeviceBase)ula);
-        }
+            => _ula.Apply();
     }
 }

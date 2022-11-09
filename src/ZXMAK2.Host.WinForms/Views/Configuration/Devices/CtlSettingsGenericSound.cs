@@ -19,11 +19,11 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public void Init(BusManager bmgr, IHostService host, ISoundRenderer device)
+        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
         {
             m_bmgr = bmgr;
-            m_device = device;
-            var busDevice = (BusDeviceBase)device;
+            m_device = (ISoundRenderer)device;
+            var busDevice = device;
             txtDevice.Text = busDevice.Name;
             txtDescription.Text = busDevice.Description.Replace("\n", Environment.NewLine);
 

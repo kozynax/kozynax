@@ -18,11 +18,11 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public void Init(BusManager bmgr, IHostService host, IJoystickDevice device)
+        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
         {
             m_bmgr = bmgr;
             m_host = host;
-            m_device = device;
+            m_device = (IJoystickDevice)device;
             var busDevice = (BusDeviceBase)device;
             //txtDevice.Text = busDevice.Name;
             txtDescription.Text = busDevice.Description.Replace("\n", Environment.NewLine);
@@ -61,7 +61,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             {
                 m_device.HostId = string.Empty;
             }
-            Init(m_bmgr, m_host, m_device);
+            Init(m_bmgr, m_host, (BusDeviceBase)m_device);
         }
 
         private void cbxType_SelectedIndexChanged(object sender, EventArgs e)
