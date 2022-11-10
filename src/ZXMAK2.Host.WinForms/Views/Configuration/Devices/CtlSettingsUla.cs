@@ -35,7 +35,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
         }
         
         private void CbxType_SelectedIndexChanged(object sender, EventArgs e)
-            => _ula.Devices.SelectedIndex = cbxType.SelectedIndex;
+            => _ula.List.SelectedIndex = cbxType.SelectedIndex;
 
         public override void Init(BusManager bmgr, IHostService host, UlaDeviceBase device)
             => _ula.Init(bmgr, host, device);
@@ -43,9 +43,9 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
         private void Ula_Redraw(object sender, EventArgs e)
         {
             cbxType.Items.Clear();
-            foreach (var bdb in _ula.Devices.List)
+            foreach (var bdb in _ula.List.List)
                 cbxType.Items.Add(bdb);
-            cbxType.SelectedIndex = _ula.Devices.SelectedIndex;
+            cbxType.SelectedIndex = _ula.List.SelectedIndex;
         }
 
         public override void Apply()

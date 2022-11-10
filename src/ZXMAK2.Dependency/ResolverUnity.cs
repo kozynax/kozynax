@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
 using Microsoft.Practices.Unity;
-using Microsoft.Practices.Unity.Configuration;
-
 
 namespace ZXMAK2.Dependency
 {
