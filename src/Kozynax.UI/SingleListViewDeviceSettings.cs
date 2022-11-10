@@ -16,6 +16,8 @@ namespace Kozynax.UI
         public TDevice Device { get; private set; }
 
         public ListView<TListItem> List { get; }
+        public Label Title { get; }
+        
         protected abstract IEnumerable<TListItem> GetListData();
         protected abstract TListItem FindSelectedItemInList(TDevice device);
         protected abstract TDevice Apply(TListItem item);
@@ -23,7 +25,11 @@ namespace Kozynax.UI
         public SingleListViewDeviceSettings()
         {
             List = new ListView<TListItem>();
+            Title = new Label();
+            Title.Text = ListLabel;
         }
+
+        protected abstract string ListLabel { get; }
 
         public override void Init(BusManager bmgr, IHostService host, TDevice device)
         {

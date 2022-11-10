@@ -3,10 +3,7 @@ using Kozynax.UI;
 using ZXMAK2.Engine;
 using ZXMAK2.Hardware;
 using ZXMAK2.Host.Interfaces;
-using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
-using ZXMAK2.Host.Entities;
-
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
@@ -24,8 +21,6 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
         }
 
         public void Init(UlaSettings ulaSettings)
-        {
-            Init(ulaSettings, cbxType);
-        }
+            => Init(ulaSettings, cbxType, lblType);
     }
 }

@@ -10,6 +10,8 @@ namespace Kozynax.UI
 {
     public class UlaSettings : SingleListViewDeviceSettings<UlaDeviceBase, BusDeviceDescriptor>
     {
+        protected override string ListLabel => "Type:";
+
         protected override IEnumerable<BusDeviceDescriptor> GetListData()
             => DeviceEnumerator.SelectByType<IUlaDevice>().OrderBy(u => u.Name).ToList();
 

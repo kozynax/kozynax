@@ -76,6 +76,7 @@ namespace ZXMAK2
             
             resolver.RegisterType<IComponentImplementation<UlaSettings>, CtlSettingsUla>();
             resolver.RegisterType<IComponentImplementation<JoystickSettings>, CtlSettingsJoystick>();
+            resolver.RegisterType<IComponentImplementation<ModemSettings>, CtlSettingsHayesModem>();
             
             Locator.Init(resolver);
             var launcher = Locator.Resolve<ILauncher>();

@@ -21,7 +21,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
         public void Init(JoystickSettings joystickSettings)
         {
             _joystickSettings = joystickSettings;
-            Init(joystickSettings, cbxType);
+            Init(joystickSettings, cbxType, lblType);
         }
         
         public override void Init(BusManager bmgr, IHostService host, IJoystickDevice device)
