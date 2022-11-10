@@ -8,6 +8,8 @@ namespace Kozynax.UI
 {
 	public class JoystickSettings : SingleListViewDeviceSettings<IJoystickDevice, IHostDeviceInfo>
 	{
+		protected override string ListLabel => "Map to the host device:";
+
 		protected override IEnumerable<IHostDeviceInfo> GetListData()
 			=> Host.Joystick.GetAvailableJoysticks();
 
