@@ -538,8 +538,18 @@ namespace ZXMAK2.Host.WinForms.Views
                 if (deviceSettingsType != null)
                     return deviceSettingsType;
 
+                // Check interfaces
+                var interfaces = objType.GetInterfaces();
+                foreach (var iface in interfaces)
+                {
+                    deviceType = deviceTypeGeneric.MakeGenericType(iface);
+                    deviceSettingsType = types.FirstOrDefault(t => deviceType.IsAssignableFrom(t));
+                    if (deviceSettingsType != null)
+                        return deviceSettingsType;
+                }
+                
                 objType = objType.BaseType;
-                if (deviceType == typeof(object))
+                if (objType == typeof(object))
                     throw new Exception();
             }
         }
