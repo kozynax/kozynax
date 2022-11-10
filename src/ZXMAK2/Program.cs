@@ -75,6 +75,7 @@ namespace ZXMAK2
             resolver.RegisterType<IViewImplementation<TapeSettings>, TapeForm>();
             
             resolver.RegisterType<IComponentImplementation<UlaSettings>, CtlSettingsUla>();
+            resolver.RegisterType<IComponentImplementation<JoystickSettings>, CtlSettingsJoystick>();
             
             Locator.Init(resolver);
             var launcher = Locator.Resolve<ILauncher>();

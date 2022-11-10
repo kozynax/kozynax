@@ -5,14 +5,12 @@ using ZXMAK2.Engine;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Hardware;
-using ZXMAK2.Host.Interfaces;
-using ZXMAK2.Host.WinForms.Lib;
 
 namespace Kozynax.UI
 {
     public class UlaSettings : SingleListViewDeviceSettings<UlaDeviceBase, BusDeviceDescriptor>
     {
-        protected override List<BusDeviceDescriptor> GetListData()
+        protected override IEnumerable<BusDeviceDescriptor> GetListData()
             => DeviceEnumerator.SelectByType<IUlaDevice>().OrderBy(u => u.Name).ToList();
 
         protected override BusDeviceDescriptor FindSelectedItemInList(UlaDeviceBase ula)

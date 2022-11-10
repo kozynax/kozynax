@@ -12,9 +12,11 @@ namespace Kozynax.UI
         public event EventHandler Redraw;
 
         protected BusManager BusManager { get; private set; }
-        private IHostService _host;
+        protected IHostService Host { get; private set; }
+        public TDevice Device { get; private set; }
+
         public ListView<TListItem> List { get; }
-        protected abstract List<TListItem> GetListData();
+        protected abstract IEnumerable<TListItem> GetListData();
         protected abstract TListItem FindSelectedItemInList(TDevice device);
         protected abstract TDevice Apply(TListItem item);
         
@@ -26,8 +28,9 @@ namespace Kozynax.UI
         public override void Init(BusManager bmgr, IHostService host, TDevice device)
         {
             BusManager = bmgr;
-            _host = host;
-
+            Host = host;
+            Device = device;
+            
             var list = GetListData();
             List.List.Clear();
             foreach (var d in list)
@@ -50,7 +53,7 @@ namespace Kozynax.UI
 
             var bdd = List.List[List.SelectedIndex];
             var updatedDevice = Apply(bdd);
-            Init(BusManager, _host, updatedDevice);
+            Init(BusManager, Host, updatedDevice);
         }
     }
 }

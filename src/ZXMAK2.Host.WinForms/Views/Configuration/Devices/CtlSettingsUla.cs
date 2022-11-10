@@ -1,5 +1,4 @@
-﻿using System;
-using Kozui.Interfaces;
+﻿using Kozui.Interfaces;
 using Kozynax.UI;
 using ZXMAK2.Engine;
 using ZXMAK2.Hardware;
@@ -11,7 +10,7 @@ using ZXMAK2.Host.Entities;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsUla : ConfigScreenControl<UlaDeviceBase>, IComponentImplementation<UlaSettings>
+    public partial class CtlSettingsUla : SingleListViewRenderer<UlaDeviceBase, UlaSettings, BusDeviceDescriptor>, IComponentImplementation<UlaSettings>
     {
         private BusManager m_bmgr;
         private IHostService m_host;
@@ -22,33 +21,11 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
         public CtlSettingsUla()
         {
             InitializeComponent();
-
-            cbxType.SelectedIndexChanged += CbxType_SelectedIndexChanged;
         }
 
         public void Init(UlaSettings ulaSettings)
         {
-            _ula = ulaSettings;
-            _ula.Redraw += Ula_Redraw;
-            
-            Ula_Redraw(this, EventArgs.Empty);
+            Init(ulaSettings, cbxType);
         }
-        
-        private void CbxType_SelectedIndexChanged(object sender, EventArgs e)
-            => _ula.List.SelectedIndex = cbxType.SelectedIndex;
-
-        public override void Init(BusManager bmgr, IHostService host, UlaDeviceBase device)
-            => _ula.Init(bmgr, host, device);
-        
-        private void Ula_Redraw(object sender, EventArgs e)
-        {
-            cbxType.Items.Clear();
-            foreach (var bdb in _ula.List.List)
-                cbxType.Items.Add(bdb);
-            cbxType.SelectedIndex = _ula.List.SelectedIndex;
-        }
-
-        public override void Apply()
-            => _ula.Apply();
     }
 }
