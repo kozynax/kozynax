@@ -185,7 +185,6 @@
             this.btnBrowseD.TabIndex = 12;
             this.btnBrowseD.Text = "...";
             this.btnBrowseD.UseVisualStyleBackColor = true;
-            this.btnBrowseD.Click += new System.EventHandler(this.btnBrowse_Click);
             // 
             // txtPathD
             // 
@@ -195,7 +194,6 @@
             this.txtPathD.Name = "txtPathD";
             this.txtPathD.Size = new System.Drawing.Size(240, 20);
             this.txtPathD.TabIndex = 10;
-            this.txtPathD.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // btnBrowseC
             // 
@@ -206,7 +204,6 @@
             this.btnBrowseC.TabIndex = 9;
             this.btnBrowseC.Text = "...";
             this.btnBrowseC.UseVisualStyleBackColor = true;
-            this.btnBrowseC.Click += new System.EventHandler(this.btnBrowse_Click);
             // 
             // txtPathC
             // 
@@ -216,7 +213,6 @@
             this.txtPathC.Name = "txtPathC";
             this.txtPathC.Size = new System.Drawing.Size(240, 20);
             this.txtPathC.TabIndex = 7;
-            this.txtPathC.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // btnBrowseB
             // 
@@ -227,7 +223,6 @@
             this.btnBrowseB.TabIndex = 6;
             this.btnBrowseB.Text = "...";
             this.btnBrowseB.UseVisualStyleBackColor = true;
-            this.btnBrowseB.Click += new System.EventHandler(this.btnBrowse_Click);
             // 
             // txtPathB
             // 
@@ -237,7 +232,6 @@
             this.txtPathB.Name = "txtPathB";
             this.txtPathB.Size = new System.Drawing.Size(240, 20);
             this.txtPathB.TabIndex = 4;
-            this.txtPathB.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // btnBrowseA
             // 
@@ -248,7 +242,6 @@
             this.btnBrowseA.TabIndex = 3;
             this.btnBrowseA.Text = "...";
             this.btnBrowseA.UseVisualStyleBackColor = true;
-            this.btnBrowseA.Click += new System.EventHandler(this.btnBrowse_Click);
             // 
             // txtPathA
             // 
@@ -258,7 +251,6 @@
             this.txtPathA.Name = "txtPathA";
             this.txtPathA.Size = new System.Drawing.Size(240, 20);
             this.txtPathA.TabIndex = 1;
-            this.txtPathA.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // chkNoDelay
             // 
