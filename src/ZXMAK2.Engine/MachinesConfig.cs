@@ -16,15 +16,19 @@ namespace ZXMAK2.Engine
         {
             var folderName = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var fileName = Path.Combine(folderName, "machines.config");
+            Stream stream;
             if (File.Exists(fileName))
-            {
-                Load(fileName);
-            }
+                stream = File.OpenRead(fileName);
+            else
+                stream = GetType().Assembly.GetManifestResourceStream("ZXMAK2.machines.config");
+            
+            Load(stream);
+            stream.Dispose();
         }
 
-        public void Load(string fileName)
+        public void Load(Stream stream)
         {
-            m_config.Load(fileName);
+            m_config.Load(stream);
         }
 
         public IEnumerable<string> GetNames()
