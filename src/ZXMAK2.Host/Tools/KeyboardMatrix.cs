@@ -21,6 +21,7 @@ using System;
 using System.Linq;
 using System.Xml;
 using System.Collections.Generic;
+using System.IO;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
 
@@ -125,10 +126,10 @@ namespace ZXMAK2.Host.Tools
 
         public static KeyboardMatrix Deserialize(
             SpeccyKey[][] rows,
-            string fileName)
+            Stream stream)
         {
             var xml = new XmlDocument();
-            xml.Load(fileName);
+            xml.Load(stream);
             return Deserialize(rows, xml.DocumentElement);
         }
 

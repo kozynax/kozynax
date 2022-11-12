@@ -10,6 +10,7 @@ using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
 using System.Text;
 using System;
+using System.Reflection;
 using System.Xml;
 
 
@@ -39,9 +40,19 @@ namespace ZXMAK2.Hardware.General
             m_noDos = true;
             m_mask = 0x01;
             m_port = 0xFE;
+
+            var keyboardConfigFileName = Path.Combine(Utils.GetAppFolder(), "Keyboard.config");
+            Stream keyboardConfigStream;
+            if (File.Exists(keyboardConfigFileName))
+                keyboardConfigStream = File.OpenRead(keyboardConfigFileName);
+            else
+                keyboardConfigStream = GetType().Assembly.GetManifestResourceStream("ZXMAK2.Host.Keyboard.config");
+            
             _matrix = KeyboardMatrix.Deserialize(
                 KeyboardMatrix.DefaultRows,
-                Path.Combine(Utils.GetAppFolder(), "Keyboard.config"));
+                keyboardConfigStream);
+            keyboardConfigStream.Dispose();
+            
             OnProcessConfigChange();
         }
 
