@@ -93,5 +93,6 @@
     <EmbeddedResource Include="ZXMAK2.Resources\DeviceIcons\RAM.png" />
     <EmbeddedResource Include="ZXMAK2.Resources\DeviceIcons\TAPE.png" />
     <EmbeddedResource Include="ZXMAK2.Resources\DeviceIcons\ULA.png" />
+    <EmbeddedResource Include="ZXMAK2.Host\Keyboard.config" />
   </ItemGroup>
 </Project>
