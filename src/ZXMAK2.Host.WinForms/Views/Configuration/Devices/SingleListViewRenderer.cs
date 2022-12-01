@@ -6,7 +6,7 @@ using ZXMAK2.Host.Interfaces;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-	public class SingleListViewRenderer<TDevice, TSettings, TListItem> : ConfigScreenControl<TDevice>
+	public class SingleListViewRenderer<TDevice, TSettings, TListItem> : ConfigScreenControl
 		where TSettings : SingleListViewDeviceSettings<TDevice, TListItem>
 	{
 		private ComboBox _comboBox;
@@ -27,9 +27,6 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 
 		private void CbxType_SelectedIndexChanged(object sender, EventArgs e)
 			=> _deviceSettings.List.SelectedIndex = _comboBox.SelectedIndex;
-
-		public override void Init(BusManager bmgr, IHostService host, TDevice device)
-			=> _deviceSettings.Init(bmgr, host, device);
 
 		private void Redraw(object sender, EventArgs e)
 		{

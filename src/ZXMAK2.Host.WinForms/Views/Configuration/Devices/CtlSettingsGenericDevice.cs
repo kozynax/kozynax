@@ -7,7 +7,7 @@ using ZXMAK2.Hardware;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsGenericDevice : ConfigScreenControl<BusDeviceBase>
+    public partial class CtlSettingsGenericDevice : ConfigScreenControl
     {
         private BusManager m_bmgr;
         private BusDeviceBase m_device;
@@ -17,7 +17,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             InitializeComponent();
         }
 
-        public override void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
+        public void Init(BusManager bmgr, IHostService host, BusDeviceBase device)
         {
             m_bmgr = bmgr;
             m_device = device;

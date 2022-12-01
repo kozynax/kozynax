@@ -476,7 +476,7 @@ namespace ZXMAK2.Host.WinForms.Views
                     }
                     
                     var deviceType = FindGenericType(typeof(DeviceSettings<>), objTarget.GetType(), asm);
-                    var componentType = FindGenericType(typeof(IComponentImplementation<>), deviceType, asm);
+                    var componentType = FindGenericType(typeof(IComponentImplementation<,>), deviceType, asm);
 
                     var mi = deviceType.GetMethod("Init", new Type[] { typeof(BusManager), typeof(IHostService), objTarget.GetType() });
                     if (mi == null)
@@ -524,34 +524,60 @@ namespace ZXMAK2.Host.WinForms.Views
             return null;
         }
 
-        private static Type FindGenericType(Type target, Type argumentType, Assembly assembly)
+        private static IEnumerable<Type> IterateAllParentTypes(Type type)
         {
-            var types = assembly.GetTypes();
-            var deviceTypeGeneric = target;
-            var objType = argumentType;
-            Type deviceType;
-
             while (true)
             {
-                deviceType = deviceTypeGeneric.MakeGenericType(objType);
-                var deviceSettingsType = types.FirstOrDefault(t => deviceType.IsAssignableFrom(t));
-                if (deviceSettingsType != null)
-                    return deviceSettingsType;
-
-                // Check interfaces
-                var interfaces = objType.GetInterfaces();
-                foreach (var iface in interfaces)
-                {
-                    deviceType = deviceTypeGeneric.MakeGenericType(iface);
-                    deviceSettingsType = types.FirstOrDefault(t => deviceType.IsAssignableFrom(t));
-                    if (deviceSettingsType != null)
-                        return deviceSettingsType;
-                }
+                yield return type;
                 
-                objType = objType.BaseType;
-                if (objType == typeof(object))
-                    throw new Exception();
+                // Check interfaces
+                var interfaces = type.GetInterfaces();
+                foreach (var iface in interfaces)
+                    yield return iface;
+                
+                type = type.BaseType;
+                if (type == typeof(object))
+                    break;
             }
+        }
+
+        private static Type FindGenericType(Type target, Type argumentType, Assembly assembly)
+        {
+            var checkTypes = IterateAllParentTypes(argumentType).ToList();
+            var types = GetAllImplementationsOfType(target, assembly).ToList();
+
+            var type = types.FirstOrDefault(t => new[] { t.BaseType }.Union(t.GetInterfaces()).Any(i => i.GetGenericArguments().Any(checkTypes.Contains)));
+            return type;
+        }
+
+        private static IEnumerable<Type> GetAllImplementationsOfType(Type target, Assembly assembly)
+        {
+            var assemblyTypes = assembly.GetTypes();
+            
+            Func<Type, IEnumerable<Type>, bool> getMatchingTypes = (a, s) => a?.IsGenericType ?? false
+                ? s.Any(t => a.GetGenericTypeDefinition() == t)
+                : s.Any(t => a == t);
+
+            Func<IEnumerable<Type>, IEnumerable<Type>> getSubtypes = s => assemblyTypes
+                .Where(a => getMatchingTypes(a.BaseType, s))
+                .Union(assemblyTypes.Where(a => a.GetInterfaces().Any(i => getMatchingTypes(i, s))));
+            
+            var result = new HashSet<Type>(getSubtypes(new[] { target }));
+            var subTypes = new HashSet<Type>(result);
+            while (true)
+            {
+                subTypes = new HashSet<Type>(
+                    assemblyTypes
+                        .Where(a => getMatchingTypes(a.BaseType, subTypes))
+                        .Union(assemblyTypes.Where(a => a.GetInterfaces().Any(i => getMatchingTypes(i, subTypes)))));
+                
+                if (subTypes.Count == 0)
+                    break;
+
+                result.UnionWith(subTypes);
+            }
+
+            return result;
         }
 
         public void Init(IHostService host, IVirtualMachine vm)

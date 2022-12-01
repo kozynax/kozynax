@@ -2,7 +2,10 @@
 using Kozui.Interfaces;
 using Kozynax.UI;
 using ZXMAK2.Dependency;
+using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Hardware;
 using ZXMAK2.Hardware.Circuits.Sound;
+using ZXMAK2.Hardware.General;
 using ZXMAK2.Hardware.Sprinter;
 using ZXMAK2.Hardware.WinForms;
 using ZXMAK2.Hardware.WinForms.General;
@@ -74,9 +77,10 @@ namespace ZXMAK2
             resolver.RegisterType<IViewImplementation<SprinterDebuggerDialog>, DebugForm>();
             resolver.RegisterType<IViewImplementation<TapeSettings>, TapeForm>();
             
-            resolver.RegisterType<IComponentImplementation<UlaSettings>, CtlSettingsUla>();
-            resolver.RegisterType<IComponentImplementation<JoystickSettings>, CtlSettingsJoystick>();
-            resolver.RegisterType<IComponentImplementation<ModemSettings>, CtlSettingsHayesModem>();
+            resolver.RegisterType<IComponentImplementation<UlaSettings, UlaDeviceBase>, CtlSettingsUla>();
+            resolver.RegisterType<IComponentImplementation<JoystickSettings, IJoystickDevice>, CtlSettingsJoystick>();
+            resolver.RegisterType<IComponentImplementation<ModemSettings, HayesModem>, CtlSettingsHayesModem>();
+            resolver.RegisterType<IComponentImplementation<GenericSoundSettings, ISoundRenderer>, CtlSettingsGenericSound>();
             
             Locator.Init(resolver);
             var launcher = Locator.Resolve<ILauncher>();
