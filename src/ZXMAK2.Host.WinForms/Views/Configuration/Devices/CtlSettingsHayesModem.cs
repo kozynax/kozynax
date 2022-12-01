@@ -8,7 +8,7 @@ using ZXMAK2.Host.Interfaces;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsHayesModem : SingleListViewRenderer<HayesModem, ModemSettings, string>, IComponentImplementation<ModemSettings>
+    public partial class CtlSettingsHayesModem : SingleListViewRenderer<HayesModem, ModemSettings, string>, IComponentImplementation<ModemSettings, HayesModem>
     {
         public CtlSettingsHayesModem()
         {

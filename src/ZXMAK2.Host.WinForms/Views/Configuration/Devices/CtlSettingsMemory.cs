@@ -8,7 +8,7 @@ using ZXMAK2.Engine.Entities;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsMemory : ConfigScreenControl<IMemoryDevice>
+    public partial class CtlSettingsMemory : ConfigScreenControl
     {
         private BusManager m_bmgr;
         private IHostService m_host;
@@ -37,7 +37,7 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             cbxRomSet.Sorted = true;
         }
 
-        public override void Init(BusManager bmgr, IHostService host, IMemoryDevice device)
+        public void Init(BusManager bmgr, IHostService host, IMemoryDevice device)
         {
             m_bmgr = bmgr;
             m_host = host;

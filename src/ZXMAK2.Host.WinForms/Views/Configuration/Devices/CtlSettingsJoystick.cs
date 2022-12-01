@@ -9,7 +9,7 @@ using ZXMAK2.Engine.Entities;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsJoystick : SingleListViewRenderer<IJoystickDevice, JoystickSettings, IHostDeviceInfo>, IComponentImplementation<JoystickSettings>
+    public partial class CtlSettingsJoystick : SingleListViewRenderer<IJoystickDevice, JoystickSettings, IHostDeviceInfo>, IComponentImplementation<JoystickSettings, IJoystickDevice>
     {
         private JoystickSettings _joystickSettings = new JoystickSettings();
         
@@ -24,9 +24,6 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             Init(joystickSettings, cbxType, lblType);
         }
         
-        public override void Init(BusManager bmgr, IHostService host, IJoystickDevice device)
-            => _joystickSettings.Init(bmgr, host, device);
-
         public override void Apply()
             => _joystickSettings.Apply();
 

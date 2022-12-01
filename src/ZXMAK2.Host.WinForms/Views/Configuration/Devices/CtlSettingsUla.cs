@@ -7,7 +7,7 @@ using ZXMAK2.Engine.Entities;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsUla : SingleListViewRenderer<UlaDeviceBase, UlaSettings, BusDeviceDescriptor>, IComponentImplementation<UlaSettings>
+    public partial class CtlSettingsUla : SingleListViewRenderer<UlaDeviceBase, UlaSettings, BusDeviceDescriptor>, IComponentImplementation<UlaSettings, UlaDeviceBase>
     {
         private BusManager m_bmgr;
         private IHostService m_host;

@@ -7,18 +7,12 @@ using System.Windows.Forms;
 using Kozui.Interfaces;
 using Kozynax.UI;
 using Kozynax.UI.Base;
-using ZXMAK2.Model.Disk;
-using ZXMAK2.Host.Interfaces;
-using ZXMAK2.Engine;
-using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
-using CheckBox = ZXMAK2.Host.WinForms.Lib.CheckBox;
-
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsBetaDisk : ConfigScreenControl<IBetaDiskDevice>, IComponentImplementation<BetaDiskSettings>
+    public partial class CtlSettingsBetaDisk : ConfigScreenControl, IComponentImplementation<BetaDiskSettings, IBetaDiskDevice>
     {
         private BetaDiskSettings _beta;
         
@@ -108,9 +102,6 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
             }
         }
 
-
-        public override void Init(BusManager bmgr, IHostService host, IBetaDiskDevice device)
-            => _beta.Init(bmgr, host, device);
 
         public override void Apply()
             => _beta.Apply();
