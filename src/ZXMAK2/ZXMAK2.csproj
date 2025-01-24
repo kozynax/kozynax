@@ -116,9 +116,6 @@
     <None Include="boot.zip">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Content Include="ROMS.PAK">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\Help\ZXMAK2.chm">
@@ -174,4 +171,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Target Name="OnBuild" BeforeTargets="Build">
+    <Exec Command="xcopy roms $(OutDir)\roms /S /Y /I" />
+  </Target>
 </Project>
