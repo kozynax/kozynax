@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace />
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Kozynax.Sdl</AssemblyName>
+    <DefineConstants>$(DefineConstants);SDL_HOST</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="1.2.0.9" />
+    <PackageReference Include="Silk.NET.SDL" Version="2.22.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Windows / DX / WinForms host stay out of the SDL build -->
+    <Compile Remove="ZXMAK2.DirectX\**" />
+    <Compile Remove="ZXMAK2.Host.WinForms\**" />
+    <Compile Remove="ZXMAK2.Hardware.WinForms\**" />
+    <Compile Remove="ZXMAK2\Program.cs" />
+    <Compile Remove="ZXMAK2.Dependency\ResolverUnity.cs" />
+    <Compile Remove="ZXMAK2.Hardware\GeneralSoundDevice.cs" />
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+
+    <EmbeddedResource Remove="ZXMAK2.DirectX\**" />
+    <EmbeddedResource Remove="ZXMAK2.Host.WinForms\**" />
+    <EmbeddedResource Remove="ZXMAK2.Hardware.WinForms\**" />
+    <None Remove="ZXMAK2.DirectX\**" />
+  </ItemGroup>
+
+</Project>

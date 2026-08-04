@@ -1,0 +1,29 @@
+<Project>
+
+  <!-- Shared by Kozynax.csproj and Kozynax.Sdl.csproj -->
+  <ItemGroup>
+    <EmbeddedResource Include="ZXMAK2.Resources\Icons\**\*">
+      <LogicalName>ZXMAK2.Resources.Icons.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ZXMAK2.Resources\DeviceIcons\**\*">
+      <LogicalName>ZXMAK2.Resources.DeviceIcons.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ZXMAK2.Resources\Pictures\**\*">
+      <LogicalName>ZXMAK2.Resources.Pictures.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ZXMAK2.Host\Keyboard.config" LogicalName="ZXMAK2.Host.Keyboard.config" />
+    <EmbeddedResource Include="ZXMAK2\machines.config" LogicalName="ZXMAK2.machines.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ZXMAK2\ROMS.PAK" Condition="Exists('ZXMAK2\ROMS.PAK')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>ROMS.PAK</TargetPath>
+    </Content>
+    <Content Include="ZXMAK2\bootgs.rom" Condition="Exists('ZXMAK2\bootgs.rom')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>bootgs.rom</TargetPath>
+    </Content>
+  </ItemGroup>
+
+</Project>
