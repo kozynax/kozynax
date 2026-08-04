@@ -1,43 +1,32 @@
-﻿using System;
-using Kozui.Interfaces;
+﻿using Kozui.Interfaces;
 using Kozynax.UI;
-using ZXMAK2.Host.Interfaces;
-using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Host.WinForms.BindingTools;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
     public partial class CtlSettingsGenericSound : ConfigScreenControl, IComponentImplementation<GenericSoundSettings, ISoundRenderer>
     {
         private GenericSoundSettings _settings;
+        private KozuiBinder _binder;
 
         public CtlSettingsGenericSound()
         {
             InitializeComponent();
-            trkVolume.ValueChanged += TrkVolume_ValueChanged;
         }
 
         public void Init(GenericSoundSettings settings)
         {
             _settings = settings;
-            _settings.Redraw += (s, e) => {
-                trkVolume.ValueChanged -= TrkVolume_ValueChanged;
-                Redraw();
-                trkVolume.ValueChanged += TrkVolume_ValueChanged;
-            };
+            _binder?.Dispose();
+            _binder = new KozuiBinder();
+            _binder.BindTrackBar(_settings.Volume, trkVolume);
         }
 
-        private void TrkVolume_ValueChanged(object sender, EventArgs e)
-            => _settings.Volume.Value = trkVolume.Value;
-
-        private void Redraw()
-        {
-            trkVolume.Minimum = _settings.Volume.Minimum;
-            trkVolume.Maximum = _settings.Volume.Maximum;
-            trkVolume.Value = _settings.Volume.Value;
-        }
-        
         public override void Apply()
             => _settings.Apply();
+
+        internal void DisposeBinder()
+            => _binder?.Dispose();
     }
 }

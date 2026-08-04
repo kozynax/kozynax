@@ -67,7 +67,6 @@
             this.cbxType.Name = "cbxType";
             this.cbxType.Size = new System.Drawing.Size(177, 21);
             this.cbxType.TabIndex = 0;
-            this.cbxType.SelectedIndexChanged += new System.EventHandler(this.cbxType_SelectedIndexChanged);
             // 
             // txtDescription
             // 

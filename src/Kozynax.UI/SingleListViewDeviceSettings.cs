@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using ZXMAK2.Engine;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
@@ -9,19 +7,17 @@ namespace Kozynax.UI
 {
     public abstract class SingleListViewDeviceSettings<TDevice, TListItem> : DeviceSettings<TDevice>
     {
-        public event EventHandler Redraw;
-
         protected BusManager BusManager { get; private set; }
         protected IHostService Host { get; private set; }
         public TDevice Device { get; private set; }
 
         public ListView<TListItem> List { get; }
         public Label Title { get; }
-        
+
         protected abstract IEnumerable<TListItem> GetListData();
         protected abstract TListItem FindSelectedItemInList(TDevice device);
         protected abstract TDevice Apply(TListItem item);
-        
+
         public SingleListViewDeviceSettings()
         {
             List = new ListView<TListItem>();
@@ -36,20 +32,15 @@ namespace Kozynax.UI
             BusManager = bmgr;
             Host = host;
             Device = device;
-            
-            var list = GetListData();
-            List.List.Clear();
-            foreach (var d in list)
-                List.List.Add(d);
-            
+
+            List.Reset(GetListData());
+
             List.SelectedIndex = -1;
             if (device != null)
             {
                 var ourItem = FindSelectedItemInList(device);
                 List.SelectedIndex = List.List.IndexOf(ourItem);
             }
-            
-            Redraw?.Invoke(this, EventArgs.Empty);
         }
 
         public override void Apply()

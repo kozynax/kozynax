@@ -2,8 +2,26 @@
 {
     public class ProgressBar : KozuiControl
     {
-        public int Minimum { get; set; }
-        public int Maximum { get; set; }
-        public int Value { get; set; }
+        private int _minimum;
+        private int _maximum;
+        private int _value;
+
+        public int Minimum
+        {
+            get => _minimum;
+            set => SetProperty(ref _minimum, value);
+        }
+
+        public int Maximum
+        {
+            get => _maximum;
+            set => SetProperty(ref _maximum, value);
+        }
+
+        public int Value
+        {
+            get => _value;
+            set => SetProperty(ref _value, value);
+        }
     }
 }
