@@ -14,7 +14,6 @@ namespace Kozynax.UI
 {
 	public class AddDeviceDialog : ViewDescription<AddDeviceDialog>
 	{
-		public event EventHandler Redraw;
 		public event EventHandler CloseRequested;
 		
 		public ListView<BusDeviceCategory> Categories { get; }
@@ -73,15 +72,12 @@ namespace Kozynax.UI
 			var bdd = Devices.List[index]; 
 			DeviceDescription.Text = bdd.Description;
 			Finish.Enabled = true;
-			
-			Redraw?.Invoke(sender, EventArgs.Empty);
 		}
 
 		private void Categories_SelectedIndexChanged(object sender, int index)
 		{
 			var category = Categories.List[index];
 			BindDevices(category);
-			Redraw?.Invoke(sender, EventArgs.Empty);
 		}
 
 		public void BindCategories()
@@ -95,10 +91,7 @@ namespace Kozynax.UI
 				}
 			}
 			list.Sort();
-			
-			Categories.List.Clear();
-			foreach (var bdd in list)
-				Categories.List.Add(bdd);
+			Categories.Reset(list);
 		}
 		
 		public void BindDevices(BusDeviceCategory category)
@@ -106,10 +99,7 @@ namespace Kozynax.UI
 			var list = new List<BusDeviceDescriptor>();
 			list.AddRange(DeviceEnumerator.SelectByCategoryWithout(category, GetIgnoreTypes()));
 			list.Sort(DeviceNameComparison);
-			
-			Devices.List.Clear();
-			foreach (var bdd in list)
-				Devices.List.Add(bdd);
+			Devices.Reset(list);
 		}
 		
 		private IEnumerable<Type> GetIgnoreTypes()

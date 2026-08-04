@@ -5,6 +5,7 @@ namespace ZXMAK2.Host.WinForms.Lib
     public class CheckBox : KozuiControl
     {
         private bool _checked;
+
         public event EventHandler CheckedStateChanged;
 
         public bool Checked
@@ -12,7 +13,8 @@ namespace ZXMAK2.Host.WinForms.Lib
             get => _checked;
             set
             {
-                _checked = value;
+                if (!SetProperty(ref _checked, value))
+                    return;
                 CheckedStateChanged?.Invoke(this, EventArgs.Empty);
             }
         }

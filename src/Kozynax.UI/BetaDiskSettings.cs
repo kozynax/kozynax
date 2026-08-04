@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using Kozynax.UI.Base;
 using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
@@ -11,12 +10,10 @@ namespace Kozynax.UI
 {
     public class BetaDiskSettings : DeviceSettings<IBetaDiskDevice>
     {
-        public event EventHandler Redraw;
-        
         private BusManager _bmgr;
         public IBetaDiskDevice Device { get; private set; }
-        public CheckBox NoDelay {get;}
-        public CheckBox LogIO {get;}
+        public CheckBox NoDelay { get; }
+        public CheckBox LogIO { get; }
 
         public DiskSelector DiskA { get; }
         public DiskSelector DiskB { get; }
@@ -32,36 +29,28 @@ namespace Kozynax.UI
             DiskB = new DiskSelector();
             DiskC = new DiskSelector();
             DiskD = new DiskSelector();
-            DiskA.DiskSelected += (o, e) => Refresh();
-            DiskB.DiskSelected += (o, e) => Refresh();
-            DiskC.DiskSelected += (o, e) => Refresh();
-            DiskD.DiskSelected += (o, e) => Refresh();
         }
-        
+
         public override void Init(BusManager bmgr, IHostService host, IBetaDiskDevice device)
         {
             _bmgr = bmgr;
             Device = device;
             NoDelay.Checked = device.NoDelay;
             LogIO.Checked = Device.LogIo;
-            
+
             initDrive(GetImage(0), DiskA);
             initDrive(GetImage(1), DiskB);
             initDrive(GetImage(2), DiskC);
             initDrive(GetImage(3), DiskD);
-            
-            Refresh();
         }
-
-        public void Refresh() => Redraw?.Invoke(this, EventArgs.Empty);
 
         private DiskImage GetImage(int index)
         {
             return Device.FDD.Length > index ? Device.FDD[index] : null;
         }
-        
+
         private void initDrive(
-            DiskImage diskImage, 
+            DiskImage diskImage,
             DiskSelector diskSelector)
         {
             diskSelector.Device = Device;
@@ -71,6 +60,7 @@ namespace Kozynax.UI
                 diskSelector.Present.Checked = diskImage.Present;
                 diskSelector.Disk.SelectFile(diskImage.FileName);
                 diskSelector.WriteProtect.Checked |= diskImage.IsWP;
+                diskSelector.UpdateEnabledState();
             }
             else
                 diskSelector.Visible = false;

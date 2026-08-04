@@ -24,7 +24,6 @@ namespace Kozynax.UI
 
         public delegate void ShowWizardEventHandler(object sender, IList<MachineConfiguration> machines);
 
-        public event EventHandler Redraw;
         public event ShowWizardEventHandler ShowWizard;
         public event EventHandler Closed;
 
@@ -187,29 +186,19 @@ namespace Kozynax.UI
 
         private void initWorkBus()
         {
-            Devices.List.Clear();
-
-            foreach (var device in WorkBus.FindDevices<BusDeviceBase>())
-                Devices.List.Add(device);
-
+            Devices.Reset(WorkBus.FindDevices<BusDeviceBase>());
             Devices.SelectedIndex = Devices.List.Any() ? 0 : -1;
-            Redraw(this, EventArgs.Empty);
         }
 
         private void RemoveDevice_Clicked(object sender, EventArgs e)
         {
             int index = Devices.SelectedIndex;
-            if (index < 0 && index >= Devices.List.Count)
+            if (index < 0 || index >= Devices.List.Count)
                 return;
 
             var device = Devices.List[index];
             Devices.List.Remove(device);
             WorkBus.Remove(device);
-
-            // var control = _deviceConfigurationControls[device];
-            // _deviceConfigurationControls.Remove(device);
-
-            Redraw?.Invoke(this, EventArgs.Empty);
         }
 
         private void Devices_SelectedIndexChanged(object sender, int index)
@@ -220,8 +209,6 @@ namespace Kozynax.UI
             RemoveDevice.Enabled = allowRemove;
             Up.Enabled = IsMoveUpAllowed();
             Down.Enabled = IsMoveDownAllowed();
-
-            Redraw?.Invoke(this, EventArgs.Empty);
         }
 
         private bool IsMoveUpAllowed()
@@ -309,8 +296,6 @@ namespace Kozynax.UI
 
             Up.Enabled = IsMoveUpAllowed();
             Down.Enabled = IsMoveDownAllowed();
-
-            Redraw?.Invoke(this, EventArgs.Empty);
         }
 
         public void Init()

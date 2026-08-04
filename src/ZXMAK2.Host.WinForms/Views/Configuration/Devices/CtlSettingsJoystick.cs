@@ -26,8 +26,5 @@ namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
         
         public override void Apply()
             => _joystickSettings.Apply();
-
-        private void cbxType_SelectedIndexChanged(object sender, EventArgs e)
-            => _joystickSettings.List.SelectedIndex = cbxType.SelectedIndex;
     }
 }

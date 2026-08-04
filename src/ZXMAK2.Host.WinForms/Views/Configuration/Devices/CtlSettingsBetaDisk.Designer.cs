@@ -13,9 +13,11 @@
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                DisposeBinder();
+                if (components != null)
+                    components.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -87,7 +89,6 @@
             this.chkPresentD.TabIndex = 21;
             this.chkPresentD.Text = "Drive D:";
             this.chkPresentD.UseVisualStyleBackColor = true;
-            this.chkPresentD.CheckedChanged += new System.EventHandler(this.chkPresent_CheckedChanged);
             // 
             // chkPresentC
             // 
@@ -98,7 +99,6 @@
             this.chkPresentC.TabIndex = 20;
             this.chkPresentC.Text = "Drive C:";
             this.chkPresentC.UseVisualStyleBackColor = true;
-            this.chkPresentC.CheckedChanged += new System.EventHandler(this.chkPresent_CheckedChanged);
             // 
             // chkPresentB
             // 
@@ -109,7 +109,6 @@
             this.chkPresentB.TabIndex = 19;
             this.chkPresentB.Text = "Drive B:";
             this.chkPresentB.UseVisualStyleBackColor = true;
-            this.chkPresentB.CheckedChanged += new System.EventHandler(this.chkPresent_CheckedChanged);
             // 
             // chkPresentA
             // 
@@ -120,7 +119,6 @@
             this.chkPresentA.TabIndex = 18;
             this.chkPresentA.Text = "Drive A:";
             this.chkPresentA.UseVisualStyleBackColor = true;
-            this.chkPresentA.CheckedChanged += new System.EventHandler(this.chkPresent_CheckedChanged);
             // 
             // chkLogIO
             // 

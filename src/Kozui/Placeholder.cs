@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace ZXMAK2.Host.WinForms.Lib
+﻿namespace ZXMAK2.Host.WinForms.Lib
 {
     public class Placeholder : KozuiControl
     {
-        public KozuiControl Content { get; set; }
+        private KozuiControl _content;
+
+        public KozuiControl Content
+        {
+            get => _content;
+            set => SetProperty(ref _content, value);
+        }
     }
 }

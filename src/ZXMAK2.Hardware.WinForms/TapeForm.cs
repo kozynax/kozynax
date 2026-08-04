@@ -1,16 +1,11 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
 using Kozui.Interfaces;
 using Kozynax.UI;
-using ZXMAK2.Engine.Entities;
-using ZXMAK2.Model.Tape.Interfaces;
 using ZXMAK2.Resources;
 using ZXMAK2.Host.Presentation.Interfaces;
+using ZXMAK2.Host.WinForms.BindingTools;
 using ZXMAK2.Host.WinForms.Views;
-using ZXMAK2.Engine.Interfaces;
-using ZXMAK2.Hardware.General;
 using ZXMAK2.Host.Entities;
 
 
@@ -144,7 +139,6 @@ namespace ZXMAK2.Hardware.WinForms
             this.btnUseTraps.Name = "btnTraps";
             this.btnUseTraps.Size = new System.Drawing.Size(23, 24);
             this.btnUseTraps.Text = "Use Traps";
-            this.btnUseTraps.Click += new System.EventHandler(this.btnTraps_Click);
             // 
             // btnAutoPlay
             // 
@@ -155,7 +149,6 @@ namespace ZXMAK2.Hardware.WinForms
             this.btnUseAutoPlay.Name = "btnAutoPlay";
             this.btnUseAutoPlay.Size = new System.Drawing.Size(23, 24);
             this.btnUseAutoPlay.Text = "Use Auto Play";
-            this.btnUseAutoPlay.Click += new System.EventHandler(this.btnAutoPlay_Click);
             // 
             // panelList
             // 
@@ -211,6 +204,7 @@ namespace ZXMAK2.Hardware.WinForms
 
         
         private TapeSettings _tapeSettings;
+        private KozuiBinder _binder;
 
         public TapeForm()
         {
@@ -218,7 +212,12 @@ namespace ZXMAK2.Hardware.WinForms
         }
 
         private void TapeForm_FormClosed(object sender, FormClosedEventArgs e)
-            => _tapeSettings.Close();
+        {
+            _binder?.Dispose();
+            _binder = null;
+            _tapeSettings?.Close();
+        }
+
         private void toolButtonRewind_Click(object sender, EventArgs e)
             => _tapeSettings.Rewind.Click(sender, e);
         private void toolButtonPrev_Click(object sender, EventArgs e)
@@ -228,37 +227,6 @@ namespace ZXMAK2.Hardware.WinForms
 
         private void toolButtonNext_Click(object sender, EventArgs e)
             => _tapeSettings.Next.Click(sender, e);
-
-        private void TapeDialog_Redraw(object sender, EventArgs args)
-        {
-            btnNext.Enabled = btnPrev.Enabled = !_tapeSettings.IsTapePlaying;
-            btnRewind.Enabled = btnPlay.Enabled = true;
-
-            if (!Enumerable.SequenceEqual(
-                    _tapeSettings.Blocks.List.Select(b => b.Description),
-                    blockList.Items.Cast<string>()))
-            {
-                blockList.Items.Clear();
-                foreach (var tb in _tapeSettings.Blocks.List)
-                    blockList.Items.Add(tb.Description);
-            }
-            
-            blockList.SelectedIndex = _tapeSettings.Blocks.SelectedIndex;
-            
-            blockList.Enabled = _tapeSettings.Blocks.Enabled;
-            btnUseTraps.Checked = _tapeSettings.UseTraps.Checked;
-            btnUseAutoPlay.Checked = _tapeSettings.UseAutoPlay.Checked;
-            btnPlay.Enabled = _tapeSettings.Play.Enabled;
-
-            toolProgressBar.Minimum = _tapeSettings.ProgressBar.Minimum;
-            toolProgressBar.Maximum = _tapeSettings.ProgressBar.Maximum;
-            toolProgressBar.Value = _tapeSettings.ProgressBar.Value;
-            
-            if (_tapeSettings.IsTapePlaying)
-                btnPlay.Image = ResourceImages.HardwareTapePause;
-            else
-                btnPlay.Image = ResourceImages.HardwareTapePlay;
-        }
 
         private void timerProgress_Tick(object sender, EventArgs e)
             => _tapeSettings.ProgressTimer.Tick();
@@ -276,16 +244,26 @@ namespace ZXMAK2.Hardware.WinForms
             _tapeSettings.Play.Click(sender, e);
         }
 
-        private void btnTraps_Click(object sender, EventArgs e)
-            => _tapeSettings.UseTraps.Checked = btnUseTraps.Checked;
-
-        private void btnAutoPlay_Click(object sender, EventArgs e)
-            => _tapeSettings.UseAutoPlay.Checked = btnUseAutoPlay.Checked;
-
         public void Init(TapeSettings tapeSettings)
         {
             _tapeSettings = tapeSettings;
-            _tapeSettings.Redraw += TapeDialog_Redraw;
+
+            _binder?.Dispose();
+            _binder = new KozuiBinder();
+            _binder.BindButton(_tapeSettings.Rewind, btnRewind);
+            _binder.BindButton(_tapeSettings.Prev, btnPrev);
+            _binder.BindButton(_tapeSettings.Play, btnPlay);
+            _binder.BindButton(_tapeSettings.Next, btnNext);
+            _binder.BindCheckBox(_tapeSettings.UseTraps, btnUseTraps);
+            _binder.BindCheckBox(_tapeSettings.UseAutoPlay, btnUseAutoPlay);
+            _binder.BindProgressBar(_tapeSettings.ProgressBar, toolProgressBar);
+            _binder.BindListBoxItems(_tapeSettings.Blocks, blockList, b => b.Description);
+            _binder.BindOneWay(_tapeSettings, nameof(TapeSettings.IsTapePlaying), () =>
+            {
+                btnPlay.Image = _tapeSettings.IsTapePlaying
+                    ? ResourceImages.HardwareTapePause
+                    : ResourceImages.HardwareTapePlay;
+            });
 
             timerProgress.Interval = _tapeSettings.ProgressTimer.IntervalMs;
             timerProgress.Enabled = _tapeSettings.ProgressTimer.Enabled;

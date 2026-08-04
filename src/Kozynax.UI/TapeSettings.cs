@@ -1,23 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Kozui.Abstract;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Model.Tape.Interfaces;
-using ZXMAK2.Resources;
 using Button = ZXMAK2.Host.WinForms.Lib.Button;
 using ProgressBar = ZXMAK2.Host.WinForms.Lib.ProgressBar;
 using Timer = ZXMAK2.Host.WinForms.Lib.Timer;
 
 namespace Kozynax.UI
 {
-    public class TapeSettings : ViewDescription<TapeSettings>
+    public class TapeSettings : ViewDescription<TapeSettings>, INotifyPropertyChanged
     {
-        public event EventHandler Redraw;
-        
         private readonly ITapeDevice _tape;
-        
+        private bool _isTapePlaying;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public Button Rewind { get; }
         public Button Prev { get; }
         public Button Play { get; }
@@ -27,22 +28,22 @@ namespace Kozynax.UI
         public CheckBox UseTraps { get; }
         public CheckBox UseAutoPlay { get; }
         public ListView<ITapeBlock> Blocks { get; }
-        
+
         public TapeSettings(ITapeDevice tape)
         {
             _tape = tape;
             _tape.TapeStateChanged += Tape_TapeStateChanged;
-            
+
             Rewind = new Button();
             Rewind.Clicked += (sender, args) => _tape.Rewind();
-            
-            Prev = new Button(); 
+
+            Prev = new Button();
             Prev.Clicked += (sender, args) => _tape.CurrentBlock--;
 
             Play = new Button();
             Play.Clicked += Play_Clicked;
-            
-            Next = new Button(); 
+
+            Next = new Button();
             Next.Clicked += (sender, args) => _tape.CurrentBlock++;
 
             ProgressTimer = new Timer();
@@ -51,7 +52,7 @@ namespace Kozynax.UI
 
             UseTraps = new CheckBox();
             UseTraps.CheckedStateChanged += (s, e) => _tape.UseTraps = UseTraps.Checked;
-            
+
             UseAutoPlay = new CheckBox();
             UseAutoPlay.CheckedStateChanged += (s, e) =>
             {
@@ -65,8 +66,18 @@ namespace Kozynax.UI
             ProgressBar = new ProgressBar();
         }
 
-        public bool IsTapePlaying => _tape.IsPlay;
-        
+        public bool IsTapePlaying
+        {
+            get => _isTapePlaying;
+            private set
+            {
+                if (_isTapePlaying == value)
+                    return;
+                _isTapePlaying = value;
+                OnPropertyChanged();
+            }
+        }
+
         private void Play_Clicked(object sender, EventArgs e)
         {
             if (_tape.IsPlay)
@@ -74,9 +85,11 @@ namespace Kozynax.UI
             else
                 _tape.Play();
         }
-        
+
         private void Tape_TapeStateChanged(object sender, EventArgs e)
         {
+            IsTapePlaying = _tape.IsPlay;
+
             if (_tape.Blocks.Count <= 0)
             {
                 Rewind.Enabled =
@@ -89,20 +102,14 @@ namespace Kozynax.UI
             {
                 Next.Enabled = Prev.Enabled = !_tape.IsPlay;
                 Rewind.Enabled = Play.Enabled = true;
-                if (!Enumerable.SequenceEqual(Blocks.List, _tape.Blocks))
-                {
-                    Blocks.List.Clear();
-                    foreach (var tb in _tape.Blocks)
-                        Blocks.List.Add(tb);
-                }
+                if (!Blocks.SequenceEqual(_tape.Blocks))
+                    Blocks.Reset(_tape.Blocks);
                 Blocks.SelectedIndex = _tape.CurrentBlock;
             }
             Blocks.Enabled = !_tape.IsPlay;
             UseTraps.Checked = _tape.UseTraps;
             UseAutoPlay.Checked = _tape.UseAutoPlay;
             Play.Enabled = !UseAutoPlay.Checked;
-            
-            Redraw?.Invoke(sender, e);
         }
 
         private void ProgressTimer_OnTick(object sender, EventArgs e)
@@ -128,19 +135,19 @@ namespace Kozynax.UI
 
             ProgressBar.Maximum = maximum;
             ProgressBar.Value = position;
-            
-            Redraw?.Invoke(this, e);
         }
 
         public void Close()
         {
-            _tape.TapeStateChanged -= new EventHandler(Tape_TapeStateChanged);
+            _tape.TapeStateChanged -= Tape_TapeStateChanged;
         }
-        
+
         private void Blocks_SelectedIndexChanged(object sender, int index)
         {
             _tape.CurrentBlock = index;
         }
 
+        private void OnPropertyChanged([CallerMemberName] string propertyName = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

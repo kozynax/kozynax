@@ -3,6 +3,7 @@ using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
 using Kozui.Interfaces;
 using Kozynax.UI;
@@ -12,6 +13,7 @@ using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Entities;
+using ZXMAK2.Host.WinForms.BindingTools;
 using ZXMAK2.Host.WinForms.Views.Configuration.Devices;
 using ZXMAK2.Host.WinForms.Tools;
 using ZXMAK2.Resources;
@@ -265,9 +267,19 @@ namespace ZXMAK2.Host.WinForms.Views
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                if (_machineSettings != null)
+                {
+                    _machineSettings.Devices.List.ListChanged -= Devices_ListChanged;
+                    _machineSettings.Devices.PropertyChanged -= Devices_PropertyChanged;
+                    _machineSettings.ShowWizard -= machineSettings_ShowWizard;
+                    _machineSettings.Closed -= _machineSettings_Closed;
+                }
+                _binder?.Dispose();
+                _binder = null;
+                if (components != null)
+                    components.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -278,6 +290,7 @@ namespace ZXMAK2.Host.WinForms.Views
 
         private Dictionary<BusDeviceBase, ConfigScreenControl> _deviceConfigurationControls = new Dictionary<BusDeviceBase, ConfigScreenControl>();
         private MachineSettings _machineSettings;
+        private KozuiBinder _binder;
 
         #endregion
 
@@ -293,9 +306,23 @@ namespace ZXMAK2.Host.WinForms.Views
             _machineSettings = machineSettings;
             _machineSettings.Init();
 
-            _machineSettings.Redraw += machineSettings_Redraw;
+            _binder?.Dispose();
+            _binder = new KozuiBinder();
+            _binder.BindButton(_machineSettings.AddDevice, btnAdd);
+            _binder.BindButton(_machineSettings.RemoveDevice, btnRemove);
+            _binder.BindButton(_machineSettings.Up, btnUp);
+            _binder.BindButton(_machineSettings.Down, btnDown);
+            _binder.BindButton(_machineSettings.Apply, btnApply);
+            _binder.BindButton(_machineSettings.Cancel, btnCancel);
+            _binder.BindButton(_machineSettings.Wizard, btnWizard);
+
+            _machineSettings.Devices.List.ListChanged += Devices_ListChanged;
+            _machineSettings.Devices.PropertyChanged += Devices_PropertyChanged;
             _machineSettings.ShowWizard += machineSettings_ShowWizard;
             _machineSettings.Closed += _machineSettings_Closed;
+
+            SyncDeviceList();
+            SyncSelectedDevice();
         }
 
         private void _machineSettings_Closed(object sender, EventArgs e)
@@ -331,7 +358,17 @@ namespace ZXMAK2.Host.WinForms.Views
             ctxMenuWizard.Show(btnWizard, p);
         }
 
-        private void machineSettings_Redraw(object sender, EventArgs e)
+        private void Devices_ListChanged(object sender, ListChangedEventArgs e)
+            => SyncDeviceList();
+
+        private void Devices_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == null ||
+                e.PropertyName == "SelectedIndex")
+                SyncSelectedDevice();
+        }
+
+        private void SyncDeviceList()
         {
             var devices = _machineSettings.Devices.List;
             int index = 0;
@@ -343,7 +380,6 @@ namespace ZXMAK2.Host.WinForms.Views
             {
                 if (devices.Count <= index)
                 {
-                    // Source list is over, so we need to delete everything in target after this
                     for (int i = lstNavigation.Items.Count - 1; i >= index; i--)
                         lstNavigation.Items.RemoveAt(i);
                     break;
@@ -353,12 +389,10 @@ namespace ZXMAK2.Host.WinForms.Views
 
                 if (lstNavigation.Items.Count <= index)
                 {
-                    // Target list is empty, so we simply add item
                     InsertListViewItem(index, device);
                 }
                 else if (lstNavigation.Items[index].Tag != device)
                 {
-                    // Attempt to find list view item for the device
                     var listItemForDevice = lstNavigation.Items.OfType<ListViewItem>().FirstOrDefault(i => i.Tag == device);
                     if (listItemForDevice != null)
                     {
@@ -374,13 +408,6 @@ namespace ZXMAK2.Host.WinForms.Views
 
             lstNavigation.ItemSelectionChanged += lstNavigation_ItemSelectionChanged;
             lstNavigation.EndUpdate();
-
-            ApplyKozuiButton(_machineSettings.AddDevice, btnAdd);
-            ApplyKozuiButton(_machineSettings.RemoveDevice, btnRemove);
-            ApplyKozuiButton(_machineSettings.Up, btnUp);
-            ApplyKozuiButton(_machineSettings.Down, btnDown);
-            ApplyKozuiButton(_machineSettings.Apply, btnApply);
-            ApplyKozuiButton(_machineSettings.Cancel, btnCancel);
 
             foreach (var device in devices)
             {
@@ -402,21 +429,29 @@ namespace ZXMAK2.Host.WinForms.Views
                 }
             }
 
+            SyncSelectedDevice();
+        }
+
+        private void SyncSelectedDevice()
+        {
             foreach (var ctl in _deviceConfigurationControls.Values)
                 ctl.Visible = false;
 
-            index = _machineSettings.Devices.SelectedIndex;
-            if (index >= 0 && index < devices.Count)
-            {
-                var device = devices[index];
-                _deviceConfigurationControls[device].Visible = true;
-            }
-        }
+            var devices = _machineSettings.Devices.List;
+            var index = _machineSettings.Devices.SelectedIndex;
+            if (index < 0 || index >= devices.Count)
+                return;
 
-        private void ApplyKozuiButton(Lib.Button button, Button formButton)
-        {
-            formButton.Visible = button.Visible;
-            formButton.Enabled = button.Enabled;
+            var device = devices[index];
+            if (_deviceConfigurationControls.TryGetValue(device, out var control))
+                control.Visible = true;
+
+            if (index < lstNavigation.Items.Count)
+            {
+                lstNavigation.ItemSelectionChanged -= lstNavigation_ItemSelectionChanged;
+                lstNavigation.Items[index].Selected = true;
+                lstNavigation.ItemSelectionChanged += lstNavigation_ItemSelectionChanged;
+            }
         }
 
         private void InsertListViewItem(int index, BusDeviceBase device)
