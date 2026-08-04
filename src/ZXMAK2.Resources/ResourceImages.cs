@@ -26,11 +26,11 @@ namespace ZXMAK2.Resources
         public static Image DebuggerStepInto => LoadImage("ZXMAK2.Resources.Icons.DebuggerStepInto.png");
         public static Image DebuggerStepOut => LoadImage("ZXMAK2.Resources.Icons.DebuggerStepOut.png");
         public static Image DebuggerStepOver => LoadImage("ZXMAK2.Resources.Icons.DebuggerStepOver.png");
-        public static Image OsdFddRd => LoadImage("ZXMAK2.Resources.Icons.OsdFddRd.png");
-        public static Image OsdFddWr => LoadImage("ZXMAK2.Resources.Icons.OsdFddWr.png");
-        public static Image OsdHddRd => LoadImage("ZXMAK2.Resources.Icons.OsdHddRd.png");
+        public static Stream OsdFddRd => OpenStream("ZXMAK2.Resources.Icons.OsdFddRd.png");
+        public static Stream OsdFddWr => OpenStream("ZXMAK2.Resources.Icons.OsdFddWr.png");
+        public static Stream OsdHddRd => OpenStream("ZXMAK2.Resources.Icons.OsdHddRd.png");
         public static Image HardwareTapeNext => LoadImage("ZXMAK2.Resources.Icons.HardwareTapeNext.png");
-        public static Image OsdPause => LoadImage("ZXMAK2.Resources.Icons.OsdPause.png");
+        public static Stream OsdPause => OpenStream("ZXMAK2.Resources.Icons.OsdPause.png");
         public static Image HardwareTapePlay => LoadImage("ZXMAK2.Resources.Icons.HardwareTapePlay.png");
         public static Image HardwareTapePrev => LoadImage("ZXMAK2.Resources.Icons.HardwareTapePrev.png");
         public static Image HardwareTapeRecord => LoadImage("ZXMAK2.Resources.Icons.HardwareTapeRecord.png");
@@ -38,7 +38,7 @@ namespace ZXMAK2.Resources
         public static Image HardwareTapeTraps => LoadImage("ZXMAK2.Resources.Icons.HardwareTapeTraps.png");
         public static Image HardwareTapePause => LoadImage("ZXMAK2.Resources.Icons.HardwareTapePause.png");
         public static Image Stop_real_16x16 => LoadImage("ZXMAK2.Resources.Icons.Stop_real_16x16.png");
-        public static Image OsdTapeRd => LoadImage("ZXMAK2.Resources.Icons.OsdTapeRd.png");
+        public static Stream OsdTapeRd => OpenStream("ZXMAK2.Resources.Icons.OsdTapeRd.png");
         public static Image KeyboardHelp => LoadImage("ZXMAK2.Resources.Icons.KeyboardHelp.png");
         public static Icon IconDebugger => LoadIcon("ZXMAK2.Resources.Icons.IconDebugger.ico");
         public static Icon IconApp => LoadIcon("ZXMAK2.Resources.Icons.IconApp.ico");
@@ -58,17 +58,19 @@ namespace ZXMAK2.Resources
         public static Image DISPLAY => LoadImage("ZXMAK2.Resources.DeviceIcons.DISPLAY.png");
 
         private static readonly Assembly Assembly = typeof(ResourceImages).GetTypeInfo().Assembly;
-        
+
+        private static Stream OpenStream(string name)
+        {
+            var resource = Assembly.GetManifestResourceStream(name);
+            if (resource == null)
+                throw new FileNotFoundException("Resource not found: " + name, name);
+            return resource;
+        }
+
         private static Image LoadImage(string name)
-        {
-            Stream resource = Assembly.GetManifestResourceStream(name);
-            return Image.FromStream(resource);
-        }
-        
+            => Image.FromStream(OpenStream(name));
+
         private static Icon LoadIcon(string name)
-        {
-            Stream resource = Assembly.GetManifestResourceStream(name);
-            return new Icon(resource);
-        }
+            => new Icon(OpenStream(name));
     }
 }
