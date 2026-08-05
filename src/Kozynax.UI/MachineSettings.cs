@@ -110,8 +110,6 @@ namespace Kozynax.UI
             {
                 Orientation = Orientation.Horizontal,
                 Spacing = 1,
-                Dock = Dock.Bottom,
-                Margin = new Thickness(0, 1, 0, 0),
             };
             deviceButtons.Add(AddDevice);
             deviceButtons.Add(RemoveDevice);
@@ -122,13 +120,22 @@ namespace Kozynax.UI
             {
                 Orientation = Orientation.Horizontal,
                 Spacing = 1,
-                Dock = Dock.Bottom,
-                Margin = new Thickness(0, 1, 0, 0),
-                HorizontalAlignment = HorizontalAlignment.Right,
             };
             actionButtons.Add(Wizard);
             actionButtons.Add(Apply);
             actionButtons.Add(Cancel);
+
+            // Footer order matches visual top→bottom (and tab order).
+            var footer = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                Spacing = 1,
+                Dock = Dock.Bottom,
+                Margin = new Thickness(0, 1, 0, 0),
+            };
+            footer.Add(deviceButtons);
+            footer.Add(actionButtons);
+            footer.Add(help);
 
             var body = new DockPanel
             {
@@ -139,9 +146,7 @@ namespace Kozynax.UI
 
             var root = new DockPanel { Margin = new Thickness(1) };
             root.Add(title);
-            root.Add(help);
-            root.Add(actionButtons);
-            root.Add(deviceButtons);
+            root.Add(footer);
             root.Add(body);
             return root;
         }
