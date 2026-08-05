@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Kozui.Abstract;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
+using ZXMAK2.Host.WinForms.Lib.Layout;
 using ZXMAK2.Model.Tape.Interfaces;
 using Button = ZXMAK2.Host.WinForms.Lib.Button;
 using ProgressBar = ZXMAK2.Host.WinForms.Lib.ProgressBar;
@@ -19,6 +20,7 @@ namespace Kozynax.UI
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        public Panel Root { get; }
         public Button Rewind { get; }
         public Button Prev { get; }
         public Button Play { get; }
@@ -34,36 +36,107 @@ namespace Kozynax.UI
             _tape = tape;
             _tape.TapeStateChanged += Tape_TapeStateChanged;
 
-            Rewind = new Button();
+            Rewind = new Button { Text = "<<" };
             Rewind.Clicked += (sender, args) => _tape.Rewind();
 
-            Prev = new Button();
+            Prev = new Button { Text = "<" };
             Prev.Clicked += (sender, args) => _tape.CurrentBlock--;
 
-            Play = new Button();
+            Play = new Button { Text = "Play" };
             Play.Clicked += Play_Clicked;
 
-            Next = new Button();
+            Next = new Button { Text = ">" };
             Next.Clicked += (sender, args) => _tape.CurrentBlock++;
 
             ProgressTimer = new Timer();
             ProgressTimer.IntervalMs = 200;
+            ProgressTimer.Enabled = true;
             ProgressTimer.OnTick += ProgressTimer_OnTick;
 
-            UseTraps = new CheckBox();
+            UseTraps = new CheckBox { Text = "Traps" };
             UseTraps.CheckedStateChanged += (s, e) => _tape.UseTraps = UseTraps.Checked;
 
-            UseAutoPlay = new CheckBox();
+            UseAutoPlay = new CheckBox { Text = "AutoPlay" };
             UseAutoPlay.CheckedStateChanged += (s, e) =>
             {
                 _tape.UseAutoPlay = UseAutoPlay.Checked;
                 Play.Enabled = !UseAutoPlay.Checked;
             };
 
-            Blocks = new ListView<ITapeBlock>();
+            Blocks = new ListView<ITapeBlock>
+            {
+                ItemTextSelector = b => b?.Description ?? string.Empty,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Dock = Dock.Fill,
+            };
             Blocks.SelectedIndexChanged += Blocks_SelectedIndexChanged;
 
-            ProgressBar = new ProgressBar();
+            ProgressBar = new ProgressBar
+            {
+                MinWidth = 16,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+            };
+
+            Root = BuildTree();
+            Tape_TapeStateChanged(_tape, EventArgs.Empty);
+        }
+
+        private Panel BuildTree()
+        {
+            var title = new Label
+            {
+                Text = "Tape",
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+
+            Rewind.Dock = Dock.Left;
+            Prev.Dock = Dock.Left;
+            Play.Dock = Dock.Left;
+            Next.Dock = Dock.Left;
+            ProgressBar.Dock = Dock.Fill;
+            ProgressBar.Margin = new Thickness(1, 0, 0, 0);
+
+            var toolbar = new DockPanel
+            {
+                Dock = Dock.Top,
+                Margin = new Thickness(0, 0, 0, 1),
+                MinHeight = 1,
+            };
+            toolbar.Add(Rewind);
+            toolbar.Add(Prev);
+            toolbar.Add(Play);
+            toolbar.Add(Next);
+            toolbar.Add(ProgressBar);
+
+            var options = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 2,
+                Dock = Dock.Top,
+                Margin = new Thickness(0, 0, 0, 1),
+            };
+            options.Add(UseTraps);
+            options.Add(UseAutoPlay);
+
+            var help = new Label
+            {
+                Text = "Tab focus  Enter act  Up/Dn list  Esc close",
+                Dock = Dock.Bottom,
+                Margin = new Thickness(0, 1, 0, 0),
+            };
+
+            var root = new DockPanel
+            {
+                Margin = new Thickness(1),
+            };
+            root.Add(title);
+            title.Dock = Dock.Top;
+            root.Add(toolbar);
+            root.Add(options);
+            root.Add(help);
+            root.Add(Blocks);
+            return root;
         }
 
         public bool IsTapePlaying
@@ -74,6 +147,7 @@ namespace Kozynax.UI
                 if (_isTapePlaying == value)
                     return;
                 _isTapePlaying = value;
+                Play.Text = value ? "Stop" : "Play";
                 OnPropertyChanged();
             }
         }

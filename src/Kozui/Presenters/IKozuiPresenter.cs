@@ -43,5 +43,7 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
         Right,
         Up,
         Down,
+        PageUp,
+        PageDown,
     }
 }
