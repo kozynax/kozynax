@@ -71,6 +71,7 @@ namespace Kozynax.UI
                 Dock = Dock.Fill,
             };
             Blocks.SelectedIndexChanged += Blocks_SelectedIndexChanged;
+            Blocks.ItemActivated += (s, e) => Play.Click(Play, EventArgs.Empty);
 
             ProgressBar = new ProgressBar
             {

@@ -8,9 +8,17 @@ namespace ZXMAK2.Host.WinForms.Lib
     /// <summary>Non-generic surface for presenters (item text + selection).</summary>
     public abstract class ListView : KozuiControl
     {
+        public event EventHandler ItemActivated;
+
+        /// <summary>When true, a mouse click that selects a row also activates it.</summary>
+        public bool ActivateOnClick { get; set; }
+
         public abstract int Count { get; }
         public abstract int SelectedIndex { get; set; }
         public abstract string GetItemText(int index);
+
+        public void ActivateItem()
+            => ItemActivated?.Invoke(this, EventArgs.Empty);
     }
 
     public class ListView<T> : ListView
