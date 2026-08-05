@@ -127,9 +127,21 @@ namespace ZXMAK2.Host.SdlBackend
             // SDL captures while the window is focused.
             _mouse.Capture();
 
+            var terminal = _resolver.Resolve<ITerminal>();
+            if (terminal is StdioTerminal)
+            {
+                // Keep the SDL window updating while Kozui runs on stdout.
+                runtime.IdlePump = IdlePumpFrame;
+                TerminalUiSession.IdlePump = IdlePumpFrame;
+            }
+
             _running = true;
             ViewOpened?.Invoke(this, EventArgs.Empty);
             HookDataContext();
+
+            // Interactive TTY: show the main menu in the console immediately.
+            if (terminal is StdioTerminal)
+                ShowMainMenu();
 
             while (!_quit)
             {
@@ -141,6 +153,10 @@ namespace ZXMAK2.Host.SdlBackend
             ViewClosed?.Invoke(this, EventArgs.Empty);
             CleanupHost();
             CleanupSdl();
+            TerminalUiSession.IdlePump = null;
+            runtime.IdlePump = null;
+            if (terminal is IDisposable disposableTerminal)
+                disposableTerminal.Dispose();
         }
 
         public void Close()
@@ -245,8 +261,18 @@ namespace ZXMAK2.Host.SdlBackend
                 item.Item1(item.Item2);
         }
 
+        private void IdlePumpFrame()
+        {
+            PumpInvokes();
+            ProcessEvents();
+            PresentFrame();
+            if (_quit)
+                (_resolver.Resolve<ITerminal>() as StdioTerminal)?.RequestQuit();
+        }
+
         private void ProcessEvents()
         {
+            var uiActive = TerminalUiSession.IsUiActive;
             Event e;
             while (_sdl.PollEvent(&e) != 0)
             {
@@ -256,11 +282,16 @@ namespace ZXMAK2.Host.SdlBackend
                         _quit = true;
                         break;
                     case EventType.Keydown:
+                        // Console Kozui owns input while a TTY UI session is active.
+                        if (uiActive)
+                            break;
                         if (HandleHotKey((KeyCode)e.Key.Keysym.Sym, true))
                             break;
                         _keyboard.OnKeyEvent((KeyCode)e.Key.Keysym.Sym, true);
                         break;
                     case EventType.Keyup:
+                        if (uiActive)
+                            break;
                         // Drop host hotkey chords so they never stick in the Spectrum matrix.
                         if (IsHostHotKey((KeyCode)e.Key.Keysym.Sym))
                             break;
@@ -370,11 +401,13 @@ namespace ZXMAK2.Host.SdlBackend
 
         private void ShowMainMenu()
         {
+            if (_quit)
+                return;
             var vm = DataContext as MainViewModel;
             if (vm == null)
                 return;
             var terminal = _resolver.Resolve<ITerminal>();
-            TerminalMainMenuView.Show(terminal, vm, _commands, this);
+            TerminalMainMenuView.Show(terminal, vm, _commands, this, () => _quit);
         }
 
         private void TryExecuteCommand(string propertyName)

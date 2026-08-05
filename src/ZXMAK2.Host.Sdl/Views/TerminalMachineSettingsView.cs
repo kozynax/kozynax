@@ -58,32 +58,27 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
             try
             {
-                while (!_closeRequested)
-                {
-                    while (_terminal.PollEvent(out var ev))
+                TerminalUiSession.Run(
+                    _terminal,
+                    presenter,
+                    () => _closeRequested,
+                    ev =>
                     {
                         if (ev.Kind == TerminalEventKind.Quit)
                         {
                             _closeRequested = true;
-                            break;
+                            return true;
                         }
 
                         if (TerminalDialogInput.IsEscape(ev))
                         {
                             _ui.Cancel.Click(_ui.Cancel, EventArgs.Empty);
-                            break;
+                            return true;
                         }
 
                         TerminalDialogInput.Route(presenter, ev);
-                    }
-
-                    if (_closeRequested)
-                        break;
-
-                    presenter.MeasureArrangeFromTerminal();
-                    presenter.Render();
-                    _terminal.Delay(16);
-                }
+                        return false;
+                    });
             }
             finally
             {
@@ -166,23 +161,25 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
             try
             {
-                while (!done)
-                {
-                    while (_terminal.PollEvent(out var ev))
+                var cancelled = false;
+                TerminalUiSession.Run(
+                    _terminal,
+                    presenter,
+                    () => done || cancelled,
+                    ev =>
                     {
-                        if (ev.Kind == TerminalEventKind.Quit)
-                            return null;
-                        if (TerminalDialogInput.IsEscape(ev))
-                            return null;
+                        if (ev.Kind == TerminalEventKind.Quit || TerminalDialogInput.IsEscape(ev))
+                        {
+                            cancelled = true;
+                            result = null;
+                            return true;
+                        }
+
                         TerminalDialogInput.Route(presenter, ev);
-                    }
+                        return false;
+                    });
 
-                    presenter.MeasureArrangeFromTerminal();
-                    presenter.Render();
-                    _terminal.Delay(16);
-                }
-
-                return result;
+                return cancelled ? null : result;
             }
             finally
             {

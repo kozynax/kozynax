@@ -8,7 +8,8 @@ using ZXMAK2.Mvvm;
 namespace ZXMAK2.Host.SdlBackend.Views
 {
     /// <summary>
-    /// Terminal host for the Kozui <see cref="MainMenu"/> (F9).
+    /// Terminal host for the Kozui <see cref="MainMenu"/> (F9 / auto-open on stdio).
+    /// Reopens after settings/commands unless the user dismissed with Esc.
     /// </summary>
     public static class TerminalMainMenuView
     {
@@ -16,46 +17,60 @@ namespace ZXMAK2.Host.SdlBackend.Views
             ITerminal terminal,
             MainViewModel viewModel,
             IEnumerable<ICommand> toolCommands,
-            object commandParameter)
+            object commandParameter,
+            Func<bool> isHostQuitting = null)
         {
             if (terminal == null || !terminal.IsAvailable || viewModel == null)
                 return;
 
-            var menu = MainMenuFactory.Create(viewModel, toolCommands, commandParameter);
-            terminal.PrepareForUiInput();
-            var presenter = new TerminalKozuiPresenter(terminal);
-            presenter.Attach(menu.Root);
-
-            var closed = false;
-            EventHandler onClose = (_, __) => closed = true;
-            menu.CloseRequested += onClose;
-            try
+            while (true)
             {
-                while (!closed)
+                if (isHostQuitting != null && isHostQuitting())
+                    break;
+
+                var menu = MainMenuFactory.Create(viewModel, toolCommands, commandParameter);
+                terminal.PrepareForUiInput();
+                var presenter = new TerminalKozuiPresenter(terminal);
+                presenter.Attach(menu.Root);
+
+                var closed = false;
+                var quit = false;
+                EventHandler onClose = (_, __) => closed = true;
+                menu.CloseRequested += onClose;
+                try
                 {
-                    while (terminal.PollEvent(out var ev))
-                    {
-                        if (ev.Kind == TerminalEventKind.Quit)
-                            return;
-
-                        if (TerminalDialogInput.IsEscape(ev))
+                    TerminalUiSession.Run(
+                        terminal,
+                        presenter,
+                        () => closed,
+                        ev =>
                         {
-                            menu.TryGoBack();
-                            continue;
-                        }
+                            if (ev.Kind == TerminalEventKind.Quit)
+                            {
+                                quit = true;
+                                closed = true;
+                                return true;
+                            }
 
-                        TerminalDialogInput.Route(presenter, ev);
-                    }
+                            if (TerminalDialogInput.IsEscape(ev))
+                            {
+                                menu.TryGoBack();
+                                return false;
+                            }
 
-                    presenter.MeasureArrangeFromTerminal();
-                    presenter.Render();
-                    terminal.Delay(16);
+                            TerminalDialogInput.Route(presenter, ev);
+                            return false;
+                        });
                 }
-            }
-            finally
-            {
-                menu.CloseRequested -= onClose;
-                terminal.EndUiInput();
+                finally
+                {
+                    menu.CloseRequested -= onClose;
+                    terminal.EndUiInput();
+                }
+
+                if (quit || menu.ClosedByUser || (isHostQuitting != null && isHostQuitting()))
+                    break;
+                // Command closed the menu after a nested dialog — reopen.
             }
         }
     }

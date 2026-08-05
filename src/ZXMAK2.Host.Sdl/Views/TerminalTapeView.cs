@@ -49,14 +49,16 @@ namespace ZXMAK2.Host.SdlBackend.Views
             var lastTick = Environment.TickCount;
             try
             {
-                while (!_closeRequested)
-                {
-                    while (_terminal.PollEvent(out var ev))
+                TerminalUiSession.Run(
+                    _terminal,
+                    presenter,
+                    () => _closeRequested,
+                    ev =>
                     {
                         if (ev.Kind == TerminalEventKind.Quit)
                         {
                             Close();
-                            break;
+                            return true;
                         }
 
                         if (TerminalDialogInput.IsEscape(ev))
@@ -65,31 +67,25 @@ namespace ZXMAK2.Host.SdlBackend.Views
                             ViewClosing?.Invoke(this, args);
                             if (!args.Cancel)
                                 Close();
-                            // When cancelled, ViewHolder.Hide() sets _closeRequested.
-                            break;
+                            return true;
                         }
 
                         TerminalDialogInput.Route(presenter, ev);
-                    }
-
-                    if (_closeRequested)
-                        break;
-
-                    if (_ui != null && _ui.ProgressTimer.Enabled)
+                        return false;
+                    },
+                    beforeRender: () =>
                     {
-                        var now = Environment.TickCount;
-                        var interval = Math.Max(50, _ui.ProgressTimer.IntervalMs);
-                        if (unchecked(now - lastTick) >= interval)
+                        if (_ui != null && _ui.ProgressTimer.Enabled)
                         {
-                            lastTick = now;
-                            _ui.ProgressTimer.Tick();
+                            var now = Environment.TickCount;
+                            var interval = Math.Max(50, _ui.ProgressTimer.IntervalMs);
+                            if (unchecked(now - lastTick) >= interval)
+                            {
+                                lastTick = now;
+                                _ui.ProgressTimer.Tick();
+                            }
                         }
-                    }
-
-                    presenter.MeasureArrangeFromTerminal();
-                    presenter.Render();
-                    _terminal.Delay(16);
-                }
+                    });
             }
             finally
             {

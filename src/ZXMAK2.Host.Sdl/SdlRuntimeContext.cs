@@ -18,6 +18,12 @@ namespace ZXMAK2.Host.SdlBackend
         /// <summary>Restore emulator mouse capture after Terminal UI overlays.</summary>
         public Action EndUiInput { get; set; }
 
+        /// <summary>
+        /// Optional pump for stdio Kozui hosts so the SDL window keeps presenting
+        /// while a console UI loop is blocking the main thread.
+        /// </summary>
+        public Action IdlePump { get; set; }
+
         public SdlRuntimeContext(Sdl sdl)
         {
             Sdl = sdl;
