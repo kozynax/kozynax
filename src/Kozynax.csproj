@@ -4,6 +4,8 @@
     <TargetFramework>net46</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace />
+    <!-- Properties/AssemblyInfo.cs already defines assembly attributes. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -15,12 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Practices.Unity, Version=2.1.505.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <HintPath>..\musor\Libraries\Unity\Microsoft.Practices.Unity.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Practices.Unity.Configuration, Version=2.1.505.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <HintPath>..\musor\Libraries\Unity\Microsoft.Practices.Unity.Configuration.dll</HintPath>
-    </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="ZXMAK2.DirectX">
       <HintPath>..\musor\_bindebug\ZXMAK2.DirectX.dll</HintPath>
@@ -32,6 +28,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- SDL host is built by Kozynax.Sdl.csproj only -->
+    <Compile Remove="ZXMAK2.Host.Sdl\**" />
+    <EmbeddedResource Remove="ZXMAK2.Host.Sdl\**" />
+    <None Remove="ZXMAK2.Host.Sdl\**" />
+    <!-- Linux TTY backend (net5+/libc); not used by WinForms -->
+    <Compile Remove="ZXMAK2.Host\Terminal\StdioTerminal.cs" />
+
     <Compile Remove="ZXMAK2.Hardware\GeneralSoundDevice.cs" />
     <Compile Remove="ZXMAK2.DirectX\DirectSound\Blob.cs" />
     <Compile Remove="ZXMAK2.Host.WinForms\Mdx\Renderers.mdx\**" />
