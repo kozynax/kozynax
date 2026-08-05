@@ -320,9 +320,16 @@ namespace ZXMAK2.Host.WinForms.Views
             _machineSettings.Devices.PropertyChanged += Devices_PropertyChanged;
             _machineSettings.ShowWizard += machineSettings_ShowWizard;
             _machineSettings.Closed += _machineSettings_Closed;
+            _machineSettings.Applying += machineSettings_Applying;
 
             SyncDeviceList();
             SyncSelectedDevice();
+        }
+
+        private void machineSettings_Applying(object sender, EventArgs e)
+        {
+            foreach (var csc in _deviceConfigurationControls)
+                csc.Value.Apply();
         }
 
         private void _machineSettings_Closed(object sender, EventArgs e)
@@ -673,12 +680,7 @@ namespace ZXMAK2.Host.WinForms.Views
         }
 
         private void btnApply_Click(object sender, EventArgs e)
-        {
-            foreach (var csc in _deviceConfigurationControls)
-                csc.Value.Apply();
-
-            _machineSettings.Apply.Click(sender, e);
-        }
+            => _machineSettings.Apply.Click(sender, e);
 
         private void btnRemove_Click(object sender, EventArgs e)
             => _machineSettings.RemoveDevice.Click(sender, e);

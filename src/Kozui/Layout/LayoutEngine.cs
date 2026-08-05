@@ -154,13 +154,38 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
 
         private static LayoutSize MeasureDock(DockPanel dock, LayoutSize available)
         {
-            // Measure children against the slot, but report content-sized desire so
-            // Top/Left docks don't swallow the entire available area.
+            // Measure docked children with axis-constrained availability so a
+            // Left list does not claim the full width during measure.
+            var remaining = available;
             foreach (var child in dock.Children)
             {
                 if (!child.Visible)
                     continue;
-                Measure(child, available);
+
+                var dockSide = child.Dock;
+                LayoutSize childAvail;
+                switch (dockSide)
+                {
+                    case Dock.Left:
+                    case Dock.Right:
+                        childAvail = new LayoutSize(remaining.Width, remaining.Height);
+                        Measure(child, childAvail);
+                        remaining = new LayoutSize(
+                            Math.Max(0, remaining.Width - child.DesiredSize.Width),
+                            remaining.Height);
+                        break;
+                    case Dock.Top:
+                    case Dock.Bottom:
+                        childAvail = new LayoutSize(remaining.Width, remaining.Height);
+                        Measure(child, childAvail);
+                        remaining = new LayoutSize(
+                            remaining.Width,
+                            Math.Max(0, remaining.Height - child.DesiredSize.Height));
+                        break;
+                    default:
+                        Measure(child, remaining);
+                        break;
+                }
             }
             return AggregateDockDesired(dock);
         }
@@ -217,6 +242,9 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                     case Dock.Left:
                     {
                         var w = Math.Min(desired.Width, remaining.Width);
+                        // Preserve space for trailing Fill siblings.
+                        if (!isLast && remaining.Width > 16)
+                            w = Math.Min(w, remaining.Width - 16);
                         slot = new LayoutRect(remaining.X, remaining.Y, w, remaining.Height);
                         remaining = new LayoutRect(remaining.X + w, remaining.Y, remaining.Width - w, remaining.Height);
                         break;
@@ -224,6 +252,8 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                     case Dock.Right:
                     {
                         var w = Math.Min(desired.Width, remaining.Width);
+                        if (!isLast && remaining.Width > 16)
+                            w = Math.Min(w, remaining.Width - 16);
                         slot = new LayoutRect(remaining.Right - w, remaining.Y, w, remaining.Height);
                         remaining = new LayoutRect(remaining.X, remaining.Y, remaining.Width - w, remaining.Height);
                         break;
@@ -324,14 +354,29 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                     Math.Max(1, control.MinHeight > 0 ? control.MinHeight : 1));
             }
 
+            if (control is TrackBar)
+            {
+                return new LayoutSize(
+                    Math.Max(10, control.MinWidth > 0 ? control.MinWidth : 16),
+                    Math.Max(1, control.MinHeight > 0 ? control.MinHeight : 1));
+            }
+
             if (control is ListView listView)
             {
-                var rows = Math.Max(3, listView.Count > 0 ? listView.Count : 3);
+                // Width is content-sized (not available.Width) so Left/Right dock
+                // does not consume the entire slot and crush Fill siblings.
+                var width = Math.Max(10, control.MinWidth > 0 ? control.MinWidth : 20);
+                var count = listView.Count;
+                for (var i = 0; i < count; i++)
+                {
+                    var text = listView.GetItemText(i);
+                    if (!string.IsNullOrEmpty(text))
+                        width = Math.Max(width, Math.Min(40, text.Length + 1));
+                }
+
+                var rows = Math.Max(3, count > 0 ? count : 3);
                 if (available.Height < int.MaxValue / 8)
                     rows = Math.Max(3, Math.Min(rows, available.Height));
-                var width = Math.Max(10, control.MinWidth > 0 ? control.MinWidth : 20);
-                if (available.Width < int.MaxValue / 8)
-                    width = Math.Max(width, available.Width);
                 return new LayoutSize(width, Math.Max(control.MinHeight, rows));
             }
 

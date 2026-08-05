@@ -7,7 +7,17 @@
         public KozuiControl Content
         {
             get => _content;
-            set => SetProperty(ref _content, value);
+            set
+            {
+                if (ReferenceEquals(_content, value))
+                    return;
+                if (_content != null)
+                    _content.Parent = null;
+                _content = value;
+                if (_content != null)
+                    _content.Parent = this;
+                OnPropertyChanged();
+            }
         }
     }
 }

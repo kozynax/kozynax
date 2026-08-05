@@ -89,20 +89,26 @@ namespace ZXMAK2.Host.Terminal
                     return true;
             }
 
+            if (focused is TrackBar trackBar && trackBar.Enabled)
+            {
+                if (HandleTrackBarInput(trackBar, input.Key))
+                    return true;
+            }
+
             switch (input.Key)
             {
                 case KozuiInputKey.Tab:
                     MoveFocus(1);
                     return true;
                 case KozuiInputKey.Right:
-                    if (!(focused is ListView))
+                    if (!(focused is ListView) && !(focused is TrackBar))
                     {
                         MoveFocus(1);
                         return true;
                     }
                     break;
                 case KozuiInputKey.Left:
-                    if (!(focused is ListView))
+                    if (!(focused is ListView) && !(focused is TrackBar))
                     {
                         MoveFocus(-1);
                         return true;
@@ -146,6 +152,28 @@ namespace ZXMAK2.Host.Terminal
                 case TerminalKey.PageUp: return KozuiInputKey.PageUp;
                 case TerminalKey.PageDown: return KozuiInputKey.PageDown;
                 default: return KozuiInputKey.None;
+            }
+        }
+
+        private static bool HandleTrackBarInput(TrackBar trackBar, KozuiInputKey key)
+        {
+            var step = Math.Max(1, (trackBar.Maximum - trackBar.Minimum) / 20);
+            switch (key)
+            {
+                case KozuiInputKey.Left:
+                    trackBar.Value = Math.Max(trackBar.Minimum, trackBar.Value - step);
+                    return true;
+                case KozuiInputKey.Right:
+                    trackBar.Value = Math.Min(trackBar.Maximum, trackBar.Value + step);
+                    return true;
+                case KozuiInputKey.PageUp:
+                    trackBar.Value = Math.Max(trackBar.Minimum, trackBar.Value - step * 4);
+                    return true;
+                case KozuiInputKey.PageDown:
+                    trackBar.Value = Math.Min(trackBar.Maximum, trackBar.Value + step * 4);
+                    return true;
+                default:
+                    return false;
             }
         }
 
@@ -290,6 +318,8 @@ namespace ZXMAK2.Host.Terminal
                 list.Add(button);
             else if (control is CheckBox checkBox && checkBox.Enabled)
                 list.Add(checkBox);
+            else if (control is TrackBar trackBar && trackBar.Enabled)
+                list.Add(trackBar);
             else if (control is ListView listView && listView.Enabled)
                 list.Add(listView);
 
@@ -330,6 +360,12 @@ namespace ZXMAK2.Host.Terminal
             if (control is ProgressBar progressBar)
             {
                 DrawProgressBar(progressBar);
+                return;
+            }
+
+            if (control is TrackBar trackBar)
+            {
+                DrawTrackBar(trackBar);
                 return;
             }
 
@@ -416,6 +452,27 @@ namespace ZXMAK2.Host.Terminal
             var fill = (int)(pw * (value / (double)range));
             if (fill > 0)
                 _terminal.FillRect(px, py + 1, fill, ph, BarFg);
+        }
+
+        private void DrawTrackBar(TrackBar bar)
+        {
+            var bounds = bar.ArrangedBounds;
+            if (bounds.Width <= 0 || bounds.Height <= 0)
+                return;
+
+            var focused = ReferenceEquals(bar, FocusedControl());
+            var (px, py) = CellToPixel(bounds.X, bounds.Y);
+            var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
+            var ph = Math.Max(TerminalFont.GlyphHeight * _scale - 2, 4);
+            if (focused)
+                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, FocusBg);
+
+            _terminal.FillRect(px, py + 1, pw, ph, BarBg);
+            var range = Math.Max(1, bar.Maximum - bar.Minimum);
+            var value = Math.Max(bar.Minimum, Math.Min(bar.Maximum, bar.Value)) - bar.Minimum;
+            var fill = (int)(pw * (value / (double)range));
+            if (fill > 0)
+                _terminal.FillRect(px, py + 1, Math.Max(fill, 2), ph, focused ? Accent : BarFg);
         }
 
         private void DrawListView(ListView listView)

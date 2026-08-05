@@ -320,6 +320,15 @@ namespace ZXMAK2.Host.SdlBackend
                 return true;
             }
 
+            // Ctrl+M - Machine Settings
+            if (ctrl && key == KeyCode.KM)
+            {
+                _keyboard.Reset();
+                TryExecuteCommand("CommandVmSettings");
+                _keyboard.Reset();
+                return true;
+            }
+
             // F11 - fullscreen, Escape - exit fullscreen / quit, F5 - warm reset via commands when available
             if (key == KeyCode.KF11)
             {
@@ -353,7 +362,7 @@ namespace ZXMAK2.Host.SdlBackend
         {
             var mods = (Keymod)_sdl.GetModState();
             var ctrl = (mods & (Keymod.Ctrl | Keymod.Lctrl | Keymod.Rctrl)) != 0;
-            if (ctrl && (key == KeyCode.KO || key == KeyCode.KH || key == KeyCode.KT))
+            if (ctrl && (key == KeyCode.KO || key == KeyCode.KH || key == KeyCode.KT || key == KeyCode.KM))
                 return true;
             return key == KeyCode.KF11 || key == KeyCode.KF5 || key == KeyCode.KF8 || key == KeyCode.KEscape;
         }

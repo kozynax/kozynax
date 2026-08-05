@@ -11,6 +11,7 @@ using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
+using ZXMAK2.Host.WinForms.Lib.Layout;
 
 namespace Kozynax.UI
 {
@@ -26,10 +27,13 @@ namespace Kozynax.UI
 
         public event ShowWizardEventHandler ShowWizard;
         public event EventHandler Closed;
+        /// <summary>Raised before bus Apply so hosts can flush device-settings panels.</summary>
+        public event EventHandler Applying;
 
         public BusManager WorkBus { get; private set; }
         public IHostService Host { get; private set; }
-        
+
+        public Panel Root { get; }
         public Button Up { get; }
         public Button Down { get; }
         public Button AddDevice { get; }
@@ -42,34 +46,104 @@ namespace Kozynax.UI
 
         private IVirtualMachine m_vm;
         private readonly MachinesConfig m_machines = new MachinesConfig();
-
         private List<MachineConfiguration> _knownMachines;
 
         public MachineSettings()
         {
-            Up = new Button();
+            Up = new Button { Text = "Up" };
             Up.Clicked += Up_Clicked;
 
-            Down = new Button();
+            Down = new Button { Text = "Dn" };
             Down.Clicked += Down_Clicked;
 
-            AddDevice = new Button();
+            AddDevice = new Button { Text = "Add" };
             AddDevice.Clicked += AddDevice_Clicked;
 
-            RemoveDevice = new Button();
+            RemoveDevice = new Button { Text = "Remove" };
             RemoveDevice.Clicked += RemoveDevice_Clicked;
 
-            Wizard = new Button();
+            Wizard = new Button { Text = "Wizard" };
             Wizard.Clicked += Wizard_Clicked;
 
-            Apply = new Button();
+            Apply = new Button { Text = "Apply" };
             Apply.Clicked += Apply_Clicked;
 
-            Cancel = new Button();
+            Cancel = new Button { Text = "Cancel" };
             Cancel.Clicked += Cancel_Clicked;
 
-            Devices = new ListView<BusDeviceBase>();
+            Devices = new ListView<BusDeviceBase>
+            {
+                ItemTextSelector = d => d == null ? string.Empty : $"{d.Category}: {d.Name}",
+                Dock = Dock.Left,
+                MinWidth = 28,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+            };
             Devices.SelectedIndexChanged += Devices_SelectedIndexChanged;
+
+            DeviceProperties = new Placeholder
+            {
+                Dock = Dock.Fill,
+                Margin = new Thickness(1, 0, 0, 0),
+            };
+
+            Root = BuildTree();
+        }
+
+        private Panel BuildTree()
+        {
+            var title = new Label
+            {
+                Text = "Machine Settings",
+                Dock = Dock.Top,
+                Margin = new Thickness(0, 0, 0, 1),
+            };
+
+            var help = new Label
+            {
+                Text = "Tab focus  Enter act  Up/Dn list  Esc cancel",
+                Dock = Dock.Bottom,
+                Margin = new Thickness(0, 1, 0, 0),
+            };
+
+            var deviceButtons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 1,
+                Dock = Dock.Bottom,
+                Margin = new Thickness(0, 1, 0, 0),
+            };
+            deviceButtons.Add(AddDevice);
+            deviceButtons.Add(RemoveDevice);
+            deviceButtons.Add(Up);
+            deviceButtons.Add(Down);
+
+            var actionButtons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 1,
+                Dock = Dock.Bottom,
+                Margin = new Thickness(0, 1, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Right,
+            };
+            actionButtons.Add(Wizard);
+            actionButtons.Add(Apply);
+            actionButtons.Add(Cancel);
+
+            var body = new DockPanel
+            {
+                Dock = Dock.Fill,
+            };
+            body.Add(Devices);
+            body.Add(DeviceProperties);
+
+            var root = new DockPanel { Margin = new Thickness(1) };
+            root.Add(title);
+            root.Add(help);
+            root.Add(actionButtons);
+            root.Add(deviceButtons);
+            root.Add(body);
+            return root;
         }
 
         private void AddDevice_Clicked(object sender, EventArgs e)
@@ -99,6 +173,8 @@ namespace Kozynax.UI
         {
             try
             {
+                Applying?.Invoke(this, EventArgs.Empty);
+
                 if (WorkBus.FindDevice<IUlaDevice>() == null)
                 {
                     Locator.Resolve<IUserMessage>()
