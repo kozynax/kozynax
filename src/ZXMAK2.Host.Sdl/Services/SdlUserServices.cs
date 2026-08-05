@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using Kozynax.UI;
 using Silk.NET.SDL;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
@@ -45,8 +46,8 @@ namespace ZXMAK2.Host.SdlBackend.Services
     {
         public DlgResult Show(string message, string caption, DlgButtonSet buttonSet, DlgIcon icon)
         {
-            Console.WriteLine($"[{caption}] {message}");
-            return DlgResult.OK;
+            var dialog = ConfirmDialog.ForButtonSet(message, caption, buttonSet);
+            return dialog.ShowDialog(null);
         }
 
         public object ObjectSelector(object[] objArray, string caption)

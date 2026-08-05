@@ -5,8 +5,11 @@ using ZXMAK2.Hardware.Circuits.Sound;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Presentation;
 using ZXMAK2.Host.Presentation.Interfaces;
+using Kozui.Interfaces;
+using Kozynax.UI;
 using ZXMAK2.Host.SdlBackend;
 using ZXMAK2.Host.SdlBackend.Services;
+using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Terminal;
 
 namespace ZXMAK2
@@ -45,6 +48,7 @@ namespace ZXMAK2
             resolver.RegisterType<IUserHelp, SdlUserHelp>();
             resolver.RegisterType<IOpenFileDialog, SdlOpenFileDialog>();
             resolver.RegisterType<ISaveFileDialog, SdlSaveFileDialog>();
+            resolver.RegisterType<IViewImplementation<ConfirmDialog>, TerminalConfirmDialogView>();
 
             resolver.RegisterType<IMainView, SdlMainView>();
             resolver.RegisterType<ILauncher, Launcher>(true);
