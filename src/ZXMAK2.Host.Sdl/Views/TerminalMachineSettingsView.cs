@@ -88,6 +88,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             finally
             {
                 _loopActive = false;
+                _terminal.EndUiInput();
             }
 
             return DlgResult.OK;
@@ -163,23 +164,30 @@ namespace ZXMAK2.Host.SdlBackend.Views
             };
             cancel.Clicked += (_, __) => done = true;
 
-            while (!done)
+            try
             {
-                while (_terminal.PollEvent(out var ev))
+                while (!done)
                 {
-                    if (ev.Kind == TerminalEventKind.Quit)
-                        return null;
-                    if (TerminalDialogInput.IsEscape(ev))
-                        return null;
-                    TerminalDialogInput.Route(presenter, ev);
+                    while (_terminal.PollEvent(out var ev))
+                    {
+                        if (ev.Kind == TerminalEventKind.Quit)
+                            return null;
+                        if (TerminalDialogInput.IsEscape(ev))
+                            return null;
+                        TerminalDialogInput.Route(presenter, ev);
+                    }
+
+                    presenter.MeasureArrangeFromTerminal();
+                    presenter.Render();
+                    _terminal.Delay(16);
                 }
 
-                presenter.MeasureArrangeFromTerminal();
-                presenter.Render();
-                _terminal.Delay(16);
+                return result;
             }
-
-            return result;
+            finally
+            {
+                _terminal.EndUiInput();
+            }
         }
 
         private void OnDeviceSelected(object sender, int index)

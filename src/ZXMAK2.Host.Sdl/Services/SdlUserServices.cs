@@ -88,14 +88,22 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
         public DlgResult ShowDialog(object owner)
         {
-            var picker = new FilePickerScreen(_terminal);
-            if (!picker.TryPickOpen(Title ?? "Open...", Filter, out var path))
-                return DlgResult.Cancel;
+            _terminal.PrepareForUiInput();
+            try
+            {
+                var picker = new FilePickerScreen(_terminal);
+                if (!picker.TryPickOpen(Title ?? "Open...", Filter, out var path))
+                    return DlgResult.Cancel;
 
-            FileName = path;
-            var args = new CancelEventArgs();
-            FileOk?.Invoke(this, args);
-            return args.Cancel ? DlgResult.Cancel : DlgResult.OK;
+                FileName = path;
+                var args = new CancelEventArgs();
+                FileOk?.Invoke(this, args);
+                return args.Cancel ? DlgResult.Cancel : DlgResult.OK;
+            }
+            finally
+            {
+                _terminal.EndUiInput();
+            }
         }
 
         public void Dispose() { }

@@ -65,6 +65,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             finally
             {
                 _ui.CloseRequested -= onClose;
+                _terminal.EndUiInput();
             }
         }
 

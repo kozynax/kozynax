@@ -9,6 +9,8 @@ namespace ZXMAK2.Host.SdlBackend
         private readonly Sdl _sdl;
         private readonly MouseStateWrapper _state = new MouseStateWrapper();
         private bool _captured;
+        private bool _resumeCaptureAfterUi;
+        private int _uiSuspendDepth;
 
         public SdlMouse(Sdl sdl)
         {
@@ -25,19 +27,57 @@ namespace ZXMAK2.Host.SdlBackend
 
         public void Capture()
         {
+            if (_uiSuspendDepth > 0)
+            {
+                // Remember intent; do not steal cursor from Terminal UI.
+                _resumeCaptureAfterUi = true;
+                return;
+            }
+
             _captured = true;
             _sdl.SetRelativeMouseMode(SdlBool.True);
+            _sdl.ShowCursor(0);
         }
 
         public void Uncapture()
         {
             _captured = false;
             _sdl.SetRelativeMouseMode(SdlBool.False);
+            _sdl.ShowCursor(1);
+        }
+
+        /// <summary>
+        /// Leave relative/captured mode for Terminal Kozui overlays; restore afterward.
+        /// Supports nested overlays (settings → wizard).
+        /// </summary>
+        public void SuspendForUi()
+        {
+            if (_uiSuspendDepth++ == 0)
+            {
+                _resumeCaptureAfterUi = _captured;
+                _state.Buttons = 0;
+                Uncapture();
+            }
+        }
+
+        public void ResumeAfterUi()
+        {
+            if (_uiSuspendDepth <= 0)
+                return;
+            if (--_uiSuspendDepth > 0)
+                return;
+
+            _state.Buttons = 0;
+            if (_resumeCaptureAfterUi)
+                Capture();
+            _resumeCaptureAfterUi = false;
         }
 
         public void OnMouseMotion(int dx, int dy)
         {
             if (!_captured)
+                return;
+            if (dx == 0 && dy == 0)
                 return;
             _state.AddDelta(dx, dy);
         }
@@ -63,6 +103,7 @@ namespace ZXMAK2.Host.SdlBackend
 
         public void Dispose()
         {
+            _uiSuspendDepth = 0;
             Uncapture();
         }
 

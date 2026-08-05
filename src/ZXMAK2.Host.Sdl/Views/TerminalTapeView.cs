@@ -94,6 +94,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             finally
             {
                 _loopActive = false;
+                _terminal.EndUiInput();
             }
         }
 

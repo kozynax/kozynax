@@ -67,8 +67,16 @@ namespace ZXMAK2.Host.SdlBackend
         {
             if (!_runtime.IsReady)
                 return;
+            _runtime.PrepareUiInput?.Invoke();
             _runtime.Sdl.SetRelativeMouseMode(SdlBool.False);
             _runtime.Sdl.ShowCursor(1);
+        }
+
+        public override void EndUiInput()
+        {
+            if (!_runtime.IsReady)
+                return;
+            _runtime.EndUiInput?.Invoke();
         }
 
         public override bool PollEvent(out TerminalEvent terminalEvent)

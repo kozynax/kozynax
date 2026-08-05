@@ -25,6 +25,11 @@ namespace ZXMAK2.Host.Terminal
         void PrepareForUiInput();
 
         /// <summary>
+        /// Restore emulator mouse capture after an overlay closes.
+        /// </summary>
+        void EndUiInput();
+
+        /// <summary>
         /// Poll one input/window event. Returns false when the queue is empty.
         /// </summary>
         bool PollEvent(out TerminalEvent terminalEvent);
