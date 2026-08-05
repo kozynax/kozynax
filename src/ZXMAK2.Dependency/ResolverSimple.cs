@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace ZXMAK2.Dependency
 {
     /// <summary>
-    /// Lightweight DI used by the SDL host (no Unity dependency).
+    /// Lightweight DI container used by both hosts (no external IoC library).
     /// </summary>
     public sealed class ResolverSimple : IResolver
     {
@@ -109,7 +109,7 @@ namespace ZXMAK2.Dependency
             for (var i = 0; i < parameters.Length; i++)
             {
                 var paramType = parameters[i].ParameterType;
-                var resolve = typeof(ResolverSimple).GetMethod(nameof(Resolve))!
+                var resolve = typeof(ResolverSimple).GetMethod(nameof(Resolve))
                     .MakeGenericMethod(paramType);
                 args[i] = resolve.Invoke(this, null);
             }

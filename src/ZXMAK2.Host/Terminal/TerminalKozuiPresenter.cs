@@ -605,7 +605,9 @@ namespace ZXMAK2.Host.Terminal
             if (bounds.Width <= 0 || bounds.Height <= 0)
                 return;
 
-            var (px, py) = CellToPixel(bounds.X, bounds.Y);
+            int px, py;
+
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
             _terminal.FillRect(px, py, pw, ph, active ? PanelBgActive : PanelBg);
@@ -702,7 +704,8 @@ namespace ZXMAK2.Host.Terminal
             if (bounds.Width <= 0 || bounds.Height <= 0)
                 return;
             var text = Truncate(label.Text ?? string.Empty, bounds.Width);
-            var (px, py) = CellToPixel(bounds.X, bounds.Y);
+            int px, py;
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
             _terminal.DrawText(px, py, text, _scale, label.Enabled ? Fg : Disabled);
         }
 
@@ -714,7 +717,8 @@ namespace ZXMAK2.Host.Terminal
 
             var focused = ReferenceEquals(button, FocusedControl());
             var pressed = ReferenceEquals(button, _pressedButton) && _pressedHot;
-            var (px, py) = CellToPixel(bounds.X, bounds.Y);
+            int px, py;
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
 
@@ -743,7 +747,8 @@ namespace ZXMAK2.Host.Terminal
                 return;
 
             var focused = ReferenceEquals(checkBox, FocusedControl());
-            var (px, py) = CellToPixel(bounds.X, bounds.Y);
+            int px, py;
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
             if (focused)
@@ -761,7 +766,9 @@ namespace ZXMAK2.Host.Terminal
             if (bounds.Width <= 0 || bounds.Height <= 0)
                 return;
 
-            var (px, py) = CellToPixel(bounds.X, bounds.Y);
+            int px, py;
+
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = Math.Max(TerminalFont.GlyphHeight * _scale - 2, 4);
             _terminal.FillRect(px, py + 1, pw, ph, BarBg);
@@ -780,7 +787,8 @@ namespace ZXMAK2.Host.Terminal
                 return;
 
             var focused = ReferenceEquals(bar, FocusedControl());
-            var (px, py) = CellToPixel(bounds.X, bounds.Y);
+            int px, py;
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = Math.Max(TerminalFont.GlyphHeight * _scale - 2, 4);
             if (focused)
@@ -815,7 +823,8 @@ namespace ZXMAK2.Host.Terminal
                     break;
 
                 var y = content.Y + row;
-                var (px, py) = CellToPixel(content.X, y);
+                int px, py;
+                CellToPixel(content.X, y, out px, out py);
                 var pw = content.Width * TerminalFont.GlyphWidth * _scale;
                 var ph = TerminalFont.GlyphHeight * _scale;
                 var selected = index == listView.SelectedIndex;
@@ -835,13 +844,17 @@ namespace ZXMAK2.Host.Terminal
 
             if (focused && listView.Count == 0)
             {
-                var (px, py) = CellToPixel(content.X, content.Y);
+                int px, py;
+                CellToPixel(content.X, content.Y, out px, out py);
                 _terminal.DrawText(px, py, "(no blocks)", _scale, Disabled);
             }
         }
 
-        private (int x, int y) CellToPixel(int cellX, int cellY)
-            => (cellX * TerminalFont.GlyphWidth * _scale, cellY * TerminalFont.GlyphHeight * _scale);
+        private void CellToPixel(int cellX, int cellY, out int pixelX, out int pixelY)
+        {
+            pixelX = cellX * TerminalFont.GlyphWidth * _scale;
+            pixelY = cellY * TerminalFont.GlyphHeight * _scale;
+        }
 
         private static string Truncate(string text, int maxChars)
         {

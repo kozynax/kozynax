@@ -46,9 +46,8 @@ namespace ZXMAK2
 
         private static void RunSafe(string[] args)
         {
-            var resolver = new ResolverUnity();
+            var resolver = new ResolverSimple();
 
-            resolver.RegisterInstance<IResolver>(resolver);
             resolver.RegisterType<ISettingService, SettingService>(true);
             resolver.RegisterType<IUserMessage, UserMessage>();
             resolver.RegisterType<IUserQuery, UserQuery>();
