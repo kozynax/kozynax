@@ -28,6 +28,11 @@ namespace Kozynax.UI
 
         public event EventHandler CloseRequested;
 
+        /// <summary>
+        /// True when the menu closed via Esc/back at the root; false when a command closed it.
+        /// </summary>
+        public bool ClosedByUser { get; private set; }
+
         public Panel Root { get; }
         public Label TitleLabel { get; }
         public ListView<MenuNode> Items { get; }
@@ -74,6 +79,7 @@ namespace Kozynax.UI
         {
             if (_stack.Count <= 1)
             {
+                ClosedByUser = true;
                 CloseRequested?.Invoke(this, EventArgs.Empty);
                 return false;
             }
@@ -116,7 +122,10 @@ namespace Kozynax.UI
             ShowCurrent();
 
             if (!IsToggleCommand(node))
+            {
+                ClosedByUser = false;
                 CloseRequested?.Invoke(this, EventArgs.Empty);
+            }
         }
 
         private static bool IsToggleCommand(MenuNode node)

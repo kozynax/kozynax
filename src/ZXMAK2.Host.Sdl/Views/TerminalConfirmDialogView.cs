@@ -3,6 +3,7 @@ using Kozui.Interfaces;
 using Kozynax.UI;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Terminal;
+
 namespace ZXMAK2.Host.SdlBackend.Views
 {
     public sealed class TerminalConfirmDialogView : IViewImplementation<ConfirmDialog>
@@ -34,31 +35,29 @@ namespace ZXMAK2.Host.SdlBackend.Views
             _ui.CloseRequested += onClose;
             try
             {
-                while (!closed)
-                {
-                    while (_terminal.PollEvent(out var ev))
+                TerminalUiSession.Run(
+                    _terminal,
+                    presenter,
+                    () => closed,
+                    ev =>
                     {
                         if (ev.Kind == TerminalEventKind.Quit)
                         {
                             _ui.Cancel();
-                            return DlgResult.Cancel;
+                            closed = true;
+                            return true;
                         }
 
                         if (TerminalDialogInput.IsEscape(ev))
                         {
                             _ui.Cancel();
-                            return _ui.DialogResult;
+                            closed = true;
+                            return true;
                         }
 
                         TerminalDialogInput.Route(presenter, ev);
-                        if (closed)
-                            break;
-                    }
-
-                    presenter.MeasureArrangeFromTerminal();
-                    presenter.Render();
-                    _terminal.Delay(16);
-                }
+                        return false;
+                    });
 
                 return _ui.DialogResult;
             }

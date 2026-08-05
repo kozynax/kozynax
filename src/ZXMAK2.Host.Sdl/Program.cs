@@ -41,7 +41,10 @@ namespace ZXMAK2
             resolver.RegisterInstance<IResolver>(resolver);
             resolver.RegisterInstance(sdl);
             resolver.RegisterInstance(runtime);
-            resolver.RegisterType<ITerminal, SdlTerminal>(true);
+            if (StdioTerminal.IsInteractive)
+                resolver.RegisterInstance<ITerminal>(new StdioTerminal());
+            else
+                resolver.RegisterType<ITerminal, SdlTerminal>(true);
             resolver.RegisterType<ISettingService, SdlSettingService>(true);
             resolver.RegisterType<IUserMessage, SdlUserMessage>();
             resolver.RegisterType<IUserQuery, SdlUserQuery>();

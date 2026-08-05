@@ -49,7 +49,7 @@ namespace ZXMAK2.Host.Terminal
                 }
 
                 Draw(title ?? "Open...", directory, entries, selected, scroll);
-                _terminal.Delay(16);
+                TerminalUiSession.AfterFrame(_terminal);
             }
         }
 
