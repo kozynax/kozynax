@@ -73,7 +73,15 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
             else if (control is Panel panel)
                 ArrangePanelFill(panel, inner);
             else if (control is Placeholder placeholder && placeholder.Content != null)
-                Arrange(placeholder.Content, inner);
+            {
+                // Keep content clear of panel chrome / outline.
+                const int pad = 1;
+                Arrange(placeholder.Content, new LayoutRect(
+                    inner.X + pad,
+                    inner.Y + pad,
+                    Math.Max(0, inner.Width - pad * 2),
+                    Math.Max(0, inner.Height - pad * 2)));
+            }
         }
 
         private static LayoutSize MeasureStack(StackPanel stack, LayoutSize available)
@@ -316,7 +324,12 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
         {
             if (placeholder.Content == null || !placeholder.Content.Visible)
                 return new LayoutSize(placeholder.MinWidth, placeholder.MinHeight);
-            return Measure(placeholder.Content, available);
+            const int pad = 1;
+            var inner = new LayoutSize(
+                Math.Max(0, available.Width - pad * 2),
+                Math.Max(0, available.Height - pad * 2));
+            var content = Measure(placeholder.Content, inner);
+            return new LayoutSize(content.Width + pad * 2, content.Height + pad * 2);
         }
 
         private static LayoutSize MeasureLeaf(KozuiControl control, LayoutSize available)

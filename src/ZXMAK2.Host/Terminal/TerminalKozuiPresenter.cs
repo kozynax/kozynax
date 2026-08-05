@@ -11,14 +11,18 @@ namespace ZXMAK2.Host.Terminal
     /// </summary>
     public sealed class TerminalKozuiPresenter : IKozuiPresenter
     {
+        private const int PanelPadCells = 1;
+
         private static readonly TerminalColor Bg = TerminalColor.Rgb(16, 18, 28);
         private static readonly TerminalColor Fg = TerminalColor.Rgb(230, 230, 230);
         private static readonly TerminalColor Accent = TerminalColor.Rgb(240, 220, 120);
-        private static readonly TerminalColor FocusBg = TerminalColor.Rgb(40, 70, 120);
+        private static readonly TerminalColor SelectedBg = TerminalColor.Rgb(30, 100, 210);
         private static readonly TerminalColor Disabled = TerminalColor.Rgb(90, 95, 110);
         private static readonly TerminalColor BarBg = TerminalColor.Rgb(40, 45, 60);
         private static readonly TerminalColor BarFg = TerminalColor.Rgb(80, 160, 220);
-        private static readonly TerminalColor ListSel = TerminalColor.Rgb(40, 70, 120);
+        private static readonly TerminalColor PanelBg = TerminalColor.Rgb(22, 26, 38);
+        private static readonly TerminalColor PanelBgActive = TerminalColor.Rgb(36, 46, 68);
+        private static readonly TerminalColor PanelBorder = TerminalColor.Rgb(55, 65, 90);
 
         private readonly ITerminal _terminal;
         private readonly int _scale;
@@ -26,6 +30,8 @@ namespace ZXMAK2.Host.Terminal
         private readonly List<KozuiControl> _focusables = new List<KozuiControl>();
         private int _focusIndex;
         private int _listScroll;
+        private KozuiControl _activeRegion;
+        private bool _needsInitialFocus;
 
         public TerminalKozuiPresenter(ITerminal terminal, int scale = 1)
         {
@@ -38,9 +44,10 @@ namespace ZXMAK2.Host.Terminal
         public void Attach(KozuiControl root)
         {
             _root = root;
-            RebuildFocusables();
-            _focusIndex = 0;
             _listScroll = 0;
+            _needsInitialFocus = true;
+            _focusIndex = 0;
+            RebuildFocusables();
         }
 
         public void MeasureArrange(LayoutSize availableCells)
@@ -70,6 +77,7 @@ namespace ZXMAK2.Host.Terminal
                 return;
 
             RebuildFocusables();
+            _activeRegion = FindActiveRegion();
             _terminal.Clear(Bg);
             DrawControl(_root);
             _terminal.Present();
@@ -183,7 +191,7 @@ namespace ZXMAK2.Host.Terminal
             if (count <= 0)
                 return false;
 
-            var visible = Math.Max(1, listView.ArrangedBounds.Height);
+            var visible = ListContentRows(listView);
             switch (key)
             {
                 case KozuiInputKey.Up:
@@ -224,7 +232,7 @@ namespace ZXMAK2.Host.Terminal
                 return;
             _focusIndex = (_focusIndex + delta + _focusables.Count) % _focusables.Count;
             if (FocusedControl() is ListView list)
-                EnsureListVisible(list, Math.Max(1, list.ArrangedBounds.Height));
+                EnsureListVisible(list, ListContentRows(list));
         }
 
         private void ActivateFocused()
@@ -295,6 +303,27 @@ namespace ZXMAK2.Host.Terminal
             if (_root != null)
                 CollectFocusables(_root, _focusables);
 
+            // Tab order follows on-screen position (top→bottom, then left→right),
+            // not construction / dock-child order.
+            _focusables.Sort(CompareVisualTabOrder);
+
+            if (_needsInitialFocus)
+            {
+                // Before the first arrange, bounds are empty and tree order would
+                // focus toolbar buttons. Wait until layout exists, then prefer a list.
+                if (_focusables.Exists(c => c.ArrangedBounds.Width > 0 && c.ArrangedBounds.Height > 0))
+                {
+                    var listIndex = _focusables.FindIndex(c => c is ListView);
+                    _focusIndex = listIndex >= 0 ? listIndex : 0;
+                    _needsInitialFocus = false;
+                }
+                else
+                {
+                    _focusIndex = 0;
+                }
+                return;
+            }
+
             if (previous != null)
             {
                 var idx = _focusables.IndexOf(previous);
@@ -307,6 +336,19 @@ namespace ZXMAK2.Host.Terminal
 
             if (_focusIndex >= _focusables.Count)
                 _focusIndex = Math.Max(0, _focusables.Count - 1);
+        }
+
+        private static int CompareVisualTabOrder(KozuiControl a, KozuiControl b)
+        {
+            var ay = a.ArrangedBounds.Y;
+            var by = b.ArrangedBounds.Y;
+            if (ay != by)
+                return ay.CompareTo(by);
+            var ax = a.ArrangedBounds.X;
+            var bx = b.ArrangedBounds.X;
+            if (ax != bx)
+                return ax.CompareTo(bx);
+            return 0;
         }
 
         private static void CollectFocusables(KozuiControl control, List<KozuiControl> list)
@@ -332,6 +374,71 @@ namespace ZXMAK2.Host.Terminal
             {
                 CollectFocusables(placeholder.Content, list);
             }
+        }
+
+        private KozuiControl FindActiveRegion()
+        {
+            var focused = FocusedControl();
+            if (focused == null)
+                return null;
+
+            if (focused is ListView)
+                return focused;
+
+            for (var c = focused; c != null; c = c.Parent)
+            {
+                if (c is Placeholder || c is ListView)
+                    return c;
+            }
+
+            // Toolbar / button strip: highlight the nearest non-root panel.
+            for (var c = focused.Parent; c != null; c = c.Parent)
+            {
+                if (c is Panel && !ReferenceEquals(c, _root))
+                    return c;
+            }
+
+            return focused;
+        }
+
+        private bool IsActiveRegion(KozuiControl control)
+            => control != null && ReferenceEquals(control, _activeRegion);
+
+        private void DrawPanelChrome(LayoutRect bounds, bool active)
+        {
+            if (bounds.Width <= 0 || bounds.Height <= 0)
+                return;
+
+            var (px, py) = CellToPixel(bounds.X, bounds.Y);
+            var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
+            var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
+            _terminal.FillRect(px, py, pw, ph, active ? PanelBgActive : PanelBg);
+            if (!active)
+                DrawRectOutline(px, py, pw, ph, PanelBorder, 1);
+        }
+
+        private static LayoutRect InsetPanelContent(LayoutRect bounds)
+        {
+            var pad = PanelPadCells;
+            return new LayoutRect(
+                bounds.X + pad,
+                bounds.Y + pad,
+                Math.Max(0, bounds.Width - pad * 2),
+                Math.Max(0, bounds.Height - pad * 2));
+        }
+
+        private static int ListContentRows(ListView listView)
+            => Math.Max(1, InsetPanelContent(listView.ArrangedBounds).Height);
+
+        private void DrawRectOutline(int x, int y, int width, int height, TerminalColor color, int thickness)
+        {
+            thickness = Math.Max(1, thickness);
+            if (width <= 0 || height <= 0)
+                return;
+            _terminal.FillRect(x, y, width, thickness, color);
+            _terminal.FillRect(x, y + height - thickness, width, thickness, color);
+            _terminal.FillRect(x, y, thickness, height, color);
+            _terminal.FillRect(x + width - thickness, y, thickness, height, color);
         }
 
         private void DrawControl(KozuiControl control)
@@ -371,19 +478,26 @@ namespace ZXMAK2.Host.Terminal
 
             if (control is ListView listView)
             {
+                DrawPanelChrome(listView.ArrangedBounds, IsActiveRegion(listView));
                 DrawListView(listView);
+                return;
+            }
+
+            if (control is Placeholder placeholder)
+            {
+                DrawPanelChrome(placeholder.ArrangedBounds, IsActiveRegion(placeholder));
+                if (placeholder.Content != null)
+                    DrawControl(placeholder.Content);
                 return;
             }
 
             if (control is Panel panel)
             {
+                if (IsActiveRegion(panel))
+                    DrawPanelChrome(panel.ArrangedBounds, active: true);
                 foreach (var child in panel.Children)
                     DrawControl(child);
-                return;
             }
-
-            if (control is Placeholder placeholder && placeholder.Content != null)
-                DrawControl(placeholder.Content);
         }
 
         private void DrawLabel(Label label)
@@ -408,7 +522,7 @@ namespace ZXMAK2.Host.Terminal
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
 
             if (focused)
-                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, FocusBg);
+                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, SelectedBg);
 
             var label = button.Text ?? string.Empty;
             var framed = focused ? $"> {label} <" : $"[ {label} ]";
@@ -428,7 +542,7 @@ namespace ZXMAK2.Host.Terminal
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
             if (focused)
-                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, FocusBg);
+                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, SelectedBg);
 
             var mark = checkBox.Checked ? "x" : " ";
             var text = Truncate($"[{mark}] {checkBox.Text}", bounds.Width);
@@ -465,7 +579,7 @@ namespace ZXMAK2.Host.Terminal
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = Math.Max(TerminalFont.GlyphHeight * _scale - 2, 4);
             if (focused)
-                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, FocusBg);
+                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, SelectedBg);
 
             _terminal.FillRect(px, py + 1, pw, ph, BarBg);
             var range = Math.Max(1, bar.Maximum - bar.Minimum);
@@ -481,8 +595,12 @@ namespace ZXMAK2.Host.Terminal
             if (bounds.Width <= 0 || bounds.Height <= 0)
                 return;
 
+            var content = InsetPanelContent(bounds);
+            if (content.Width <= 0 || content.Height <= 0)
+                return;
+
             var focused = ReferenceEquals(listView, FocusedControl());
-            var visible = Math.Max(1, bounds.Height);
+            var visible = Math.Max(1, content.Height);
             EnsureListVisible(listView, visible);
 
             for (var row = 0; row < visible; row++)
@@ -491,20 +609,20 @@ namespace ZXMAK2.Host.Terminal
                 if (index >= listView.Count)
                     break;
 
-                var y = bounds.Y + row;
-                var (px, py) = CellToPixel(bounds.X, y);
-                var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
+                var y = content.Y + row;
+                var (px, py) = CellToPixel(content.X, y);
+                var pw = content.Width * TerminalFont.GlyphWidth * _scale;
                 var ph = TerminalFont.GlyphHeight * _scale;
                 var selected = index == listView.SelectedIndex;
 
                 if (selected)
-                    _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, focused ? FocusBg : ListSel);
+                    _terminal.FillRect(px, py, pw, ph, SelectedBg);
 
                 var prefix = selected ? ">" : " ";
-                var text = Truncate(prefix + listView.GetItemText(index), bounds.Width);
+                var text = Truncate(prefix + listView.GetItemText(index), content.Width);
                 var color = !listView.Enabled
                     ? Disabled
-                    : selected && focused
+                    : selected
                         ? Accent
                         : Fg;
                 _terminal.DrawText(px, py, text, _scale, color);
@@ -512,7 +630,7 @@ namespace ZXMAK2.Host.Terminal
 
             if (focused && listView.Count == 0)
             {
-                var (px, py) = CellToPixel(bounds.X, bounds.Y);
+                var (px, py) = CellToPixel(content.X, content.Y);
                 _terminal.DrawText(px, py, "(no blocks)", _scale, Disabled);
             }
         }
