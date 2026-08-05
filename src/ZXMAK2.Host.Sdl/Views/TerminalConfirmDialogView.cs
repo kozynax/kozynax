@@ -3,8 +3,6 @@ using Kozui.Interfaces;
 using Kozynax.UI;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Terminal;
-using ZXMAK2.Host.WinForms.Lib.Presenters;
-
 namespace ZXMAK2.Host.SdlBackend.Views
 {
     public sealed class TerminalConfirmDialogView : IViewImplementation<ConfirmDialog>
@@ -27,6 +25,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             if (_ui == null || !_terminal.IsAvailable)
                 return DlgResult.Cancel;
 
+            _terminal.PrepareForUiInput();
             var presenter = new TerminalKozuiPresenter(_terminal);
             presenter.Attach(_ui.Root);
 
@@ -45,17 +44,13 @@ namespace ZXMAK2.Host.SdlBackend.Views
                             return DlgResult.Cancel;
                         }
 
-                        if (ev.Kind != TerminalEventKind.KeyDown)
-                            continue;
-
-                        var key = TerminalKozuiPresenter.MapKey(ev.Key);
-                        if (key == KozuiInputKey.Escape)
+                        if (TerminalDialogInput.IsEscape(ev))
                         {
                             _ui.Cancel();
                             return _ui.DialogResult;
                         }
 
-                        presenter.RouteInput(KozuiInput.KeyDown(key));
+                        TerminalDialogInput.Route(presenter, ev);
                         if (closed)
                             break;
                     }

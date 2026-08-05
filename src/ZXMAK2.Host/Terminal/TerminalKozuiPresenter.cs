@@ -17,6 +17,7 @@ namespace ZXMAK2.Host.Terminal
         private static readonly TerminalColor Fg = TerminalColor.Rgb(230, 230, 230);
         private static readonly TerminalColor Accent = TerminalColor.Rgb(240, 220, 120);
         private static readonly TerminalColor SelectedBg = TerminalColor.Rgb(30, 100, 210);
+        private static readonly TerminalColor PressedBg = TerminalColor.Rgb(18, 60, 140);
         private static readonly TerminalColor Disabled = TerminalColor.Rgb(90, 95, 110);
         private static readonly TerminalColor BarBg = TerminalColor.Rgb(40, 45, 60);
         private static readonly TerminalColor BarFg = TerminalColor.Rgb(80, 160, 220);
@@ -32,6 +33,8 @@ namespace ZXMAK2.Host.Terminal
         private int _listScroll;
         private KozuiControl _activeRegion;
         private bool _needsInitialFocus;
+        private Button _pressedButton;
+        private bool _pressedHot;
 
         public TerminalKozuiPresenter(ITerminal terminal, int scale = 1)
         {
@@ -47,6 +50,7 @@ namespace ZXMAK2.Host.Terminal
             _listScroll = 0;
             _needsInitialFocus = true;
             _focusIndex = 0;
+            ClearButtonPress();
             RebuildFocusables();
         }
 
@@ -85,10 +89,22 @@ namespace ZXMAK2.Host.Terminal
 
         public bool RouteInput(KozuiInput input)
         {
-            if (_root == null || input.Kind != KozuiInputKind.KeyDown)
+            if (_root == null)
                 return false;
 
             RebuildFocusables();
+
+            if (input.Kind == KozuiInputKind.MouseDown)
+                return HandleMouseDown(input);
+            if (input.Kind == KozuiInputKind.MouseMove)
+                return HandleMouseMove(input);
+            if (input.Kind == KozuiInputKind.MouseUp)
+                return HandleMouseUp(input);
+            if (input.Kind == KozuiInputKind.MouseWheel)
+                return HandleMouseWheel(input);
+            if (input.Kind != KozuiInputKind.KeyDown)
+                return false;
+
             var focused = FocusedControl();
 
             if (focused is ListView listView && listView.Enabled)
@@ -146,6 +162,44 @@ namespace ZXMAK2.Host.Terminal
             return false;
         }
 
+        /// <summary>
+        /// Maps a terminal event to Kozui input when the presenter can handle it.
+        /// Escape/Quit stay with the host view.
+        /// </summary>
+        public static bool TryMapEvent(TerminalEvent ev, out KozuiInput input)
+        {
+            input = default;
+            switch (ev.Kind)
+            {
+                case TerminalEventKind.KeyDown:
+                {
+                    var key = MapKey(ev.Key);
+                    if (key == KozuiInputKey.None || key == KozuiInputKey.Escape)
+                        return false;
+                    input = KozuiInput.KeyDown(key);
+                    return true;
+                }
+                case TerminalEventKind.MouseDown:
+                    if (ev.Button != TerminalMouseButton.Left)
+                        return false;
+                    input = KozuiInput.MouseDown(ev.X, ev.Y, KozuiMouseButton.Left);
+                    return true;
+                case TerminalEventKind.MouseUp:
+                    if (ev.Button != TerminalMouseButton.Left)
+                        return false;
+                    input = KozuiInput.MouseUp(ev.X, ev.Y, KozuiMouseButton.Left);
+                    return true;
+                case TerminalEventKind.MouseMove:
+                    input = KozuiInput.MouseMove(ev.X, ev.Y);
+                    return true;
+                case TerminalEventKind.MouseWheel:
+                    input = KozuiInput.MouseWheel(ev.X, ev.Y, ev.WheelDelta);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static KozuiInputKey MapKey(TerminalKey key)
         {
             switch (key)
@@ -162,6 +216,172 @@ namespace ZXMAK2.Host.Terminal
                 default: return KozuiInputKey.None;
             }
         }
+
+        private bool HandleMouseDown(KozuiInput input)
+        {
+            ClearButtonPress();
+
+            PixelToCell(input.X, input.Y, out var cellX, out var cellY);
+            var hit = HitTestInteractive(_root, cellX, cellY);
+            if (hit == null || !hit.Enabled)
+                return false;
+
+            FocusControl(hit);
+
+            if (hit is Button button)
+            {
+                _pressedButton = button;
+                _pressedHot = true;
+                return true;
+            }
+
+            if (hit is CheckBox checkBox)
+            {
+                checkBox.Checked = !checkBox.Checked;
+                return true;
+            }
+
+            if (hit is TrackBar trackBar)
+            {
+                var bounds = trackBar.ArrangedBounds;
+                if (bounds.Width > 0)
+                {
+                    var t = (cellX - bounds.X + 0.5) / bounds.Width;
+                    t = Math.Max(0, Math.Min(1, t));
+                    var range = trackBar.Maximum - trackBar.Minimum;
+                    trackBar.Value = trackBar.Minimum + (int)Math.Round(t * range);
+                }
+                return true;
+            }
+
+            if (hit is ListView listView)
+            {
+                var content = InsetPanelContent(listView.ArrangedBounds);
+                if (content.Height > 0 && cellY >= content.Y && cellY < content.Y + content.Height)
+                {
+                    var row = cellY - content.Y;
+                    var index = _listScroll + row;
+                    if (index >= 0 && index < listView.Count)
+                        listView.SelectedIndex = index;
+                }
+                return true;
+            }
+
+            return true;
+        }
+
+        private bool HandleMouseMove(KozuiInput input)
+        {
+            if (_pressedButton == null)
+                return false;
+
+            PixelToCell(input.X, input.Y, out var cellX, out var cellY);
+            _pressedHot = ContainsCell(_pressedButton.ArrangedBounds, cellX, cellY)
+                          && _pressedButton.Enabled
+                          && _pressedButton.Visible;
+            return true;
+        }
+
+        private bool HandleMouseUp(KozuiInput input)
+        {
+            if (_pressedButton == null)
+                return false;
+
+            var button = _pressedButton;
+            PixelToCell(input.X, input.Y, out var cellX, out var cellY);
+            var releaseInside = ContainsCell(button.ArrangedBounds, cellX, cellY)
+                                && button.Enabled
+                                && button.Visible;
+            ClearButtonPress();
+
+            if (releaseInside)
+                button.Click(button, EventArgs.Empty);
+            return true;
+        }
+
+        private void ClearButtonPress()
+        {
+            _pressedButton = null;
+            _pressedHot = false;
+        }
+
+        private static bool ContainsCell(LayoutRect bounds, int cellX, int cellY)
+            => bounds.Width > 0
+               && bounds.Height > 0
+               && cellX >= bounds.X
+               && cellX < bounds.X + bounds.Width
+               && cellY >= bounds.Y
+               && cellY < bounds.Y + bounds.Height;
+
+        private bool HandleMouseWheel(KozuiInput input)
+        {
+            if (input.WheelDelta == 0)
+                return false;
+
+            PixelToCell(input.X, input.Y, out var cellX, out var cellY);
+            var hit = HitTestInteractive(_root, cellX, cellY) as ListView
+                      ?? FocusedControl() as ListView;
+            if (hit == null || !hit.Enabled || hit.Count <= 0)
+                return false;
+
+            FocusControl(hit);
+            var delta = input.WheelDelta > 0 ? -1 : 1;
+            hit.SelectedIndex = Math.Max(0, Math.Min(hit.Count - 1, hit.SelectedIndex + delta));
+            EnsureListVisible(hit, ListContentRows(hit));
+            return true;
+        }
+
+        private void FocusControl(KozuiControl control)
+        {
+            if (control == null)
+                return;
+            _needsInitialFocus = false;
+            var idx = _focusables.IndexOf(control);
+            if (idx >= 0)
+                _focusIndex = idx;
+        }
+
+        private void PixelToCell(int pixelX, int pixelY, out int cellX, out int cellY)
+        {
+            var cellW = TerminalFont.GlyphWidth * _scale;
+            var cellH = TerminalFont.GlyphHeight * _scale;
+            cellX = cellW > 0 ? pixelX / cellW : 0;
+            cellY = cellH > 0 ? pixelY / cellH : 0;
+        }
+
+        private static KozuiControl HitTestInteractive(KozuiControl control, int cellX, int cellY)
+        {
+            if (control == null || !control.Visible)
+                return null;
+
+            // Deepest-first so nested detail controls win over parent panels.
+            if (control is Panel panel)
+            {
+                for (var i = panel.Children.Count - 1; i >= 0; i--)
+                {
+                    var hit = HitTestInteractive(panel.Children[i], cellX, cellY);
+                    if (hit != null)
+                        return hit;
+                }
+            }
+            else if (control is Placeholder placeholder && placeholder.Content != null)
+            {
+                var hit = HitTestInteractive(placeholder.Content, cellX, cellY);
+                if (hit != null)
+                    return hit;
+            }
+
+            if (!IsInteractive(control) || !control.Enabled)
+                return null;
+
+            var b = control.ArrangedBounds;
+            if (cellX >= b.X && cellX < b.X + b.Width && cellY >= b.Y && cellY < b.Y + b.Height)
+                return control;
+            return null;
+        }
+
+        private static bool IsInteractive(KozuiControl control)
+            => control is Button || control is CheckBox || control is TrackBar || control is ListView;
 
         private static bool HandleTrackBarInput(TrackBar trackBar, KozuiInputKey key)
         {
@@ -306,6 +526,12 @@ namespace ZXMAK2.Host.Terminal
             // Tab order follows on-screen position (top→bottom, then left→right),
             // not construction / dock-child order.
             _focusables.Sort(CompareVisualTabOrder);
+
+            if (_pressedButton != null
+                && (!_pressedButton.Visible || !_pressedButton.Enabled || !_focusables.Contains(_pressedButton)))
+            {
+                ClearButtonPress();
+            }
 
             if (_needsInitialFocus)
             {
@@ -517,17 +743,26 @@ namespace ZXMAK2.Host.Terminal
                 return;
 
             var focused = ReferenceEquals(button, FocusedControl());
+            var pressed = ReferenceEquals(button, _pressedButton) && _pressedHot;
             var (px, py) = CellToPixel(bounds.X, bounds.Y);
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
 
-            if (focused)
+            if (pressed)
+                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, PressedBg);
+            else if (focused)
                 _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, SelectedBg);
 
             var label = button.Text ?? string.Empty;
-            var framed = focused ? $"> {label} <" : $"[ {label} ]";
+            string framed;
+            if (pressed)
+                framed = $"| {label} |";
+            else if (focused)
+                framed = $"> {label} <";
+            else
+                framed = $"[ {label} ]";
             framed = Truncate(framed, bounds.Width);
-            var color = !button.Enabled ? Disabled : focused ? Accent : Fg;
+            var color = !button.Enabled ? Disabled : (pressed || focused) ? Accent : Fg;
             _terminal.DrawText(px, py, framed, _scale, color);
         }
 

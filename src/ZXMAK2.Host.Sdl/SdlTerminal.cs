@@ -63,6 +63,14 @@ namespace ZXMAK2.Host.SdlBackend
         public override void Delay(int milliseconds)
             => _runtime.Sdl.Delay((uint)System.Math.Max(0, milliseconds));
 
+        public override void PrepareForUiInput()
+        {
+            if (!_runtime.IsReady)
+                return;
+            _runtime.Sdl.SetRelativeMouseMode(SdlBool.False);
+            _runtime.Sdl.ShowCursor(1);
+        }
+
         public override bool PollEvent(out TerminalEvent terminalEvent)
         {
             terminalEvent = default;
@@ -90,10 +98,68 @@ namespace ZXMAK2.Host.SdlBackend
                     case EventType.Keyup:
                         terminalEvent = TerminalEvent.KeyUp(MapKey(e.Key.Keysym));
                         return true;
+                    case EventType.Mousebuttondown:
+                    {
+                        ScaleMouseToRenderer(e.Button.X, e.Button.Y, out var mx, out var my);
+                        terminalEvent = TerminalEvent.MouseDown(mx, my, MapMouseButton(e.Button.Button));
+                        return true;
+                    }
+                    case EventType.Mousebuttonup:
+                    {
+                        ScaleMouseToRenderer(e.Button.X, e.Button.Y, out var mx, out var my);
+                        terminalEvent = TerminalEvent.MouseUp(mx, my, MapMouseButton(e.Button.Button));
+                        return true;
+                    }
+                    case EventType.Mousemotion:
+                    {
+                        ScaleMouseToRenderer(e.Motion.X, e.Motion.Y, out var mx, out var my);
+                        terminalEvent = TerminalEvent.MouseMove(mx, my);
+                        return true;
+                    }
+                    case EventType.Mousewheel:
+                    {
+                        int mx, my;
+                        _runtime.Sdl.GetMouseState(&mx, &my);
+                        ScaleMouseToRenderer(mx, my, out var rx, out var ry);
+                        // SDL wheel Y: positive away from user (up)
+                        terminalEvent = TerminalEvent.MouseWheel(rx, ry, e.Wheel.Y);
+                        return true;
+                    }
                 }
             }
 
             return false;
+        }
+
+        private void ScaleMouseToRenderer(int windowX, int windowY, out int rendererX, out int rendererY)
+        {
+            rendererX = windowX;
+            rendererY = windowY;
+            if (!_runtime.IsReady || _runtime.Window == null)
+                return;
+
+            int winW, winH;
+            _runtime.Sdl.GetWindowSize(_runtime.Window, &winW, &winH);
+            int outW = Width;
+            int outH = Height;
+            if (winW <= 0 || winH <= 0 || outW <= 0 || outH <= 0)
+                return;
+            if (winW == outW && winH == outH)
+                return;
+
+            rendererX = windowX * outW / winW;
+            rendererY = windowY * outH / winH;
+        }
+
+        private static TerminalMouseButton MapMouseButton(byte button)
+        {
+            switch (button)
+            {
+                case 1: return TerminalMouseButton.Left;
+                case 2: return TerminalMouseButton.Middle;
+                case 3: return TerminalMouseButton.Right;
+                default: return TerminalMouseButton.None;
+            }
         }
 
         private static TerminalKey MapKey(Keysym keySym)

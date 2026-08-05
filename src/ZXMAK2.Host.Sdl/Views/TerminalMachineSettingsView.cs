@@ -10,8 +10,6 @@ using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Terminal;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Host.WinForms.Lib.Layout;
-using ZXMAK2.Host.WinForms.Lib.Presenters;
-
 namespace ZXMAK2.Host.SdlBackend.Views
 {
     public sealed class TerminalMachineSettingsView : IMachineSettingsView
@@ -54,6 +52,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
             _closeRequested = false;
             _loopActive = true;
+            _terminal.PrepareForUiInput();
             var presenter = new TerminalKozuiPresenter(_terminal);
             presenter.Attach(_ui.Root);
 
@@ -69,17 +68,13 @@ namespace ZXMAK2.Host.SdlBackend.Views
                             break;
                         }
 
-                        if (ev.Kind != TerminalEventKind.KeyDown)
-                            continue;
-
-                        var key = TerminalKozuiPresenter.MapKey(ev.Key);
-                        if (key == KozuiInputKey.Escape)
+                        if (TerminalDialogInput.IsEscape(ev))
                         {
                             _ui.Cancel.Click(_ui.Cancel, EventArgs.Empty);
                             break;
                         }
 
-                        presenter.RouteInput(KozuiInput.KeyDown(key));
+                        TerminalDialogInput.Route(presenter, ev);
                     }
 
                     if (_closeRequested)
@@ -154,6 +149,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             root.Add(buttons);
             root.Add(list);
 
+            _terminal.PrepareForUiInput();
             var presenter = new TerminalKozuiPresenter(_terminal);
             presenter.Attach(root);
 
@@ -173,12 +169,9 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 {
                     if (ev.Kind == TerminalEventKind.Quit)
                         return null;
-                    if (ev.Kind != TerminalEventKind.KeyDown)
-                        continue;
-                    var key = TerminalKozuiPresenter.MapKey(ev.Key);
-                    if (key == KozuiInputKey.Escape)
+                    if (TerminalDialogInput.IsEscape(ev))
                         return null;
-                    presenter.RouteInput(KozuiInput.KeyDown(key));
+                    TerminalDialogInput.Route(presenter, ev);
                 }
 
                 presenter.MeasureArrangeFromTerminal();
