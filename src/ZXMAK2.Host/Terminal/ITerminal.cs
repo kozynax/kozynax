@@ -20,6 +20,11 @@ namespace ZXMAK2.Host.Terminal
         void Delay(int milliseconds);
 
         /// <summary>
+        /// Release relative/captured mouse so overlays can use absolute clicks.
+        /// </summary>
+        void PrepareForUiInput();
+
+        /// <summary>
         /// Poll one input/window event. Returns false when the queue is empty.
         /// </summary>
         bool PollEvent(out TerminalEvent terminalEvent);
