@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Silk.NET.SDL;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
+using ZXMAK2.Host.Terminal;
 
 namespace ZXMAK2.Host.SdlBackend.Services
 {
@@ -67,6 +68,14 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
     public sealed class SdlOpenFileDialog : IOpenFileDialog
     {
+        private readonly ITerminal _terminal;
+
+        public SdlOpenFileDialog(ITerminal terminal)
+        {
+            _terminal = terminal;
+            ReadOnlyChecked = true;
+        }
+
         public event CancelEventHandler FileOk;
         public string Title { get; set; }
         public string Filter { get; set; }
@@ -78,9 +87,14 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
         public DlgResult ShowDialog(object owner)
         {
-            // SDL shell has no native file dialog yet; load images via command-line args.
-            Console.WriteLine("Open file dialog is not available in SDL host. Pass a file path as an argument.");
-            return DlgResult.Cancel;
+            var picker = new FilePickerScreen(_terminal);
+            if (!picker.TryPickOpen(Title ?? "Open...", Filter, out var path))
+                return DlgResult.Cancel;
+
+            FileName = path;
+            var args = new CancelEventArgs();
+            FileOk?.Invoke(this, args);
+            return args.Cancel ? DlgResult.Cancel : DlgResult.OK;
         }
 
         public void Dispose() { }

@@ -7,6 +7,7 @@ using ZXMAK2.Host.Presentation;
 using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.SdlBackend;
 using ZXMAK2.Host.SdlBackend.Services;
+using ZXMAK2.Host.Terminal;
 
 namespace ZXMAK2
 {
@@ -33,8 +34,11 @@ namespace ZXMAK2
             var resolver = new ResolverSimple();
             var sdl = Silk.NET.SDL.Sdl.GetApi();
 
+            var runtime = new SdlRuntimeContext(sdl);
             resolver.RegisterInstance<IResolver>(resolver);
             resolver.RegisterInstance(sdl);
+            resolver.RegisterInstance(runtime);
+            resolver.RegisterType<ITerminal, SdlTerminal>(true);
             resolver.RegisterType<ISettingService, SdlSettingService>(true);
             resolver.RegisterType<IUserMessage, SdlUserMessage>();
             resolver.RegisterType<IUserQuery, SdlUserQuery>();

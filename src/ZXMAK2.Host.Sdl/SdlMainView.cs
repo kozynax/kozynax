@@ -107,6 +107,10 @@ namespace ZXMAK2.Host.SdlBackend
             _sdl.RenderClear(_renderer);
             _sdl.RenderPresent(_renderer);
 
+            var runtime = _resolver.Resolve<SdlRuntimeContext>();
+            runtime.Window = _window;
+            runtime.Renderer = _renderer;
+
             _uiThreadId = Thread.CurrentThread.ManagedThreadId;
             _video = new SdlVideo();
             _sound = new SdlSound(_sdl);
@@ -244,10 +248,14 @@ namespace ZXMAK2.Host.SdlBackend
                         _quit = true;
                         break;
                     case EventType.Keydown:
+                        if (HandleHotKey((KeyCode)e.Key.Keysym.Sym, true))
+                            break;
                         _keyboard.OnKeyEvent((KeyCode)e.Key.Keysym.Sym, true);
-                        HandleHotKey((KeyCode)e.Key.Keysym.Sym, true);
                         break;
                     case EventType.Keyup:
+                        // Drop host hotkey chords so they never stick in the Spectrum matrix.
+                        if (IsHostHotKey((KeyCode)e.Key.Keysym.Sym))
+                            break;
                         _keyboard.OnKeyEvent((KeyCode)e.Key.Keysym.Sym, false);
                         break;
                     case EventType.Mousemotion:
@@ -272,26 +280,59 @@ namespace ZXMAK2.Host.SdlBackend
             _joystick.Scan();
         }
 
-        private void HandleHotKey(KeyCode key, bool pressed)
+        private bool HandleHotKey(KeyCode key, bool pressed)
         {
             if (!pressed || DataContext == null)
-                return;
+                return false;
+
+            var mods = (Keymod)_sdl.GetModState();
+            var ctrl = (mods & (Keymod.Ctrl | Keymod.Lctrl | Keymod.Rctrl)) != 0;
+
+            // Ctrl+O - open file screen (never feed this chord to the emulated keyboard)
+            if (ctrl && key == KeyCode.KO)
+            {
+                _keyboard.Reset();
+                TryExecuteCommand("CommandFileOpen");
+                _keyboard.Reset();
+                return true;
+            }
 
             // F11 - fullscreen, Escape - exit fullscreen / quit, F5 - warm reset via commands when available
             if (key == KeyCode.KF11)
+            {
                 TryExecuteCommand("CommandViewFullScreen");
-            else if (key == KeyCode.KF5)
+                return true;
+            }
+            if (key == KeyCode.KF5)
+            {
                 TryExecuteCommand("CommandVmWarmReset");
-            else if (key == KeyCode.KF8)
+                return true;
+            }
+            if (key == KeyCode.KF8)
+            {
                 TryExecuteCommand("CommandVmPause");
-            else if (key == KeyCode.KEscape)
+                return true;
+            }
+            if (key == KeyCode.KEscape)
             {
                 var fs = DataContext.GetType().GetProperty("IsFullScreen");
                 if (fs != null && (bool)fs.GetValue(DataContext))
                     TryExecuteCommand("CommandViewFullScreen");
                 else
                     TryExecuteCommand("CommandFileExit");
+                return true;
             }
+
+            return false;
+        }
+
+        private bool IsHostHotKey(KeyCode key)
+        {
+            var mods = (Keymod)_sdl.GetModState();
+            var ctrl = (mods & (Keymod.Ctrl | Keymod.Lctrl | Keymod.Rctrl)) != 0;
+            if (ctrl && key == KeyCode.KO)
+                return true;
+            return key == KeyCode.KF11 || key == KeyCode.KF5 || key == KeyCode.KF8 || key == KeyCode.KEscape;
         }
 
         private void TryExecuteCommand(string propertyName)
@@ -398,6 +439,13 @@ namespace ZXMAK2.Host.SdlBackend
 
         private void CleanupSdl()
         {
+            var runtime = _resolver.TryResolve<SdlRuntimeContext>();
+            if (runtime != null)
+            {
+                runtime.Window = null;
+                runtime.Renderer = null;
+            }
+
             if (_texture != null)
             {
                 _sdl.DestroyTexture(_texture);
