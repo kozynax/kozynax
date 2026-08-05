@@ -49,6 +49,8 @@ namespace ZXMAK2
             resolver.RegisterType<IOpenFileDialog, SdlOpenFileDialog>();
             resolver.RegisterType<ISaveFileDialog, SdlSaveFileDialog>();
             resolver.RegisterType<IViewImplementation<ConfirmDialog>, TerminalConfirmDialogView>();
+            resolver.RegisterType<ITapeView, TerminalTapeView>();
+            resolver.RegisterType<IViewImplementation<TapeSettings>, TerminalTapeView>();
 
             resolver.RegisterType<IMainView, SdlMainView>();
             resolver.RegisterType<ILauncher, Launcher>(true);
@@ -56,7 +58,7 @@ namespace ZXMAK2
             resolver.RegisterType<IPsgChip, PsgChip>();
 
             // WinForms dialogs are unavailable in the SDL shell.
-            // Settings/debugger commands stay disabled until Kozui hosts are ported.
+            // ConfirmDialog + TapeSettings are hosted on Terminal via Kozui trees.
 
             // Ensure Wayland is chosen before any SDL_Init (SdlMainView also sets this).
             if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER"))

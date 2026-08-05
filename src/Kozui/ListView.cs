@@ -5,7 +5,15 @@ using System.Linq;
 
 namespace ZXMAK2.Host.WinForms.Lib
 {
-    public class ListView<T> : KozuiControl
+    /// <summary>Non-generic surface for presenters (item text + selection).</summary>
+    public abstract class ListView : KozuiControl
+    {
+        public abstract int Count { get; }
+        public abstract int SelectedIndex { get; set; }
+        public abstract string GetItemText(int index);
+    }
+
+    public class ListView<T> : ListView
     {
         public delegate void IndexChangeEventHandler(object sender, int index);
 
@@ -13,7 +21,7 @@ namespace ZXMAK2.Host.WinForms.Lib
 
         private int _selectedIndex = -1;
 
-        public int SelectedIndex
+        public override int SelectedIndex
         {
             get => _selectedIndex;
             set
@@ -25,6 +33,20 @@ namespace ZXMAK2.Host.WinForms.Lib
         }
 
         public BindingList<T> List { get; } = new BindingList<T>();
+
+        public Func<T, string> ItemTextSelector { get; set; }
+
+        public override int Count => List.Count;
+
+        public override string GetItemText(int index)
+        {
+            if (index < 0 || index >= List.Count)
+                return string.Empty;
+            var item = List[index];
+            if (ItemTextSelector != null)
+                return ItemTextSelector(item) ?? string.Empty;
+            return item?.ToString() ?? string.Empty;
+        }
 
         public void Reset(IEnumerable<T> items)
         {

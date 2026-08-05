@@ -154,16 +154,15 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
 
         private static LayoutSize MeasureDock(DockPanel dock, LayoutSize available)
         {
-            // Desired size is the available slot; children consume space during arrange.
+            // Measure children against the slot, but report content-sized desire so
+            // Top/Left docks don't swallow the entire available area.
             foreach (var child in dock.Children)
             {
                 if (!child.Visible)
                     continue;
                 Measure(child, available);
             }
-            return available.Width == int.MaxValue / 4 || available.Height == int.MaxValue / 4
-                ? AggregateDockDesired(dock)
-                : available;
+            return AggregateDockDesired(dock);
         }
 
         private static LayoutSize AggregateDockDesired(DockPanel dock)
@@ -311,8 +310,30 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                 return new LayoutSize(Math.Max(1, text.Length), 1);
             }
 
-            if (control is CheckBox)
-                return new LayoutSize(Math.Max(3, control.MinWidth), Math.Max(1, control.MinHeight));
+            if (control is CheckBox checkBox)
+            {
+                var text = checkBox.Text ?? string.Empty;
+                // "[x] text"
+                return new LayoutSize(Math.Max(4, text.Length + 4), 1);
+            }
+
+            if (control is ProgressBar)
+            {
+                return new LayoutSize(
+                    Math.Max(8, control.MinWidth > 0 ? control.MinWidth : 16),
+                    Math.Max(1, control.MinHeight > 0 ? control.MinHeight : 1));
+            }
+
+            if (control is ListView listView)
+            {
+                var rows = Math.Max(3, listView.Count > 0 ? listView.Count : 3);
+                if (available.Height < int.MaxValue / 8)
+                    rows = Math.Max(3, Math.Min(rows, available.Height));
+                var width = Math.Max(10, control.MinWidth > 0 ? control.MinWidth : 20);
+                if (available.Width < int.MaxValue / 8)
+                    width = Math.Max(width, available.Width);
+                return new LayoutSize(width, Math.Max(control.MinHeight, rows));
+            }
 
             return new LayoutSize(
                 Math.Max(1, control.MinWidth),
