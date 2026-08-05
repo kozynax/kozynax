@@ -262,7 +262,12 @@ namespace ZXMAK2.Host.Terminal
                     var row = cellY - content.Y;
                     var index = _listScroll + row;
                     if (index >= 0 && index < listView.Count)
+                    {
+                        var alreadySelected = listView.SelectedIndex == index;
                         listView.SelectedIndex = index;
+                        if (listView.ActivateOnClick || alreadySelected)
+                            listView.ActivateItem();
+                    }
                 }
                 return true;
             }
@@ -470,43 +475,8 @@ namespace ZXMAK2.Host.Terminal
                 return;
             }
 
-            if (focused is ListView && focused.Enabled)
-            {
-                // Double-click equivalent: play current block
-                var play = FindButtonByText("Play") ?? FindButtonByText("Stop");
-                if (play != null && play.Enabled)
-                    play.Click(play, EventArgs.Empty);
-            }
-        }
-
-        private Button FindButtonByText(string text)
-        {
-            foreach (var c in _focusables)
-            {
-                if (c is Button b && string.Equals(b.Text, text, StringComparison.Ordinal))
-                    return b;
-            }
-            return FindButtonInTree(_root, text);
-        }
-
-        private static Button FindButtonInTree(KozuiControl control, string text)
-        {
-            if (control is Button button && string.Equals(button.Text, text, StringComparison.Ordinal))
-                return button;
-            if (control is Panel panel)
-            {
-                foreach (var child in panel.Children)
-                {
-                    var found = FindButtonInTree(child, text);
-                    if (found != null)
-                        return found;
-                }
-            }
-            else if (control is Placeholder placeholder && placeholder.Content != null)
-            {
-                return FindButtonInTree(placeholder.Content, text);
-            }
-            return null;
+            if (focused is ListView list && list.Enabled)
+                list.ActivateItem();
         }
 
         private KozuiControl FocusedControl()

@@ -8,10 +8,12 @@ using ManualResetEvent = System.Threading.ManualResetEvent;
 using SendOrPostCallback = System.Threading.SendOrPostCallback;
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine.Interfaces;
-using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
+using ZXMAK2.Host.Presentation;
 using ZXMAK2.Host.Presentation.Interfaces;
+using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Services;
+using ZXMAK2.Host.Terminal;
 using ZXMAK2.Mvvm;
 using Silk.NET.Maths;
 using Event = Silk.NET.SDL.Event;
@@ -315,33 +317,11 @@ namespace ZXMAK2.Host.SdlBackend
                 return true;
             }
 
-            // Ctrl+H - pilot Kozui ConfirmDialog on Terminal
-            if (ctrl && key == KeyCode.KH)
+            // F9 - main menu (Kozui on Terminal)
+            if (key == KeyCode.KF9)
             {
                 _keyboard.Reset();
-                var query = Locator.Resolve<IUserQuery>();
-                query?.Show("Kozui layout pilot: Tab/arrows focus, Enter activates, Esc cancels.",
-                    "ConfirmDialog",
-                    DlgButtonSet.OKCancel,
-                    DlgIcon.Information);
-                _keyboard.Reset();
-                return true;
-            }
-
-            // Ctrl+T - Tape Settings (Kozui tree on Terminal)
-            if (ctrl && key == KeyCode.KT)
-            {
-                _keyboard.Reset();
-                TryExecuteUiCommand("Tape");
-                _keyboard.Reset();
-                return true;
-            }
-
-            // Ctrl+M - Machine Settings
-            if (ctrl && key == KeyCode.KM)
-            {
-                _keyboard.Reset();
-                TryExecuteCommand("CommandVmSettings");
+                ShowMainMenu();
                 _keyboard.Reset();
                 return true;
             }
@@ -379,9 +359,22 @@ namespace ZXMAK2.Host.SdlBackend
         {
             var mods = (Keymod)_sdl.GetModState();
             var ctrl = (mods & (Keymod.Ctrl | Keymod.Lctrl | Keymod.Rctrl)) != 0;
-            if (ctrl && (key == KeyCode.KO || key == KeyCode.KH || key == KeyCode.KT || key == KeyCode.KM))
+            if (ctrl && key == KeyCode.KO)
                 return true;
-            return key == KeyCode.KF11 || key == KeyCode.KF5 || key == KeyCode.KF8 || key == KeyCode.KEscape;
+            return key == KeyCode.KF9
+                   || key == KeyCode.KF11
+                   || key == KeyCode.KF5
+                   || key == KeyCode.KF8
+                   || key == KeyCode.KEscape;
+        }
+
+        private void ShowMainMenu()
+        {
+            var vm = DataContext as MainViewModel;
+            if (vm == null)
+                return;
+            var terminal = _resolver.Resolve<ITerminal>();
+            TerminalMainMenuView.Show(terminal, vm, _commands, this);
         }
 
         private void TryExecuteCommand(string propertyName)
@@ -390,20 +383,6 @@ namespace ZXMAK2.Host.SdlBackend
             var command = prop?.GetValue(DataContext) as ICommand;
             if (command != null && command.CanExecute(this))
                 command.Execute(this);
-        }
-
-        private void TryExecuteUiCommand(string commandText)
-        {
-            foreach (var command in _commands)
-            {
-                if (command != null
-                    && string.Equals(command.Text, commandText, StringComparison.OrdinalIgnoreCase)
-                    && command.CanExecute(this))
-                {
-                    command.Execute(this);
-                    return;
-                }
-            }
         }
 
         private void PresentFrame()
