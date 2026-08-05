@@ -117,8 +117,13 @@ namespace ZXMAK2.Host.SdlBackend
             _sound = new SdlSound(_sdl);
             _keyboard = new SdlKeyboard();
             _mouse = new SdlMouse(_sdl);
+            runtime.PrepareUiInput = _mouse.SuspendForUi;
+            runtime.EndUiInput = _mouse.ResumeAfterUi;
             _joystick = new SdlJoystick(_sdl);
             _host = new HostService(_video, _sound, _keyboard, _mouse, _joystick);
+            // Kempston/etc. need relative deltas; WinForms captures on double-click,
+            // SDL captures while the window is focused.
+            _mouse.Capture();
 
             _running = true;
             ViewOpened?.Invoke(this, EventArgs.Empty);
@@ -263,14 +268,26 @@ namespace ZXMAK2.Host.SdlBackend
                         _mouse.OnMouseMotion(e.Motion.Xrel, e.Motion.Yrel);
                         break;
                     case EventType.Mousebuttondown:
+                        if (!_mouse.IsCaptured)
+                            _mouse.Capture();
                         _mouse.OnMouseButton(e.Button.Button, true);
                         break;
                     case EventType.Mousebuttonup:
                         _mouse.OnMouseButton(e.Button.Button, false);
                         break;
                     case EventType.Windowevent:
-                        if ((WindowEventID)e.Window.Event == WindowEventID.Close)
-                            _quit = true;
+                        switch ((WindowEventID)e.Window.Event)
+                        {
+                            case WindowEventID.Close:
+                                _quit = true;
+                                break;
+                            case WindowEventID.FocusGained:
+                                _mouse.Capture();
+                                break;
+                            case WindowEventID.FocusLost:
+                                _mouse.Uncapture();
+                                break;
+                        }
                         break;
                 }
             }
