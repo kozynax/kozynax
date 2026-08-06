@@ -41,6 +41,7 @@ namespace ZXMAK2.Host.SdlBackend
         private bool _applyingRenderSize;
 
         private SdlVideo _video;
+        private SdlIconOverlay _icons;
         private SdlSound _sound;
         private SdlKeyboard _keyboard;
         private SdlMouse _mouse;
@@ -119,6 +120,7 @@ namespace ZXMAK2.Host.SdlBackend
 
             _uiThreadId = Thread.CurrentThread.ManagedThreadId;
             _video = new SdlVideo();
+            _icons = new SdlIconOverlay(_sdl);
             _sound = new SdlSound(_sdl);
             _keyboard = new SdlKeyboard();
             _mouse = new SdlMouse(_sdl);
@@ -529,6 +531,7 @@ namespace ZXMAK2.Host.SdlBackend
                 _sdl.GetRendererOutputSize(_renderer, &winW, &winH);
                 var dst = ComputeDestination(GetRenderScaleMode(), winW, winH, _frameWidth, _frameHeight, _frameRatio);
                 _sdl.RenderCopy(_renderer, _texture, null, &dst);
+                DrawOsdIcons(winW, winH);
             }
 
             // Soft dim so menu text stays readable over moving video.
@@ -557,11 +560,30 @@ namespace ZXMAK2.Host.SdlBackend
             _sdl.GetRendererOutputSize(_renderer, &winW, &winH);
             var dst = ComputeDestination(GetRenderScaleMode(), winW, winH, _frameWidth, _frameHeight, _frameRatio);
             _sdl.RenderCopy(_renderer, _texture, null, &dst);
+            DrawOsdIcons(winW, winH);
             _sdl.RenderPresent(_renderer);
 
             // Cap present rate; re-blitting the last texture avoids black flicker
             // when the UI loop outruns the ~50 Hz emulator.
             _sdl.Delay(1);
+        }
+
+        private void DrawOsdIcons(int winW, int winH)
+        {
+            if (_icons == null || _video == null || !IsDisplayIconEnabled())
+                return;
+            _icons.Draw(_renderer, winW, winH, _video.Icons);
+        }
+
+        private bool IsDisplayIconEnabled()
+        {
+            var settings = _resolver.TryResolve<ISettingService>();
+            if (settings != null)
+                return settings.RenderDisplayIcon;
+
+            var prop = DataContext?.GetType().GetProperty("CommandViewDisplayIcon");
+            var command = prop?.GetValue(DataContext) as ICommand;
+            return command == null || command.Checked;
         }
 
         /// <returns>True when a new frame was consumed.</returns>
@@ -677,6 +699,8 @@ namespace ZXMAK2.Host.SdlBackend
             _host?.Dispose();
             _host = null;
             // HostService does not dispose video.
+            _icons?.Dispose();
+            _icons = null;
             _video?.Dispose();
             _video = null;
             _sound = null;

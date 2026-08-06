@@ -7,6 +7,8 @@ namespace ZXMAK2.Host.SdlBackend
 {
     public sealed class SdlVideo : IHostVideo
     {
+        private static readonly IIconDescriptor[] NoIcons = Array.Empty<IIconDescriptor>();
+
         private readonly object _sync = new object();
         private readonly AutoResetEvent _frameEvent = new AutoResetEvent(false);
         private readonly AutoResetEvent _cancelEvent = new AutoResetEvent(false);
@@ -15,11 +17,24 @@ namespace ZXMAK2.Host.SdlBackend
         private int[] _frontBuffer;
         private Size _size;
         private float _ratio = 1f;
+        private IIconDescriptor[] _icons = NoIcons;
         private bool _hasFrame;
         private bool _disposed;
 
         public bool IsSyncSupported => true;
         public bool IsSynchronized { get; set; }
+
+        /// <summary>
+        /// Latest icon descriptors from the emu (shared instances; read <see cref="IIconDescriptor.Visible"/> live).
+        /// </summary>
+        public IIconDescriptor[] Icons
+        {
+            get
+            {
+                lock (_sync)
+                    return _icons ?? NoIcons;
+            }
+        }
 
         public void PushFrame(IFrameInfo info, IFrameVideo frame)
         {
@@ -37,6 +52,7 @@ namespace ZXMAK2.Host.SdlBackend
                 Array.Copy(src, _backBuffer, length);
                 _size = frame.Size;
                 _ratio = frame.Ratio;
+                _icons = info.Icons ?? NoIcons;
                 _hasFrame = true;
             }
 
