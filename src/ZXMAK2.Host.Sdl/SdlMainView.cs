@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using Silk.NET.SDL;
 using Thread = System.Threading.Thread;
 using ManualResetEvent = System.Threading.ManualResetEvent;
@@ -11,6 +12,7 @@ using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Presentation;
 using ZXMAK2.Host.Presentation.Interfaces;
+using RenderScaleMode = ZXMAK2.Host.Presentation.Interfaces.ScaleMode;
 using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Services;
 using ZXMAK2.Host.Terminal;
@@ -36,6 +38,7 @@ namespace ZXMAK2.Host.SdlBackend
         private int _frameHeight;
         private float _frameRatio = 1f;
         private bool _hasTexture;
+        private bool _applyingRenderSize;
 
         private SdlVideo _video;
         private SdlSound _sound;
@@ -229,6 +232,8 @@ namespace ZXMAK2.Host.SdlBackend
                 ApplyTitle();
             if (e.PropertyName == null || e.PropertyName == "IsFullScreen")
                 ApplyFullScreen();
+            if (e.PropertyName == null || e.PropertyName == "RenderSize")
+                ApplyRenderSize();
         }
 
         private void ApplyTitle()
@@ -250,6 +255,62 @@ namespace ZXMAK2.Host.SdlBackend
                 return;
             var full = (bool)prop.GetValue(DataContext);
             _sdl.SetWindowFullscreen(_window, full ? (uint)WindowFlags.FullscreenDesktop : 0);
+            // Size commands set RenderSize then clear fullscreen — apply size once windowed.
+            if (!full)
+                ApplyRenderSize();
+        }
+
+        private void ApplyRenderSize()
+        {
+            if (_window == null || DataContext == null)
+                return;
+
+            var fsProp = DataContext.GetType().GetProperty("IsFullScreen");
+            if (fsProp != null && (bool)fsProp.GetValue(DataContext))
+                return;
+
+            var prop = DataContext.GetType().GetProperty("RenderSize");
+            if (prop == null)
+                return;
+
+            var size = prop.GetValue(DataContext);
+            if (!(size is Size renderSize) || renderSize.Width <= 0 || renderSize.Height <= 0)
+                return;
+
+            _applyingRenderSize = true;
+            try
+            {
+                _sdl.SetWindowSize(_window, renderSize.Width, renderSize.Height);
+            }
+            finally
+            {
+                _applyingRenderSize = false;
+            }
+        }
+
+        private void SyncWindowSizeToViewModel()
+        {
+            if (_applyingRenderSize || _window == null || DataContext == null)
+                return;
+
+            var fsProp = DataContext.GetType().GetProperty("IsFullScreen");
+            if (fsProp != null && (bool)fsProp.GetValue(DataContext))
+                return;
+
+            var prop = DataContext.GetType().GetProperty("RenderSize");
+            if (prop == null || !prop.CanWrite)
+                return;
+
+            int w, h;
+            _sdl.GetWindowSize(_window, &w, &h);
+            if (w <= 0 || h <= 0)
+                return;
+
+            var current = prop.GetValue(DataContext);
+            if (current is Size existing && existing.Width == w && existing.Height == h)
+                return;
+
+            prop.SetValue(DataContext, new Size(w, h));
         }
 
         private void PumpInvokes()
@@ -327,6 +388,10 @@ namespace ZXMAK2.Host.SdlBackend
                                 break;
                             case WindowEventID.FocusLost:
                                 _mouse.Uncapture();
+                                break;
+                            case WindowEventID.SizeChanged:
+                            case WindowEventID.Resized:
+                                SyncWindowSizeToViewModel();
                                 break;
                         }
                         break;
@@ -460,13 +525,21 @@ namespace ZXMAK2.Host.SdlBackend
 
             int winW, winH;
             _sdl.GetRendererOutputSize(_renderer, &winW, &winH);
-            var dst = ComputeDestination(winW, winH, _frameWidth, _frameHeight, _frameRatio);
+            var dst = ComputeDestination(GetRenderScaleMode(), winW, winH, _frameWidth, _frameHeight, _frameRatio);
             _sdl.RenderCopy(_renderer, _texture, null, &dst);
             _sdl.RenderPresent(_renderer);
 
             // Cap present rate; re-blitting the last texture avoids black flicker
             // when the UI loop outruns the ~50 Hz emulator.
             _sdl.Delay(1);
+        }
+
+        private RenderScaleMode GetRenderScaleMode()
+        {
+            var prop = DataContext?.GetType().GetProperty("RenderScaleMode");
+            if (prop != null && prop.GetValue(DataContext) is RenderScaleMode mode)
+                return mode;
+            return RenderScaleMode.KeepProportion;
         }
 
         private void EnsureTexture(int width, int height)
@@ -493,21 +566,57 @@ namespace ZXMAK2.Host.SdlBackend
             _textureHeight = height;
         }
 
-        private static Silk.NET.Maths.Rectangle<int> ComputeDestination(int winW, int winH, int frameW, int frameH, float ratio)
+        /// <summary>
+        /// Mirrors WinForms <c>ScaleHelper.GetDestinationRect</c> (ratio-normalized frame size).
+        /// </summary>
+        private static Silk.NET.Maths.Rectangle<int> ComputeDestination(
+            RenderScaleMode scaleMode,
+            int winW,
+            int winH,
+            int frameW,
+            int frameH,
+            float ratio)
         {
             if (frameW <= 0 || frameH <= 0)
                 return new Silk.NET.Maths.Rectangle<int>(0, 0, winW, winH);
 
-            var aspect = (frameW * Math.Max(ratio, 0.01f)) / frameH;
-            var destH = winH;
-            var destW = (int)(destH * aspect);
-            if (destW > winW)
+            var dstW = (float)frameW;
+            var dstH = frameH * Math.Max(ratio, 0.01f);
+            var rx = winW / dstW;
+            var ry = winH / dstH;
+
+            switch (scaleMode)
             {
-                destW = winW;
-                destH = (int)(destW / aspect);
+                case RenderScaleMode.SquarePixelSize:
+                {
+                    var s = Math.Min(Math.Floor(rx), Math.Floor(ry));
+                    s = s < 1 ? 1 : s;
+                    rx = ry = (float)s;
+                    break;
+                }
+                case RenderScaleMode.FixedPixelSize:
+                    rx = (float)Math.Floor(rx);
+                    ry = (float)Math.Floor(ry);
+                    if (rx < 1)
+                        rx = 1;
+                    if (ry < 1)
+                        ry = 1;
+                    break;
+                case RenderScaleMode.KeepProportion:
+                    if (rx > ry)
+                        rx = (winW * ry / rx) / dstW;
+                    else if (rx < ry)
+                        ry = (winH * rx / ry) / dstH;
+                    break;
+                case RenderScaleMode.Stretch:
+                    break;
             }
 
-            return new Silk.NET.Maths.Rectangle<int>((winW - destW) / 2, (winH - destH) / 2, destW, destH);
+            var outW = (int)Math.Floor(dstW * rx);
+            var outH = (int)Math.Floor(dstH * ry);
+            var x = (winW - outW) / 2;
+            var y = (winH - outH) / 2;
+            return new Silk.NET.Maths.Rectangle<int>(x, y, outW, outH);
         }
 
         private void CleanupHost()
