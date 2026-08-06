@@ -114,7 +114,14 @@ namespace Kozynax.UI
             if (node.Command == null)
                 return;
 
-            var param = node.Parameter ?? _commandParameter;
+            object param;
+            if (node.Parameter != null)
+                param = node.Parameter;
+            else if (node.Command.CanExecute(null))
+                param = null;
+            else
+                param = _commandParameter;
+
             if (!node.Command.CanExecute(param))
                 return;
 

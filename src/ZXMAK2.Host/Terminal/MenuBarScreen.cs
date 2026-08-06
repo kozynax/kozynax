@@ -314,7 +314,7 @@ namespace ZXMAK2.Host.Terminal
             if (node?.Command == null)
                 return null;
 
-            var param = node.Parameter ?? _commandParameter;
+            var param = ResolveParameter(node);
             if (!node.Command.CanExecute(param))
                 return null;
 
@@ -594,8 +594,20 @@ namespace ZXMAK2.Host.Terminal
         {
             if (node?.Command == null)
                 return node != null && node.HasChildren;
-            var param = node.Parameter ?? _commandParameter;
-            return node.Command.CanExecute(param);
+            return node.Command.CanExecute(ResolveParameter(node));
+        }
+
+        /// <summary>
+        /// Toggle commands (Show Icons, Smooth, …) only accept null/bool.
+        /// Do not fall back to the host view for those — that greys them out.
+        /// </summary>
+        private object ResolveParameter(MenuNode node)
+        {
+            if (node.Parameter != null)
+                return node.Parameter;
+            if (node.Command != null && node.Command.CanExecute(null))
+                return null;
+            return _commandParameter;
         }
 
         private static string FormatItem(MenuNode node)
