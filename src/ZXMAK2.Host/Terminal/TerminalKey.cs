@@ -16,6 +16,7 @@ namespace ZXMAK2.Host.Terminal
         PageUp,
         PageDown,
         Tab,
+        F9,
         // Letters / digits reserved for future Kozui text input
         A, B, C, D, E, F, G, H, I, J, K, L, M,
         N, O, P, Q, R, S, T, U, V, W, X, Y, Z,

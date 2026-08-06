@@ -348,7 +348,7 @@ namespace ZXMAK2.Host.SdlBackend
                 return true;
             }
 
-            // F9 - main menu (Kozui on Terminal)
+            // F9 - horizontal menu bar on Terminal
             if (key == KeyCode.KF9)
             {
                 _keyboard.Reset();
@@ -407,7 +407,10 @@ namespace ZXMAK2.Host.SdlBackend
             if (vm == null)
                 return;
             var terminal = _resolver.Resolve<ITerminal>();
-            TerminalMainMenuView.Show(terminal, vm, _commands, this, () => _quit);
+            if (terminal is StdioTerminal)
+                TerminalMainMenuView.Show(terminal, vm, _commands, this, () => _quit);
+            else
+                SdlMenuBarView.Show(terminal, vm, _commands, this, () => _quit);
         }
 
         private void TryExecuteCommand(string propertyName)
