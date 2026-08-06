@@ -27,6 +27,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 return DlgResult.Cancel;
 
             _terminal.PrepareForUiInput();
+            _terminal.CaptureBackdrop();
             var presenter = new TerminalKozuiPresenter(_terminal);
             presenter.Attach(_ui.Root);
 
@@ -64,6 +65,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             finally
             {
                 _ui.CloseRequested -= onClose;
+                _terminal.ReleaseBackdrop();
                 _terminal.EndUiInput();
             }
         }

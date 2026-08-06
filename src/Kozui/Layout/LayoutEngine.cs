@@ -353,6 +353,13 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                 return new LayoutSize(Math.Max(1, text.Length), 1);
             }
 
+            if (control is TextBox textBox)
+            {
+                return new LayoutSize(
+                    Math.Max(8, textBox.MinWidth > 0 ? textBox.MinWidth : 16),
+                    1);
+            }
+
             if (control is CheckBox checkBox)
             {
                 var text = checkBox.Text ?? string.Empty;

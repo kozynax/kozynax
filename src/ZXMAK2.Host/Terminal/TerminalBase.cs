@@ -14,6 +14,9 @@ namespace ZXMAK2.Host.Terminal
         public abstract void FillRect(int x, int y, int width, int height, TerminalColor color);
         public abstract void Present();
         public abstract void Delay(int milliseconds);
+        public virtual void CaptureBackdrop() { }
+        public virtual void ReleaseBackdrop() { }
+        public virtual bool HasBackdrop => false;
         public virtual void PrepareForUiInput() { }
         public virtual void EndUiInput() { }
         public abstract bool PollEvent(out TerminalEvent terminalEvent);

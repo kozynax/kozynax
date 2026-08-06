@@ -10,6 +10,9 @@ namespace ZXMAK2.Host.SdlBackend
     public sealed unsafe class SdlTerminal : TerminalBase
     {
         private readonly SdlRuntimeContext _runtime;
+        private Texture* _backdrop;
+        private int _backdropW;
+        private int _backdropH;
 
         public SdlTerminal(SdlRuntimeContext runtime)
         {
@@ -17,6 +20,8 @@ namespace ZXMAK2.Host.SdlBackend
         }
 
         public override bool IsAvailable => _runtime.IsReady;
+
+        public override bool HasBackdrop => _backdrop != null;
 
         public override int Width
         {
@@ -42,9 +47,76 @@ namespace ZXMAK2.Host.SdlBackend
             }
         }
 
+        public override void CaptureBackdrop()
+        {
+            if (!_runtime.IsReady)
+                return;
+
+            ReleaseBackdrop();
+            var w = Width;
+            var h = Height;
+            if (w <= 0 || h <= 0)
+                return;
+
+            var sdl = _runtime.Sdl;
+            var pixels = new byte[w * h * 4];
+            fixed (byte* pPixels = pixels)
+            {
+                if (sdl.RenderReadPixels(
+                        _runtime.Renderer,
+                        null,
+                        Sdl.PixelformatArgb8888,
+                        pPixels,
+                        w * 4) != 0)
+                {
+                    return;
+                }
+
+                _backdrop = sdl.CreateTexture(
+                    _runtime.Renderer,
+                    Sdl.PixelformatArgb8888,
+                    (int)TextureAccess.Static,
+                    w,
+                    h);
+                if (_backdrop == null)
+                    return;
+
+                sdl.UpdateTexture(_backdrop, null, pPixels, w * 4);
+                _backdropW = w;
+                _backdropH = h;
+            }
+        }
+
+        public override void ReleaseBackdrop()
+        {
+            if (_backdrop == null || !_runtime.IsReady)
+            {
+                _backdrop = null;
+                return;
+            }
+            _runtime.Sdl.DestroyTexture(_backdrop);
+            _backdrop = null;
+            _backdropW = 0;
+            _backdropH = 0;
+        }
+
         public override void Clear(TerminalColor color)
         {
             var sdl = _runtime.Sdl;
+            if (_backdrop != null)
+            {
+                // Restore previous frame, then dim it for a modal look.
+                var dst = new Silk.NET.Maths.Rectangle<int>(0, 0, Width, Height);
+                var src = new Silk.NET.Maths.Rectangle<int>(0, 0, _backdropW, _backdropH);
+                sdl.RenderCopy(_runtime.Renderer, _backdrop, &src, &dst);
+                sdl.SetRenderDrawBlendMode(_runtime.Renderer, BlendMode.Blend);
+                sdl.SetRenderDrawColor(_runtime.Renderer, 0, 0, 0, 160);
+                var dim = new Silk.NET.Maths.Rectangle<int>(0, 0, Width, Height);
+                sdl.RenderFillRect(_runtime.Renderer, &dim);
+                sdl.SetRenderDrawBlendMode(_runtime.Renderer, BlendMode.None);
+                return;
+            }
+
             sdl.SetRenderDrawColor(_runtime.Renderer, color.R, color.G, color.B, color.A);
             sdl.RenderClear(_runtime.Renderer);
         }
@@ -101,8 +173,15 @@ namespace ZXMAK2.Host.SdlBackend
                         }
                         break;
                     case EventType.Keydown:
-                        terminalEvent = TerminalEvent.KeyDown(MapKey(e.Key.Keysym));
+                    {
+                        var key = MapKey(e.Key.Keysym);
+                        var ch = '\0';
+                        var sym = (int)e.Key.Keysym.Sym;
+                        if (sym >= 32 && sym < 127)
+                            ch = (char)sym;
+                        terminalEvent = TerminalEvent.KeyDown(key, ch);
                         return true;
+                    }
                     case EventType.Keyup:
                         terminalEvent = TerminalEvent.KeyUp(MapKey(e.Key.Keysym));
                         return true;

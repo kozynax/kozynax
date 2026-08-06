@@ -20,6 +20,18 @@ namespace ZXMAK2.Host.Terminal
         void Delay(int milliseconds);
 
         /// <summary>
+        /// Snapshot the current surface so a nested modal can draw over it
+        /// instead of wiping the screen.
+        /// </summary>
+        void CaptureBackdrop();
+
+        /// <summary>Drop the snapshot from <see cref="CaptureBackdrop"/>.</summary>
+        void ReleaseBackdrop();
+
+        /// <summary>True while a backdrop snapshot is active.</summary>
+        bool HasBackdrop { get; }
+
+        /// <summary>
         /// Release relative/captured mouse so overlays can use absolute clicks.
         /// </summary>
         void PrepareForUiInput();

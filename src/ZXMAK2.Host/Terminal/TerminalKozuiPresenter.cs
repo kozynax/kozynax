@@ -107,6 +107,20 @@ namespace ZXMAK2.Host.Terminal
 
             var focused = FocusedControl();
 
+            if (focused is TextBox textBox && textBox.Enabled)
+            {
+                if (input.Char != '\0')
+                {
+                    textBox.InsertChar(input.Char);
+                    return true;
+                }
+                if (input.Key == KozuiInputKey.Backspace)
+                {
+                    textBox.Backspace();
+                    return true;
+                }
+            }
+
             if (focused is ListView listView && listView.Enabled)
             {
                 if (HandleListInput(listView, input.Key))
@@ -125,34 +139,36 @@ namespace ZXMAK2.Host.Terminal
                     MoveFocus(1);
                     return true;
                 case KozuiInputKey.Right:
-                    if (!(focused is ListView) && !(focused is TrackBar))
+                    if (!(focused is ListView) && !(focused is TrackBar) && !(focused is TextBox))
                     {
                         MoveFocus(1);
                         return true;
                     }
                     break;
                 case KozuiInputKey.Left:
-                    if (!(focused is ListView) && !(focused is TrackBar))
+                    if (!(focused is ListView) && !(focused is TrackBar) && !(focused is TextBox))
                     {
                         MoveFocus(-1);
                         return true;
                     }
                     break;
                 case KozuiInputKey.Down:
-                    if (!(focused is ListView))
+                    if (!(focused is ListView) && !(focused is TextBox))
                     {
                         MoveFocus(1);
                         return true;
                     }
                     break;
                 case KozuiInputKey.Up:
-                    if (!(focused is ListView))
+                    if (!(focused is ListView) && !(focused is TextBox))
                     {
                         MoveFocus(-1);
                         return true;
                     }
                     break;
                 case KozuiInputKey.Enter:
+                    if (focused is TextBox)
+                        return false;
                     ActivateFocused();
                     return true;
                 case KozuiInputKey.Escape:
@@ -173,6 +189,11 @@ namespace ZXMAK2.Host.Terminal
             {
                 case TerminalEventKind.KeyDown:
                 {
+                    if (ev.Char != '\0' && !char.IsControl(ev.Char))
+                    {
+                        input = KozuiInput.TextInput(ev.Char);
+                        return true;
+                    }
                     var key = MapKey(ev.Key);
                     if (key == KozuiInputKey.None || key == KozuiInputKey.Escape)
                         return false;
@@ -207,6 +228,7 @@ namespace ZXMAK2.Host.Terminal
                 case TerminalKey.Escape: return KozuiInputKey.Escape;
                 case TerminalKey.Enter: return KozuiInputKey.Enter;
                 case TerminalKey.Tab: return KozuiInputKey.Tab;
+                case TerminalKey.Backspace: return KozuiInputKey.Backspace;
                 case TerminalKey.Left: return KozuiInputKey.Left;
                 case TerminalKey.Right: return KozuiInputKey.Right;
                 case TerminalKey.Up: return KozuiInputKey.Up;
@@ -386,7 +408,7 @@ namespace ZXMAK2.Host.Terminal
         }
 
         private static bool IsInteractive(KozuiControl control)
-            => control is Button || control is CheckBox || control is TrackBar || control is ListView;
+            => control is Button || control is CheckBox || control is TrackBar || control is ListView || control is TextBox;
 
         private static bool HandleTrackBarInput(TrackBar trackBar, KozuiInputKey key)
         {
@@ -509,8 +531,14 @@ namespace ZXMAK2.Host.Terminal
                 // focus toolbar buttons. Wait until layout exists, then prefer a list.
                 if (_focusables.Exists(c => c.ArrangedBounds.Width > 0 && c.ArrangedBounds.Height > 0))
                 {
+                    var textIndex = _focusables.FindIndex(c => c is TextBox);
                     var listIndex = _focusables.FindIndex(c => c is ListView);
-                    _focusIndex = listIndex >= 0 ? listIndex : 0;
+                    if (textIndex >= 0)
+                        _focusIndex = textIndex;
+                    else if (listIndex >= 0)
+                        _focusIndex = listIndex;
+                    else
+                        _focusIndex = 0;
                     _needsInitialFocus = false;
                 }
                 else
@@ -560,6 +588,8 @@ namespace ZXMAK2.Host.Terminal
                 list.Add(trackBar);
             else if (control is ListView listView && listView.Enabled)
                 list.Add(listView);
+            else if (control is TextBox textBox && textBox.Enabled)
+                list.Add(textBox);
 
             if (control is Panel panel)
             {
@@ -650,6 +680,12 @@ namespace ZXMAK2.Host.Terminal
                 return;
             }
 
+            if (control is TextBox textBox)
+            {
+                DrawTextBox(textBox);
+                return;
+            }
+
             if (control is Button button)
             {
                 DrawButton(button);
@@ -683,7 +719,10 @@ namespace ZXMAK2.Host.Terminal
 
             if (control is Placeholder placeholder)
             {
-                DrawPanelChrome(placeholder.ArrangedBounds, IsActiveRegion(placeholder));
+                // Modal overlays always paint frame chrome so the dialog reads as a window.
+                var showChrome = IsActiveRegion(placeholder) || _terminal.HasBackdrop;
+                if (showChrome)
+                    DrawPanelChrome(placeholder.ArrangedBounds, active: true);
                 if (placeholder.Content != null)
                     DrawControl(placeholder.Content);
                 return;
@@ -707,6 +746,26 @@ namespace ZXMAK2.Host.Terminal
             int px, py;
             CellToPixel(bounds.X, bounds.Y, out px, out py);
             _terminal.DrawText(px, py, text, _scale, label.Enabled ? Fg : Disabled);
+        }
+
+        private void DrawTextBox(TextBox textBox)
+        {
+            var bounds = textBox.ArrangedBounds;
+            if (bounds.Width <= 0 || bounds.Height <= 0)
+                return;
+
+            var focused = ReferenceEquals(textBox, FocusedControl());
+            int px, py;
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
+            var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
+            var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
+            _terminal.FillRect(px, py, pw, ph, focused ? SelectedBg : PanelBg);
+
+            var raw = textBox.Text ?? string.Empty;
+            var shown = focused ? raw + "_" : raw;
+            var text = Truncate(shown, bounds.Width);
+            var color = !textBox.Enabled ? Disabled : focused ? Accent : Fg;
+            _terminal.DrawText(px, py, text, _scale, color);
         }
 
         private void DrawButton(Button button)

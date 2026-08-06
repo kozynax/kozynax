@@ -67,16 +67,26 @@ namespace Kozynax.UI
             {
                 Orientation = Orientation.Vertical,
                 Spacing = 1,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 Margin = new Thickness(2),
+                MinWidth = 24,
             };
             content.Add(TitleLabel);
             content.Add(MessageLabel);
             content.Add(buttons);
 
+            var frame = new Placeholder
+            {
+                Content = content,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(3),
+                MinWidth = 28,
+                MinHeight = 6,
+            };
+
             Root = new Panel();
-            Root.Add(content);
+            Root.Add(frame);
 
             OkButton.Clicked += (_, __) => Complete(acceptResult);
             CancelButton.Clicked += (_, __) => Complete(rejectResult);
