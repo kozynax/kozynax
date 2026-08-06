@@ -782,9 +782,9 @@ namespace ZXMAK2.Host.Terminal
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
 
             if (pressed)
-                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, PressedBg);
+                _terminal.FillRect(px, py, pw, ph, PressedBg);
             else if (focused)
-                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, SelectedBg);
+                _terminal.FillRect(px, py, pw, ph, SelectedBg);
 
             var label = button.Text ?? string.Empty;
             string framed;
@@ -811,7 +811,7 @@ namespace ZXMAK2.Host.Terminal
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
             if (focused)
-                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, SelectedBg);
+                _terminal.FillRect(px, py, pw, ph, SelectedBg);
 
             var mark = checkBox.Checked ? "x" : " ";
             var text = Truncate($"[{mark}] {checkBox.Text}", bounds.Width);
@@ -851,7 +851,7 @@ namespace ZXMAK2.Host.Terminal
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = Math.Max(TerminalFont.GlyphHeight * _scale - 2, 4);
             if (focused)
-                _terminal.FillRect(px - 2, py - 1, pw + 4, ph + 2, SelectedBg);
+                _terminal.FillRect(px, py, pw, ph, SelectedBg);
 
             _terminal.FillRect(px, py + 1, pw, ph, BarBg);
             var range = Math.Max(1, bar.Maximum - bar.Minimum);
