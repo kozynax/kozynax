@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="1.2.0.9" />
     <PackageReference Include="Silk.NET.SDL" Version="2.22.0" />
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
   </ItemGroup>
