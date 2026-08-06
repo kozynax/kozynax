@@ -21,7 +21,8 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
             int x = 0,
             int y = 0,
             KozuiMouseButton button = KozuiMouseButton.None,
-            int wheelDelta = 0)
+            int wheelDelta = 0,
+            char ch = '\0')
         {
             Kind = kind;
             Key = key;
@@ -29,6 +30,7 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
             Y = y;
             Button = button;
             WheelDelta = wheelDelta;
+            Char = ch;
         }
 
         public KozuiInputKind Kind { get; }
@@ -37,9 +39,13 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
         public int Y { get; }
         public KozuiMouseButton Button { get; }
         public int WheelDelta { get; }
+        public char Char { get; }
 
         public static KozuiInput KeyDown(KozuiInputKey key)
             => new KozuiInput(KozuiInputKind.KeyDown, key);
+
+        public static KozuiInput TextInput(char ch)
+            => new KozuiInput(KozuiInputKind.KeyDown, ch: ch);
 
         public static KozuiInput MouseDown(int x, int y, KozuiMouseButton button = KozuiMouseButton.Left)
             => new KozuiInput(KozuiInputKind.MouseDown, x: x, y: y, button: button);
@@ -84,5 +90,6 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
         Down,
         PageUp,
         PageDown,
+        Backspace,
     }
 }

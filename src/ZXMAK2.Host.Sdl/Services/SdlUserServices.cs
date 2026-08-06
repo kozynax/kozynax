@@ -54,10 +54,10 @@ namespace ZXMAK2.Host.SdlBackend.Services
             => objArray != null && objArray.Length > 0 ? objArray[0] : null;
 
         public bool QueryText(string caption, string text, ref string value)
-            => false;
+            => InputDialog.Query(caption, text, ref value);
 
         public bool QueryValue(string caption, string text, string format, ref int value, int min, int max)
-            => false;
+            => InputDialog.QueryValue(caption, text, format, ref value, min, max);
     }
 
     public sealed class SdlUserHelp : IUserHelp

@@ -28,7 +28,8 @@ namespace ZXMAK2.Host.Terminal
             int x = 0,
             int y = 0,
             TerminalMouseButton button = TerminalMouseButton.None,
-            int wheelDelta = 0)
+            int wheelDelta = 0,
+            char ch = '\0')
         {
             Kind = kind;
             Key = key;
@@ -36,6 +37,7 @@ namespace ZXMAK2.Host.Terminal
             Y = y;
             Button = button;
             WheelDelta = wheelDelta;
+            Char = ch;
         }
 
         public TerminalEventKind Kind { get; }
@@ -47,11 +49,13 @@ namespace ZXMAK2.Host.Terminal
         public TerminalMouseButton Button { get; }
         /// <summary>Positive = scroll up / away from user.</summary>
         public int WheelDelta { get; }
+        /// <summary>Printable character when available (text input).</summary>
+        public char Char { get; }
 
         public static TerminalEvent QuitEvent => new TerminalEvent(TerminalEventKind.Quit);
 
-        public static TerminalEvent KeyDown(TerminalKey key)
-            => new TerminalEvent(TerminalEventKind.KeyDown, key);
+        public static TerminalEvent KeyDown(TerminalKey key, char ch = '\0')
+            => new TerminalEvent(TerminalEventKind.KeyDown, key, ch: ch);
 
         public static TerminalEvent KeyUp(TerminalKey key)
             => new TerminalEvent(TerminalEventKind.KeyUp, key);

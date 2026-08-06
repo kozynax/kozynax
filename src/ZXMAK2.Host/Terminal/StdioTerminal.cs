@@ -21,6 +21,7 @@ namespace ZXMAK2.Host.Terminal
         private readonly StringBuilder _presentBuilder = new StringBuilder(4096);
 
         private Cell[] _cells = Array.Empty<Cell>();
+        private Cell[] _backdropCells;
         private int _cols;
         private int _rows;
         private int _uiDepth;
@@ -56,6 +57,8 @@ namespace ZXMAK2.Host.Terminal
 
         public override bool IsAvailable => !_disposed && IsInteractive;
 
+        public override bool HasBackdrop => _backdropCells != null;
+
         public override int Width
         {
             get
@@ -82,11 +85,39 @@ namespace ZXMAK2.Host.Terminal
             lock (_bufferLock)
             {
                 EnsureBuffer();
+                if (_backdropCells != null && _backdropCells.Length == _cells.Length)
+                {
+                    Array.Copy(_backdropCells, _cells, _cells.Length);
+                    // Dim: pull backgrounds toward black so the modal frame stands out.
+                    for (var i = 0; i < _cells.Length; i++)
+                    {
+                        var c = _cells[i];
+                        _cells[i] = new Cell(
+                            c.Ch,
+                            (byte)(c.FgR * 2 / 3), (byte)(c.FgG * 2 / 3), (byte)(c.FgB * 2 / 3),
+                            (byte)(c.BgR / 3), (byte)(c.BgG / 3), (byte)(c.BgB / 3));
+                    }
+                    return;
+                }
+
                 var cell = new Cell(' ', DefaultFgR, DefaultFgG, DefaultFgB, color.R, color.G, color.B);
                 for (var i = 0; i < _cells.Length; i++)
                     _cells[i] = cell;
             }
         }
+
+        public override void CaptureBackdrop()
+        {
+            lock (_bufferLock)
+            {
+                EnsureBuffer();
+                _backdropCells = new Cell[_cells.Length];
+                Array.Copy(_cells, _backdropCells, _cells.Length);
+            }
+        }
+
+        public override void ReleaseBackdrop()
+            => _backdropCells = null;
 
         public override void FillRect(int x, int y, int width, int height, TerminalColor color)
         {
@@ -224,6 +255,7 @@ namespace ZXMAK2.Host.Terminal
             _disposed = true;
             StopInputThread();
             LeaveSession();
+            ReleaseBackdrop();
             while (TerminalUiSession.UiDepth > 0)
                 TerminalUiSession.NotifyLeave();
             _uiDepth = 0;
@@ -313,12 +345,17 @@ namespace ZXMAK2.Host.Terminal
                         continue;
                     }
 
-                    var key = Console.ReadKey(intercept: true);
-                    if (TryMapKey(key, out var terminalKey))
-                    {
-                        _events.Enqueue(TerminalEvent.KeyDown(terminalKey));
+                    var keyInfo = Console.ReadKey(intercept: true);
+                    TryMapKey(keyInfo, out var terminalKey);
+                    var ch = keyInfo.KeyChar;
+                    if (char.IsControl(ch))
+                        ch = '\0';
+                    if (terminalKey == TerminalKey.Unknown && ch == '\0')
+                        continue;
+
+                    _events.Enqueue(TerminalEvent.KeyDown(terminalKey, ch));
+                    if (terminalKey != TerminalKey.Unknown)
                         _events.Enqueue(TerminalEvent.KeyUp(terminalKey));
-                    }
                 }
             }
             catch
