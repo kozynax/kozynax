@@ -272,13 +272,26 @@ namespace ZXMAK2.Host.Presentation
             }
             set
             {
-                if (!value.HasValue || RenderScaleRatio == value)
+                if (!value.HasValue ||
+                    FrameSize.Width <= 0 ||
+                    FrameSize.Height <= 0)
                 {
                     return;
                 }
-                RenderSize = new Size(
+
+                var size = new Size(
                     FrameSize.Width * value.Value,
                     FrameSize.Height * value.Value);
+                // Always push size to the view — even when the recorded ratio already
+                // matches (e.g. user resized the window but RenderSize was stale).
+                if (RenderSize != size)
+                {
+                    RenderSize = size;
+                }
+                else
+                {
+                    OnPropertyChanged("RenderSize");
+                }
             }
         }
 
@@ -680,6 +693,7 @@ namespace ZXMAK2.Host.Presentation
                 return;
             }
             RenderScaleRatio = (int)objState;
+            RenderScaleMode = ScaleMode.FixedPixelSize;
             IsFullScreen = false;
         }
 
