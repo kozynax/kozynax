@@ -481,9 +481,27 @@ namespace ZXMAK2.Host.SdlBackend
                 return;
             var terminal = _resolver.Resolve<ITerminal>();
             if (terminal is StdioTerminal)
+            {
                 TerminalMainMenuView.Show(terminal, vm, _commands, this, () => _quit);
-            else
+                return;
+            }
+
+            // Menu loop blocks the main pump; keep draining synchronized VM→UI updates
+            // (e.g. Pause/Resume label) while the overlay is open.
+            var previousIdle = TerminalUiSession.IdlePump;
+            TerminalUiSession.IdlePump = () =>
+            {
+                previousIdle?.Invoke();
+                PumpInvokes();
+            };
+            try
+            {
                 SdlMenuBarView.Show(terminal, vm, _commands, this, () => _quit, DrawEmulatorUnderlay);
+            }
+            finally
+            {
+                TerminalUiSession.IdlePump = previousIdle;
+            }
         }
 
         private void TryExecuteCommand(string propertyName)
