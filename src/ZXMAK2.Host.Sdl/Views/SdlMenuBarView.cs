@@ -18,7 +18,8 @@ namespace ZXMAK2.Host.SdlBackend.Views
             MainViewModel viewModel,
             IEnumerable<ICommand> toolCommands,
             object commandParameter,
-            Func<bool> isHostQuitting = null)
+            Func<bool> isHostQuitting = null,
+            Action underlay = null)
         {
             if (terminal == null || !terminal.IsAvailable || viewModel == null)
                 return;
@@ -27,14 +28,16 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
             var root = MainMenuFactory.BuildRoot(viewModel, toolCommands);
             terminal.PrepareForUiInput();
-            terminal.CaptureBackdrop();
             try
             {
-                new MenuBarScreen(terminal, commandParameter).Run(root);
+                var screen = new MenuBarScreen(terminal, commandParameter)
+                {
+                    Underlay = underlay,
+                };
+                screen.Run(root);
             }
             finally
             {
-                terminal.ReleaseBackdrop();
                 terminal.EndUiInput();
             }
         }

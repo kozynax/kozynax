@@ -483,7 +483,7 @@ namespace ZXMAK2.Host.SdlBackend
             if (terminal is StdioTerminal)
                 TerminalMainMenuView.Show(terminal, vm, _commands, this, () => _quit);
             else
-                SdlMenuBarView.Show(terminal, vm, _commands, this, () => _quit);
+                SdlMenuBarView.Show(terminal, vm, _commands, this, () => _quit, DrawEmulatorUnderlay);
         }
 
         private void TryExecuteCommand(string propertyName)
@@ -494,26 +494,38 @@ namespace ZXMAK2.Host.SdlBackend
                 command.Execute(this);
         }
 
+        /// <summary>
+        /// Draws the latest emulator frame into the renderer without presenting,
+        /// then dims slightly so the menu chrome stays readable.
+        /// </summary>
+        private void DrawEmulatorUnderlay()
+        {
+            UpdateEmulatorTexture();
+
+            _sdl.SetRenderDrawColor(_renderer, 0, 0, 0, 255);
+            _sdl.RenderClear(_renderer);
+
+            if (_hasTexture && _texture != null)
+            {
+                int winW, winH;
+                _sdl.GetRendererOutputSize(_renderer, &winW, &winH);
+                var dst = ComputeDestination(GetRenderScaleMode(), winW, winH, _frameWidth, _frameHeight, _frameRatio);
+                _sdl.RenderCopy(_renderer, _texture, null, &dst);
+            }
+
+            // Soft dim so menu text stays readable over moving video.
+            _sdl.SetRenderDrawBlendMode(_renderer, BlendMode.Blend);
+            _sdl.SetRenderDrawColor(_renderer, 0, 0, 0, 100);
+            int rw, rh;
+            _sdl.GetRendererOutputSize(_renderer, &rw, &rh);
+            var dim = new Silk.NET.Maths.Rectangle<int>(0, 0, rw, rh);
+            _sdl.RenderFillRect(_renderer, &dim);
+            _sdl.SetRenderDrawBlendMode(_renderer, BlendMode.None);
+        }
+
         private void PresentFrame()
         {
-            if (_video.TryConsumeFrame(out var buffer, out var size, out var ratio))
-            {
-                EnsureTexture(size.Width, size.Height);
-                _frameWidth = size.Width;
-                _frameHeight = size.Height;
-                _frameRatio = ratio;
-
-                // Copy under the video lock lifetime: TryConsumeFrame returns the
-                // shared buffer, so upload immediately before the next PushFrame.
-                fixed (int* pBuffer = buffer)
-                {
-                    _sdl.UpdateTexture(_texture, null, pBuffer, size.Width * 4);
-                }
-
-                _hasTexture = true;
-                _video.NotifyPresented();
-            }
-            else if (!_hasTexture)
+            if (!UpdateEmulatorTexture() && !_hasTexture)
             {
                 // No frame yet — keep the window mapped without busy-spinning.
                 _sdl.Delay(1);
@@ -532,6 +544,29 @@ namespace ZXMAK2.Host.SdlBackend
             // Cap present rate; re-blitting the last texture avoids black flicker
             // when the UI loop outruns the ~50 Hz emulator.
             _sdl.Delay(1);
+        }
+
+        /// <returns>True when a new frame was consumed.</returns>
+        private bool UpdateEmulatorTexture()
+        {
+            if (!_video.TryConsumeFrame(out var buffer, out var size, out var ratio))
+                return false;
+
+            EnsureTexture(size.Width, size.Height);
+            _frameWidth = size.Width;
+            _frameHeight = size.Height;
+            _frameRatio = ratio;
+
+            // Copy under the video lock lifetime: TryConsumeFrame returns the
+            // shared buffer, so upload immediately before the next PushFrame.
+            fixed (int* pBuffer = buffer)
+            {
+                _sdl.UpdateTexture(_texture, null, pBuffer, size.Width * 4);
+            }
+
+            _hasTexture = true;
+            _video.NotifyPresented();
+            return true;
         }
 
         private RenderScaleMode GetRenderScaleMode()

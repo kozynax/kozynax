@@ -43,6 +43,12 @@ namespace ZXMAK2.Host.Terminal
         private int _lastWidth;
         private int _lastHeight;
 
+        /// <summary>
+        /// Optional live background drawn before the menu chrome (e.g. emulator frame).
+        /// When set, <see cref="ITerminal.Clear"/> is skipped so the underlay stays visible.
+        /// </summary>
+        public Action Underlay { get; set; }
+
         public MenuBarScreen(ITerminal terminal, object commandParameter = null, int scale = 1)
         {
             _terminal = terminal ?? throw new ArgumentNullException(nameof(terminal));
@@ -532,7 +538,10 @@ namespace ZXMAK2.Host.Terminal
                     OpenTop(_topIndex);
             }
 
-            _terminal.Clear(TerminalColor.Rgb(16, 18, 28));
+            if (Underlay != null)
+                Underlay();
+            else
+                _terminal.Clear(TerminalColor.Rgb(16, 18, 28));
 
             // Menu bar
             _terminal.FillRect(0, 0, winW, _barHeight, BarBg);
