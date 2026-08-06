@@ -35,6 +35,9 @@ namespace ZXMAK2.Host.Terminal
         private bool _needsInitialFocus;
         private Button _pressedButton;
         private bool _pressedHot;
+        private ListView _pressedListView;
+        private int _listPressIndex = -1;
+        private bool _listPressWasSelected;
 
         public TerminalKozuiPresenter(ITerminal terminal, int scale = 1)
         {
@@ -50,7 +53,7 @@ namespace ZXMAK2.Host.Terminal
             _listScroll = 0;
             _needsInitialFocus = true;
             _focusIndex = 0;
-            ClearButtonPress();
+            ClearPointerPress();
             RebuildFocusables();
         }
 
@@ -241,7 +244,7 @@ namespace ZXMAK2.Host.Terminal
 
         private bool HandleMouseDown(KozuiInput input)
         {
-            ClearButtonPress();
+            ClearPointerPress();
 
             PixelToCell(input.X, input.Y, out var cellX, out var cellY);
             var hit = HitTestInteractive(_root, cellX, cellY);
@@ -278,18 +281,13 @@ namespace ZXMAK2.Host.Terminal
 
             if (hit is ListView listView)
             {
-                var content = InsetPanelContent(listView.ArrangedBounds);
-                if (content.Height > 0 && cellY >= content.Y && cellY < content.Y + content.Height)
+                var index = HitListRow(listView, cellX, cellY);
+                if (index >= 0)
                 {
-                    var row = cellY - content.Y;
-                    var index = _listScroll + row;
-                    if (index >= 0 && index < listView.Count)
-                    {
-                        var alreadySelected = listView.SelectedIndex == index;
-                        listView.SelectedIndex = index;
-                        if (listView.ActivateOnClick || alreadySelected)
-                            listView.ActivateItem();
-                    }
+                    _pressedListView = listView;
+                    _listPressIndex = index;
+                    _listPressWasSelected = listView.SelectedIndex == index;
+                    listView.SelectedIndex = index;
                 }
                 return true;
             }
@@ -299,10 +297,24 @@ namespace ZXMAK2.Host.Terminal
 
         private bool HandleMouseMove(KozuiInput input)
         {
+            PixelToCell(input.X, input.Y, out var cellX, out var cellY);
+
+            if (_pressedListView != null)
+            {
+                if (_pressedListView.Enabled
+                    && _pressedListView.Visible
+                    && ContainsCell(_pressedListView.ArrangedBounds, cellX, cellY))
+                {
+                    var index = HitListRow(_pressedListView, cellX, cellY);
+                    if (index >= 0)
+                        _pressedListView.SelectedIndex = index;
+                }
+                return true;
+            }
+
             if (_pressedButton == null)
                 return false;
 
-            PixelToCell(input.X, input.Y, out var cellX, out var cellY);
             _pressedHot = ContainsCell(_pressedButton.ArrangedBounds, cellX, cellY)
                           && _pressedButton.Enabled
                           && _pressedButton.Visible;
@@ -311,25 +323,65 @@ namespace ZXMAK2.Host.Terminal
 
         private bool HandleMouseUp(KozuiInput input)
         {
+            PixelToCell(input.X, input.Y, out var cellX, out var cellY);
+
+            if (_pressedListView != null)
+            {
+                var list = _pressedListView;
+                var pressIndex = _listPressIndex;
+                var wasSelected = _listPressWasSelected;
+                ClearPointerPress();
+
+                if (!list.Enabled || !list.Visible)
+                    return true;
+
+                var index = HitListRow(list, cellX, cellY);
+                if (index < 0)
+                    return true;
+
+                list.SelectedIndex = index;
+                if (list.ActivateOnClick || (wasSelected && index == pressIndex))
+                    list.ActivateItem();
+                return true;
+            }
+
             if (_pressedButton == null)
                 return false;
 
             var button = _pressedButton;
-            PixelToCell(input.X, input.Y, out var cellX, out var cellY);
             var releaseInside = ContainsCell(button.ArrangedBounds, cellX, cellY)
                                 && button.Enabled
                                 && button.Visible;
-            ClearButtonPress();
+            ClearPointerPress();
 
             if (releaseInside)
                 button.Click(button, EventArgs.Empty);
             return true;
         }
 
-        private void ClearButtonPress()
+        private int HitListRow(ListView listView, int cellX, int cellY)
+        {
+            var content = InsetPanelContent(listView.ArrangedBounds);
+            if (content.Width <= 0 || content.Height <= 0)
+                return -1;
+            if (cellX < content.X || cellX >= content.X + content.Width)
+                return -1;
+            if (cellY < content.Y || cellY >= content.Y + content.Height)
+                return -1;
+
+            var index = _listScroll + (cellY - content.Y);
+            if (index < 0 || index >= listView.Count)
+                return -1;
+            return index;
+        }
+
+        private void ClearPointerPress()
         {
             _pressedButton = null;
             _pressedHot = false;
+            _pressedListView = null;
+            _listPressIndex = -1;
+            _listPressWasSelected = false;
         }
 
         private static bool ContainsCell(LayoutRect bounds, int cellX, int cellY)
@@ -522,7 +574,12 @@ namespace ZXMAK2.Host.Terminal
             if (_pressedButton != null
                 && (!_pressedButton.Visible || !_pressedButton.Enabled || !_focusables.Contains(_pressedButton)))
             {
-                ClearButtonPress();
+                ClearPointerPress();
+            }
+            else if (_pressedListView != null
+                     && (!_pressedListView.Visible || !_pressedListView.Enabled || !_focusables.Contains(_pressedListView)))
+            {
+                ClearPointerPress();
             }
 
             if (_needsInitialFocus)

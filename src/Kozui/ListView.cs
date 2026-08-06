@@ -10,7 +10,7 @@ namespace ZXMAK2.Host.WinForms.Lib
     {
         public event EventHandler ItemActivated;
 
-        /// <summary>When true, a mouse click that selects a row also activates it.</summary>
+        /// <summary>When true, releasing the mouse over a row activates it (selection still follows press/drag).</summary>
         public bool ActivateOnClick { get; set; }
 
         public abstract int Count { get; }
