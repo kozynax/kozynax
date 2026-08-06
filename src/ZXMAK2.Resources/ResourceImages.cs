@@ -39,6 +39,19 @@ namespace ZXMAK2.Resources
         public static Image HardwareTapePause => LoadImage("ZXMAK2.Resources.Icons.HardwareTapePause.png");
         public static Image Stop_real_16x16 => LoadImage("ZXMAK2.Resources.Icons.Stop_real_16x16.png");
         public static Stream OsdTapeRd => OpenStream("ZXMAK2.Resources.Icons.OsdTapeRd.png");
+
+        /// <summary>PNG stream for hosts that cannot use System.Drawing (e.g. SDL on Linux).</summary>
+        public static Stream EmuFileOpenPng => OpenStream("ZXMAK2.Resources.Icons.EmuFileOpen_32x32.png");
+        public static Stream EmuFileSavePng => OpenStream("ZXMAK2.Resources.Icons.EmuFileSave_32x32.png");
+        public static Stream EmuPausePng => OpenStream("ZXMAK2.Resources.Icons.EmuPause_32x32.png");
+        public static Stream EmuResumePng => OpenStream("ZXMAK2.Resources.Icons.EmuResume_32x32.png");
+        public static Stream EmuMaxSpeedPng => OpenStream("ZXMAK2.Resources.Icons.EmuMaxSpeed_32x32.png");
+        public static Stream EmuWarmResetPng => OpenStream("ZXMAK2.Resources.Icons.EmuWarmReset_32x32.png");
+        public static Stream EmuColdResetPng => OpenStream("ZXMAK2.Resources.Icons.EmuColdReset_32x32.png");
+        public static Stream EmuFullScreenPng => OpenStream("ZXMAK2.Resources.Icons.EmuFullScreen_32x32.png");
+        public static Stream EmuWindowedPng => OpenStream("ZXMAK2.Resources.Icons.EmuWindowed_32x32.png");
+        public static Stream EmuQuickLoadPng => OpenStream("ZXMAK2.Resources.Icons.EmuQuickLoad_32x32.png");
+        public static Stream EmuSettingsPng => OpenStream("ZXMAK2.Resources.Icons.EmuSettings_32x32.png");
         public static Image KeyboardHelp => LoadImage("ZXMAK2.Resources.Icons.KeyboardHelp.png");
         public static Icon IconDebugger => LoadIcon("ZXMAK2.Resources.Icons.IconDebugger.ico");
         public static Icon IconApp => LoadIcon("ZXMAK2.Resources.Icons.IconApp.ico");

@@ -496,12 +496,22 @@ namespace ZXMAK2.Host.SdlBackend
                 previousIdle?.Invoke();
                 PumpInvokes();
             };
+            SdlMenuImagePainter painter = null;
             try
             {
-                SdlMenuBarView.Show(terminal, vm, _commands, this, () => _quit, DrawEmulatorUnderlay);
+                painter = new SdlMenuImagePainter(_sdl, _renderer);
+                SdlMenuBarView.Show(
+                    terminal,
+                    vm,
+                    _commands,
+                    this,
+                    () => _quit,
+                    DrawEmulatorUnderlay,
+                    painter);
             }
             finally
             {
+                painter?.Dispose();
                 TerminalUiSession.IdlePump = previousIdle;
             }
         }
