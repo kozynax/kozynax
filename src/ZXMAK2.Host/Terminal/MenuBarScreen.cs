@@ -17,6 +17,7 @@ namespace ZXMAK2.Host.Terminal
     /// <summary>
     /// Classic horizontal menu bar overlay: top row + vertical dropdowns + cascading submenus.
     /// Draws through <see cref="ITerminal"/> only (SDL / other hosts).
+    /// Compose with <see cref="ToolbarStrip"/> via <see cref="MenuChromeScreen"/> when both are needed.
     /// </summary>
     public sealed class MenuBarScreen
     {
@@ -46,8 +47,21 @@ namespace ZXMAK2.Host.Terminal
         /// <summary>
         /// Optional live background drawn before the menu chrome (e.g. emulator frame).
         /// When set, <see cref="ITerminal.Clear"/> is skipped so the underlay stays visible.
+        /// Ignored when <see cref="OwnsFrame"/> is false.
         /// </summary>
         public Action Underlay { get; set; }
+
+        /// <summary>Y offset of the menu bar (e.g. below a toolbar).</summary>
+        public int TopOffset { get; set; }
+
+        /// <summary>
+        /// When false, <see cref="DrawContent"/> is used by a host that owns clear/present
+        /// (see <see cref="MenuChromeScreen"/>).
+        /// </summary>
+        public bool OwnsFrame { get; set; } = true;
+
+        private int ChromeBottom => TopOffset + _barHeight;
+        private int MenuY => TopOffset;
 
         public MenuBarScreen(ITerminal terminal, object commandParameter = null, int scale = 1)
         {
@@ -61,12 +75,10 @@ namespace ZXMAK2.Host.Terminal
         /// </summary>
         public bool ClosedByUser { get; private set; }
 
-        public MenuBarCloseReason Run(MenuNode root)
+        public void Begin(MenuNode root)
         {
             if (root == null)
                 throw new ArgumentNullException(nameof(root));
-            if (!_terminal.IsAvailable)
-                return MenuBarCloseReason.Dismissed;
 
             _root = root;
             ClosedByUser = false;
@@ -75,22 +87,30 @@ namespace ZXMAK2.Host.Terminal
             _topIndex = 0;
             RebuildMetrics();
             LayoutTops();
+        }
+
+        public MenuBarCloseReason Run(MenuNode root)
+        {
+            if (!_terminal.IsAvailable)
+                return MenuBarCloseReason.Dismissed;
+
+            Begin(root);
 
             while (true)
             {
                 while (_terminal.PollEvent(out var ev))
                 {
-                    var reason = HandleEvent(ev);
+                    var reason = ProcessEvent(ev);
                     if (reason.HasValue)
                         return reason.Value;
                 }
 
-                Draw();
+                DrawFrame();
                 TerminalUiSession.AfterFrame(_terminal);
             }
         }
 
-        private MenuBarCloseReason? HandleEvent(TerminalEvent ev)
+        public MenuBarCloseReason? ProcessEvent(TerminalEvent ev)
         {
             switch (ev.Kind)
             {
@@ -123,6 +143,59 @@ namespace ZXMAK2.Host.Terminal
                 default:
                     return null;
             }
+        }
+
+        public void DrawContent()
+        {
+            RebuildMetrics();
+            var winW = _terminal.Width;
+            var winH = _terminal.Height;
+            if (winW != _lastWidth || winH != _lastHeight)
+            {
+                _lastWidth = winW;
+                _lastHeight = winH;
+                var oldTop = _topIndex;
+                LayoutTops();
+                _topIndex = oldTop < _tops.Count ? oldTop : Math.Max(0, _tops.Count - 1);
+                if (_open && _topIndex >= 0 && _topIndex < _tops.Count)
+                    OpenTop(_topIndex);
+            }
+
+            _terminal.FillRect(0, MenuY, winW, _barHeight, BarBg);
+            _terminal.FillRect(0, ChromeBottom - _scale, winW, _scale, Border);
+
+            for (var i = 0; i < _tops.Count; i++)
+            {
+                var t = _tops[i];
+                if (i == _topIndex)
+                    _terminal.FillRect(t.X, MenuY, t.Width, _barHeight, SelectedBg);
+                var color = i == _topIndex ? Accent : Fg;
+                _terminal.DrawText(
+                    t.X + _pad,
+                    MenuY + (_barHeight - TerminalFont.GlyphHeight * _scale) / 2,
+                    t.Text,
+                    _scale,
+                    color);
+            }
+
+            foreach (var popup in _popups)
+                DrawPopup(popup);
+        }
+
+        private void DrawFrame()
+        {
+            if (OwnsFrame)
+            {
+                if (Underlay != null)
+                    Underlay();
+                else
+                    _terminal.Clear(TerminalColor.Rgb(16, 18, 28));
+            }
+
+            DrawContent();
+
+            if (OwnsFrame)
+                _terminal.Present();
         }
 
         private MenuBarCloseReason? HandleKey(TerminalKey key)
@@ -227,6 +300,9 @@ namespace ZXMAK2.Host.Terminal
                 OpenTop(top);
                 return null;
             }
+
+            if (y >= MenuY && y < ChromeBottom)
+                return null;
 
             if (_open && HitPopup(x, y, out _, out _))
                 return null;
@@ -341,7 +417,7 @@ namespace ZXMAK2.Host.Terminal
             if (items.Count == 0)
                 return;
 
-            var popup = BuildPopup(items, top.X, _barHeight);
+            var popup = BuildPopup(items, top.X, ChromeBottom);
             popup.SelectedIndex = 0;
             _popups.Add(popup);
         }
@@ -385,11 +461,11 @@ namespace ZXMAK2.Host.Terminal
             if (x + width > winW)
                 x = Math.Max(0, winW - width);
             if (y + height > winH)
-                y = Math.Max(_barHeight, winH - height);
+                y = Math.Max(ChromeBottom, winH - height);
             if (x < 0)
                 x = 0;
-            if (y < _barHeight)
-                y = _barHeight;
+            if (y < ChromeBottom)
+                y = ChromeBottom;
 
             return new Popup
             {
@@ -441,7 +517,6 @@ namespace ZXMAK2.Host.Terminal
             if (deepest == null || deepest.Items.Count == 0)
                 return;
             deepest.SelectedIndex = (deepest.SelectedIndex + delta + deepest.Items.Count) % deepest.Items.Count;
-            // Drop any cascade that belonged to the previous row.
             var deepestIndex = _popups.Count - 1;
             TruncatePopups(deepestIndex + 1);
             SyncCascadeFromHover();
@@ -459,7 +534,7 @@ namespace ZXMAK2.Host.Terminal
 
         private int HitTop(int x, int y)
         {
-            if (y < 0 || y >= _barHeight)
+            if (y < MenuY || y >= MenuY + _barHeight)
                 return -1;
             for (var i = 0; i < _tops.Count; i++)
             {
@@ -474,7 +549,6 @@ namespace ZXMAK2.Host.Terminal
         {
             popupIndex = -1;
             itemIndex = -1;
-            // Front-most first
             for (var i = _popups.Count - 1; i >= 0; i--)
             {
                 var p = _popups[i];
@@ -522,46 +596,6 @@ namespace ZXMAK2.Host.Terminal
                 _topIndex = Math.Max(0, _tops.Count - 1);
         }
 
-        private void Draw()
-        {
-            RebuildMetrics();
-            var winW = _terminal.Width;
-            var winH = _terminal.Height;
-            if (winW != _lastWidth || winH != _lastHeight)
-            {
-                _lastWidth = winW;
-                _lastHeight = winH;
-                var oldTop = _topIndex;
-                LayoutTops();
-                _topIndex = oldTop < _tops.Count ? oldTop : Math.Max(0, _tops.Count - 1);
-                if (_open && _topIndex >= 0 && _topIndex < _tops.Count)
-                    OpenTop(_topIndex);
-            }
-
-            if (Underlay != null)
-                Underlay();
-            else
-                _terminal.Clear(TerminalColor.Rgb(16, 18, 28));
-
-            // Menu bar
-            _terminal.FillRect(0, 0, winW, _barHeight, BarBg);
-            _terminal.FillRect(0, _barHeight - _scale, winW, _scale, Border);
-
-            for (var i = 0; i < _tops.Count; i++)
-            {
-                var t = _tops[i];
-                if (i == _topIndex)
-                    _terminal.FillRect(t.X, 0, t.Width, _barHeight, SelectedBg);
-                var color = i == _topIndex ? Accent : Fg;
-                _terminal.DrawText(t.X + _pad, (_barHeight - TerminalFont.GlyphHeight * _scale) / 2, t.Text, _scale, color);
-            }
-
-            foreach (var popup in _popups)
-                DrawPopup(popup);
-
-            _terminal.Present();
-        }
-
         private void DrawPopup(Popup popup)
         {
             _terminal.FillRect(popup.X, popup.Y, popup.Width, popup.Height, PopupBg);
@@ -594,18 +628,17 @@ namespace ZXMAK2.Host.Terminal
         {
             if (node?.Command == null)
                 return node != null && node.HasChildren;
-            return node.Command.CanExecute(ResolveParameter(node));
+            return node.Command.CanExecute(ResolveParameter(node.Parameter, node.Command, node.IsChecked != null));
         }
 
-        /// <summary>
-        /// Toggle commands (Show Icons, Smooth, …) only accept null/bool.
-        /// Do not fall back to the host view for those — that greys them out.
-        /// </summary>
         private object ResolveParameter(MenuNode node)
+            => ResolveParameter(node.Parameter, node.Command, node.IsChecked != null);
+
+        private object ResolveParameter(object parameter, ZXMAK2.Mvvm.ICommand command, bool isToggle)
         {
-            if (node.Parameter != null)
-                return node.Parameter;
-            if (node.Command != null && node.Command.CanExecute(null))
+            if (parameter != null)
+                return parameter;
+            if (isToggle || (command != null && command.CanExecute(null)))
                 return null;
             return _commandParameter;
         }
