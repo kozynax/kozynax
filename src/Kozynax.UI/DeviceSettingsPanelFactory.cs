@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using ZXMAK2;
+using ZXMAK2.Dependency;
 using ZXMAK2.Engine;
 using ZXMAK2.Engine.Entities;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Host.WinForms.Lib.Layout;
@@ -209,6 +211,8 @@ namespace Kozynax.UI
             beta.NoDelay.Text = "No Delay";
             beta.LogIO.Text = "Log I/O";
 
+            WireDiskBrowse(beta);
+
             var stack = new StackPanel { Orientation = Orientation.Vertical, Spacing = 1 };
             stack.Add(new Label { Text = "Beta Disk" });
             stack.Add(beta.NoDelay);
@@ -218,6 +222,47 @@ namespace Kozynax.UI
             stack.Add(BuildDiskRow("C", beta.DiskC));
             stack.Add(BuildDiskRow("D", beta.DiskD));
             return new DevicePanel(stack, beta.Apply);
+        }
+
+        private static void WireDiskBrowse(BetaDiskSettings beta)
+        {
+            if (beta?.Device == null)
+                return;
+
+            void OnBrowse(FileSelector fileSelector, string initialFileName)
+            {
+                var disks = new[] { beta.DiskA, beta.DiskB, beta.DiskC, beta.DiskD };
+                var drive = Array.FindIndex(disks, d => d != null && ReferenceEquals(d.Disk, fileSelector));
+                if (drive < 0 || drive >= beta.Device.LoadManagers.Length)
+                    return;
+
+                var dialog = Locator.TryResolve<IOpenFileDialog>();
+                if (dialog == null)
+                    return;
+
+                using (dialog)
+                {
+                    dialog.Title = "Open...";
+                    dialog.Filter = beta.Device.LoadManagers[drive].GetOpenExtFilter();
+                    dialog.FileName = initialFileName ?? string.Empty;
+                    dialog.ShowReadOnly = true;
+                    dialog.ReadOnlyChecked = true;
+                    dialog.CheckFileExists = true;
+                    if (dialog.ShowDialog(null) != DlgResult.OK)
+                        return;
+
+                    fileSelector.SelectFile(dialog.FileName);
+                    disks[drive].WriteProtect.Checked |= dialog.ReadOnlyChecked;
+                }
+            }
+
+            foreach (var disk in new[] { beta.DiskA, beta.DiskB, beta.DiskC, beta.DiskD })
+            {
+                if (disk?.Disk == null)
+                    continue;
+                disk.Disk.OnBrowseFile -= OnBrowse;
+                disk.Disk.OnBrowseFile += OnBrowse;
+            }
         }
 
         private static KozuiControl BuildDiskRow(string name, Base.DiskSelector disk)
@@ -238,10 +283,20 @@ namespace Kozynax.UI
                     file.Text = TruncateFile(disk.Disk.FileName);
             };
 
+            var browse = new Button { Text = "..." };
+            browse.Enabled = disk.Disk.Enabled;
+            disk.Disk.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == null || e.PropertyName == nameof(FileSelector.Enabled))
+                    browse.Enabled = disk.Disk.Enabled;
+            };
+            browse.Clicked += (_, __) => disk.Disk.BrowseFile(disk.Disk.FileName);
+
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 1 };
             row.Add(disk.Present);
             row.Add(disk.WriteProtect);
             row.Add(file);
+            row.Add(browse);
             return row;
         }
 
