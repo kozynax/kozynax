@@ -100,6 +100,11 @@ namespace ZXMAK2.Host.Terminal
                     return null;
 
                 case TerminalEventKind.MouseDown:
+                    if (ev.Button == TerminalMouseButton.Right)
+                    {
+                        ClosedByUser = true;
+                        return MenuBarCloseReason.Dismissed;
+                    }
                     if (ev.Button == TerminalMouseButton.Left)
                         return HandleMouseDown(ev.X, ev.Y);
                     return null;

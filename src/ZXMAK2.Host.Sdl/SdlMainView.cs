@@ -123,9 +123,6 @@ namespace ZXMAK2.Host.SdlBackend
             runtime.EndUiInput = _mouse.ResumeAfterUi;
             _joystick = new SdlJoystick(_sdl);
             _host = new HostService(_video, _sound, _keyboard, _mouse, _joystick);
-            // Kempston/etc. need relative deltas; WinForms captures on double-click,
-            // SDL captures while the window is focused.
-            _mouse.Capture();
 
             var terminal = _resolver.Resolve<ITerminal>();
             if (terminal is StdioTerminal)
@@ -298,14 +295,28 @@ namespace ZXMAK2.Host.SdlBackend
                         _keyboard.OnKeyEvent((KeyCode)e.Key.Keysym.Sym, false);
                         break;
                     case EventType.Mousemotion:
+                        if (uiActive)
+                            break;
                         _mouse.OnMouseMotion(e.Motion.Xrel, e.Motion.Yrel);
                         break;
                     case EventType.Mousebuttondown:
+                        if (uiActive)
+                            break;
+                        // SDL: 1=left, 2=middle, 3=right — menu only while uncaptured.
+                        if (e.Button.Button == 3 && !_mouse.IsCaptured)
+                        {
+                            _keyboard.Reset();
+                            ShowMainMenu();
+                            _keyboard.Reset();
+                            break;
+                        }
                         if (!_mouse.IsCaptured)
                             _mouse.Capture();
                         _mouse.OnMouseButton(e.Button.Button, true);
                         break;
                     case EventType.Mousebuttonup:
+                        if (uiActive)
+                            break;
                         _mouse.OnMouseButton(e.Button.Button, false);
                         break;
                     case EventType.Windowevent:
@@ -313,9 +324,6 @@ namespace ZXMAK2.Host.SdlBackend
                         {
                             case WindowEventID.Close:
                                 _quit = true;
-                                break;
-                            case WindowEventID.FocusGained:
-                                _mouse.Capture();
                                 break;
                             case WindowEventID.FocusLost:
                                 _mouse.Uncapture();
