@@ -129,18 +129,7 @@ namespace Kozynax.UI
         }
 
         private static bool IsToggleCommand(MenuNode node)
-        {
-            if (node?.Command == null)
-                return false;
-            if (node.IsChecked != null)
-                return true;
-            var text = node.Command.Text ?? string.Empty;
-            return text.IndexOf("Pause", StringComparison.OrdinalIgnoreCase) >= 0
-                   || text.IndexOf("Resume", StringComparison.OrdinalIgnoreCase) >= 0
-                   || text.IndexOf("Full Screen", StringComparison.OrdinalIgnoreCase) >= 0
-                   || text.IndexOf("Windowed", StringComparison.OrdinalIgnoreCase) >= 0
-                   || text.IndexOf("Maximum Speed", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
+            => node?.IsChecked != null;
 
         private void PushLevel(string title, List<MenuNode> children)
         {
