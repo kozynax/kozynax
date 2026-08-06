@@ -18,7 +18,7 @@ namespace Kozynax.UI
             return new MainMenu(root, commandParameter);
         }
 
-        private static MenuNode BuildRoot(MainViewModel vm, IEnumerable<ICommand> toolCommands)
+        public static MenuNode BuildRoot(MainViewModel vm, IEnumerable<ICommand> toolCommands)
         {
             return new MenuNode
             {
