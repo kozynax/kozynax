@@ -30,5 +30,12 @@ namespace ZXMAK2.Host.SdlBackend
         }
 
         public bool IsReady => Window != null && Renderer != null;
+
+        public SdlMenuImagePainter CreateMenuImagePainter()
+        {
+            if (!IsReady)
+                return null;
+            return new SdlMenuImagePainter(Sdl, Renderer);
+        }
     }
 }

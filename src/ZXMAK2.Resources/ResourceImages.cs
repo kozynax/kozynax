@@ -57,6 +57,8 @@ namespace ZXMAK2.Resources
         public static Icon IconApp => LoadIcon("ZXMAK2.Resources.Icons.IconApp.ico");
         public static Icon ImageZxLogo => LoadIcon("ZXMAK2.Resources.Pictures.ZxLogo.png");
         public static Image ImageKeyboardHelp => LoadImage("ZXMAK2.Resources.Pictures.KeyboardHelp.png");
+        /// <summary>PNG stream for hosts that cannot use System.Drawing (e.g. SDL on Linux).</summary>
+        public static Stream ImageKeyboardHelpPng => OpenStream("ZXMAK2.Resources.Pictures.KeyboardHelp.png");
         public static Image Wizard => LoadImage("ZXMAK2.Resources.Icons.Wizard.png");
         public static Image RAM => LoadImage("ZXMAK2.Resources.DeviceIcons.RAM.png");
         public static Image PCB => LoadImage("ZXMAK2.Resources.DeviceIcons.PCB.png");

@@ -400,6 +400,13 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                 return new LayoutSize(width, Math.Max(control.MinHeight, rows));
             }
 
+            if (control is ImageView)
+            {
+                return new LayoutSize(
+                    Math.Max(8, control.MinWidth > 0 ? control.MinWidth : 20),
+                    Math.Max(4, control.MinHeight > 0 ? control.MinHeight : 8));
+            }
+
             return new LayoutSize(
                 Math.Max(1, control.MinWidth),
                 Math.Max(1, control.MinHeight));

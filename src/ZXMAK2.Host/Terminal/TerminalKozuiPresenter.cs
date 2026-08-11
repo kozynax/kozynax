@@ -45,6 +45,9 @@ namespace ZXMAK2.Host.Terminal
             _scale = Math.Max(1, scale);
         }
 
+        /// <summary>Optional PNG blitter for <see cref="ImageView"/> controls.</summary>
+        public IMenuImagePainter ImagePainter { get; set; }
+
         public KozuiControl Root => _root;
 
         public void Attach(KozuiControl root)
@@ -774,6 +777,12 @@ namespace ZXMAK2.Host.Terminal
                 return;
             }
 
+            if (control is ImageView imageView)
+            {
+                DrawImageView(imageView);
+                return;
+            }
+
             if (control is Placeholder placeholder)
             {
                 // Modal overlays always paint frame chrome so the dialog reads as a window.
@@ -803,6 +812,60 @@ namespace ZXMAK2.Host.Terminal
             int px, py;
             CellToPixel(bounds.X, bounds.Y, out px, out py);
             _terminal.DrawText(px, py, text, _scale, label.Enabled ? Fg : Disabled);
+        }
+
+        private void DrawImageView(ImageView imageView)
+        {
+            var bounds = imageView.ArrangedBounds;
+            if (bounds.Width <= 0 || bounds.Height <= 0)
+                return;
+
+            int px, py;
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
+            var slotW = bounds.Width * TerminalFont.GlyphWidth * _scale;
+            var slotH = bounds.Height * TerminalFont.GlyphHeight * _scale;
+            _terminal.FillRect(px, py, slotW, slotH, PanelBg);
+
+            if (ImagePainter == null || imageView.Image == null)
+            {
+                var fallback = Truncate("[image]", bounds.Width);
+                _terminal.DrawText(px, py, fallback, _scale, Disabled);
+                return;
+            }
+
+            var srcW = imageView.SourceWidth > 0 ? imageView.SourceWidth : slotW;
+            var srcH = imageView.SourceHeight > 0 ? imageView.SourceHeight : slotH;
+            FitRect(slotW, slotH, srcW, srcH, out var drawW, out var drawH);
+            var dx = px + (slotW - drawW) / 2;
+            var dy = py + (slotH - drawH) / 2;
+
+            try
+            {
+                using (var stream = imageView.Image())
+                {
+                    if (stream != null)
+                        ImagePainter.DrawPng(dx, dy, drawW, drawH, imageView.ImageKey ?? "image", stream);
+                }
+            }
+            catch
+            {
+                var fallback = Truncate("[image error]", bounds.Width);
+                _terminal.DrawText(px, py, fallback, _scale, Disabled);
+            }
+        }
+
+        private static void FitRect(int slotW, int slotH, int srcW, int srcH, out int drawW, out int drawH)
+        {
+            if (srcW <= 0 || srcH <= 0)
+            {
+                drawW = Math.Max(1, slotW);
+                drawH = Math.Max(1, slotH);
+                return;
+            }
+
+            var scale = Math.Min((double)slotW / srcW, (double)slotH / srcH);
+            drawW = Math.Max(1, (int)Math.Round(srcW * scale));
+            drawH = Math.Max(1, (int)Math.Round(srcH * scale));
         }
 
         private void DrawTextBox(TextBox textBox)
