@@ -20,6 +20,9 @@ namespace ZXMAK2.Host.SdlBackend.Views
         private bool _loopActive;
         private bool _closeRequested;
         private bool _wired;
+        private int _dataClickTick;
+        private int _dataClickRow = -1;
+        private int _dataClickCol = -1;
 
         public TerminalDebuggerView(ITerminal terminal)
         {
@@ -92,6 +95,12 @@ namespace ZXMAK2.Host.SdlBackend.Views
                         if (ev.Kind == TerminalEventKind.KeyDown && TryHandlePanelKey(presenter, ev.Key))
                             return true;
 
+                        // Hex click: select byte (and poke on double-click). May fall through to Route.
+                        if (ev.Kind == TerminalEventKind.MouseDown
+                            && TryHandleDataMouseDown(presenter, ev, out var consumeMouse)
+                            && consumeMouse)
+                            return true;
+
                         if (ev.Kind == TerminalEventKind.MouseWheel && TryHandlePanelWheel(presenter, ev))
                             return true;
 
@@ -111,11 +120,9 @@ namespace ZXMAK2.Host.SdlBackend.Views
                     {
                         if (_dialog == null)
                             return;
-                        // List chrome uses 1-cell padding on each side (see TerminalKozuiPresenter).
                         var dasmRows = Math.Max(0, _dialog.DasmList.ArrangedBounds.Height - 2);
-                        var dataRows = Math.Max(0, _dialog.DataList.ArrangedBounds.Height - 2);
-                        if (dasmRows > 0 || dataRows > 0)
-                            _dialog.FitVisibleLines(dasmRows, dataRows);
+                        if (dasmRows > 0)
+                            _dialog.FitVisibleLines(dasmRows);
                     });
             }
             finally
@@ -230,16 +237,96 @@ namespace ZXMAK2.Host.SdlBackend.Views
                     case TerminalKey.Down:
                         _dialog.DataNavigateDown();
                         return true;
+                    case TerminalKey.Left:
+                        _dialog.DataNavigateLeft();
+                        return true;
+                    case TerminalKey.Right:
+                        _dialog.DataNavigateRight();
+                        return true;
                     case TerminalKey.PageUp:
                         _dialog.DataNavigatePageUp();
                         return true;
                     case TerminalKey.PageDown:
                         _dialog.DataNavigatePageDown();
                         return true;
+                    case TerminalKey.Enter:
+                        _dialog.EditSelectedDataByte();
+                        return true;
                 }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Handles hex-panel mouse down. Returns false when the event is not over the hex list.
+        /// When true, <paramref name="consume"/> indicates whether Route should be skipped.
+        /// </summary>
+        private bool TryHandleDataMouseDown(
+            TerminalKozuiPresenter presenter,
+            TerminalEvent ev,
+            out bool consume)
+        {
+            consume = false;
+            if (_dialog == null || presenter == null || ev.Button != TerminalMouseButton.Left)
+                return false;
+            if (!TryHitDataCell(ev.X, ev.Y, out var row, out var col))
+                return false;
+
+            const int doubleClickMs = 500;
+            _dialog.DataSelectCell(row, col);
+            presenter.Focus(_dialog.DataList);
+
+            var now = Environment.TickCount;
+            var isDoubleClick = row == _dataClickRow
+                                && col == _dataClickCol
+                                && unchecked(now - _dataClickTick) <= doubleClickMs;
+            // Always consume hex clicks so the presenter cannot treat a second
+            // single-click as activate — only a real double-click opens poke.
+            consume = true;
+            if (isDoubleClick)
+            {
+                _dataClickTick = 0;
+                _dataClickRow = -1;
+                _dataClickCol = -1;
+                _dialog.EditSelectedDataByte();
+            }
+            else
+            {
+                _dataClickTick = now;
+                _dataClickRow = row;
+                _dataClickCol = col;
+            }
+
+            return true;
+        }
+
+        private bool TryHitDataCell(int pixelX, int pixelY, out int row, out int col)
+        {
+            row = -1;
+            col = 0;
+            if (_dialog == null || !IsPointOver(_dialog.DataList, pixelX, pixelY))
+                return false;
+
+            // Match DrawListView: 8x8 cells, 1-cell list chrome, leading focus prefix.
+            const int cellW = 8;
+            const int cellH = 8;
+            const int pad = 1;
+            var bounds = _dialog.DataList.ArrangedBounds;
+            var cellX = pixelX / cellW;
+            var cellY = pixelY / cellH;
+            var contentX = bounds.X + pad;
+            var contentY = bounds.Y + pad;
+            var contentH = Math.Max(0, bounds.Height - pad * 2);
+            row = cellY - contentY;
+            if (row < 0 || row >= contentH || row >= _dialog.DataPanel.VisibleLineCount)
+                return false;
+
+            // Text: "XXXX  HH HH ...  cccc" after the focus prefix.
+            var relX = cellX - contentX - 1;
+            if (relX >= 6)
+                col = Math.Min(_dialog.DataPanel.ColCount - 1, Math.Max(0, (relX - 6) / 3));
+            return true;
         }
 
         private bool TryHandlePanelWheel(TerminalKozuiPresenter presenter, TerminalEvent ev)

@@ -53,6 +53,14 @@ namespace ZXMAK2.Host.Terminal
         /// <summary>Currently focused interactive control, if any.</summary>
         public KozuiControl Focused => FocusedControl();
 
+        public void Focus(KozuiControl control)
+        {
+            RebuildFocusables();
+            FocusControl(control);
+            if (control is ListView list)
+                EnsureListVisible(list, ListContentRows(list));
+        }
+
         public void Attach(KozuiControl root)
         {
             _root = root;
@@ -346,7 +354,8 @@ namespace ZXMAK2.Host.Terminal
                     return true;
 
                 list.SelectedIndex = index;
-                if (list.ActivateOnClick || (wasSelected && index == pressIndex))
+                if (list.ActivateOnClick
+                    || (list.ActivateOnSecondClick && wasSelected && index == pressIndex))
                     list.ActivateItem();
                 return true;
             }
@@ -997,6 +1006,8 @@ namespace ZXMAK2.Host.Terminal
             var focused = ReferenceEquals(listView, FocusedControl());
             var visible = Math.Max(1, content.Height);
             EnsureListVisible(listView, visible);
+            var cellW = TerminalFont.GlyphWidth * _scale;
+            var cellH = TerminalFont.GlyphHeight * _scale;
 
             for (var row = 0; row < visible; row++)
             {
@@ -1007,21 +1018,43 @@ namespace ZXMAK2.Host.Terminal
                 var y = content.Y + row;
                 int px, py;
                 CellToPixel(content.X, y, out px, out py);
-                var pw = content.Width * TerminalFont.GlyphWidth * _scale;
-                var ph = TerminalFont.GlyphHeight * _scale;
+                var pw = content.Width * cellW;
                 var selected = index == listView.SelectedIndex;
+                var spans = listView.GetHighlightSpans?.Invoke(index);
+                var rowHighlight = selected && !listView.SuppressRowHighlight;
 
-                if (selected)
-                    _terminal.FillRect(px, py, pw, ph, SelectedBg);
+                if (rowHighlight)
+                    _terminal.FillRect(px, py, pw, cellH, SelectedBg);
 
-                var prefix = selected ? ">" : " ";
-                var text = Truncate(prefix + listView.GetItemText(index), content.Width);
+                var prefix = rowHighlight ? ">" : " ";
+                var itemText = listView.GetItemText(index) ?? string.Empty;
+                var text = Truncate(prefix + itemText, content.Width);
                 var color = !listView.Enabled
                     ? Disabled
-                    : selected
+                    : rowHighlight
                         ? Accent
                         : Fg;
                 _terminal.DrawText(px, py, text, _scale, color);
+
+                if (spans == null || spans.Count == 0 || !listView.Enabled)
+                    continue;
+
+                for (var s = 0; s < spans.Count; s++)
+                {
+                    var span = spans[s];
+                    // +1 for the focus/spacer prefix drawn above.
+                    var start = 1 + span.Start;
+                    if (start >= text.Length || span.Length <= 0)
+                        continue;
+                    var length = Math.Min(span.Length, text.Length - start);
+                    if (length <= 0)
+                        continue;
+
+                    int hx, hy;
+                    CellToPixel(content.X + start, y, out hx, out hy);
+                    _terminal.FillRect(hx, hy, length * cellW, cellH, SelectedBg);
+                    _terminal.DrawText(hx, hy, text.Substring(start, length), _scale, Accent);
+                }
             }
 
             if (focused && listView.Count == 0)

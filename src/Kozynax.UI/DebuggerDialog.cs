@@ -57,6 +57,7 @@ namespace Kozynax.UI
 
             DataPanel = new DataPanelComponent { VisibleLineCount = 8, ColCount = 8 };
             DataPanel.GetData += dasmPanel_GetData;
+            DataPanel.DataClick += DataPanel_DataClick;
 
             DasmList = new ListView<string>
             {
@@ -69,11 +70,16 @@ namespace Kozynax.UI
             DataList = new ListView<string>
             {
                 ItemTextSelector = s => s ?? string.Empty,
-                ActivateOnClick = true,
+                // Enter / real double-click poke; single click only selects the byte.
+                ActivateOnClick = false,
+                ActivateOnSecondClick = false,
+                SuppressRowHighlight = true,
                 Dock = Dock.Fill,
                 MinWidth = 40,
-                MinHeight = 6,
+                // 8 data rows + 2-cell list chrome (TerminalKozuiPresenter padding).
+                MinHeight = 10,
             };
+            DataList.GetHighlightSpans = GetDataHighlightSpans;
             RegistersList = new ListView<string>
             {
                 ItemTextSelector = s => s ?? string.Empty,
@@ -116,7 +122,7 @@ namespace Kozynax.UI
                 if (index >= 0 && index < DasmPanel.VisibleLineCount)
                     DasmPanel.ActiveLine = index;
             };
-            DataList.ItemActivated += (_, __) => EditDataAtSelection();
+            DataList.ItemActivated += (_, __) => EditSelectedDataByte();
             DataList.SelectedIndexChanged += (_, index) =>
             {
                 if (index >= 0 && index < DataPanel.VisibleLineCount)
@@ -207,32 +213,19 @@ namespace Kozynax.UI
         }
 
         /// <summary>
-        /// Match WinForms panels: visible row count follows the arranged control height.
+        /// Match WinForms disasm panel: visible row count follows arranged height.
+        /// Hex view stays fixed at 8 rows.
         /// </summary>
-        public void FitVisibleLines(int dasmRows, int dataRows)
+        public void FitVisibleLines(int dasmRows)
         {
-            var changed = false;
-            if (dasmRows > 0 && DasmPanel.VisibleLineCount != dasmRows)
-            {
-                DasmPanel.VisibleLineCount = dasmRows;
-                if (DasmPanel.ActiveLine >= dasmRows)
-                    DasmPanel.ActiveLine = dasmRows - 1;
-                changed = true;
-            }
-
-            if (dataRows > 0 && DataPanel.VisibleLineCount != dataRows)
-            {
-                DataPanel.VisibleLineCount = dataRows;
-                if (DataPanel.ActiveLine >= dataRows)
-                    DataPanel.ActiveLine = dataRows - 1;
-                changed = true;
-            }
-
-            if (!changed)
+            if (dasmRows <= 0 || DasmPanel.VisibleLineCount == dasmRows)
                 return;
 
+            DasmPanel.VisibleLineCount = dasmRows;
+            if (DasmPanel.ActiveLine >= dasmRows)
+                DasmPanel.ActiveLine = dasmRows - 1;
+
             DasmPanel.UpdateLines();
-            DataPanel.UpdateLines();
             SyncPanelLists();
         }
 
@@ -292,6 +285,33 @@ namespace Kozynax.UI
             SyncPanelLists();
         }
 
+        public void DataNavigateLeft()
+        {
+            DataPanel.ControlLeft();
+            DataPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DataNavigateRight()
+        {
+            DataPanel.ControlRight();
+            DataPanel.Update();
+            SyncPanelLists();
+        }
+
+        /// <summary>Select a byte cell in the hex view (row + column).</summary>
+        public void DataSelectCell(int line, int column)
+        {
+            if (line < 0 || line >= DataPanel.VisibleLineCount)
+                return;
+            if (column < 0 || column >= DataPanel.ColCount)
+                return;
+            DataPanel.ActiveLine = line;
+            DataPanel.ActiveColumn = column;
+            DataPanel.Update();
+            SyncPanelLists();
+        }
+
         private static string FormatDasmLine(Line line)
         {
             var prefix = new StringBuilder(2);
@@ -323,6 +343,25 @@ namespace Kozynax.UI
             }
 
             return string.Format("{0}  {1}  {2}", addr, hex, chars);
+        }
+
+        private IReadOnlyList<ListTextSpan> GetDataHighlightSpans(int row)
+        {
+            if (row != DataPanel.ActiveLine)
+                return null;
+
+            var col = DataPanel.ActiveColumn;
+            if (col < 0 || col >= DataPanel.ColCount)
+                return null;
+
+            // "XXXX  HH HH HH HH HH HH HH HH  cccccccc"
+            var hexStart = 6 + col * 3;
+            var charStart = 6 + (DataPanel.ColCount * 3 - 1) + 2 + col;
+            return new[]
+            {
+                new ListTextSpan(hexStart, 2),
+                new ListTextSpan(charStart, 1),
+            };
         }
 
         private static char DisplayChar(string text)
@@ -631,13 +670,31 @@ namespace Kozynax.UI
             UpdateCPU(false);
         }
 
-        private void EditDataAtSelection()
+        /// <summary>Open the POKE dialog for the currently selected hex byte.</summary>
+        public void EditSelectedDataByte()
         {
-            if (m_spectrum == null || m_spectrum.IsRunning || DataList.SelectedIndex < 0)
+            if (m_spectrum == null)
+                return;
+            if (DataPanel.ActiveLine < 0 || DataPanel.ActiveLine >= DataPanel.VisibleLineCount)
+                return;
+            if (DataPanel.ActiveColumn < 0 || DataPanel.ActiveColumn >= DataPanel.ColCount)
                 return;
 
-            DataPanel.ActiveLine = DataList.SelectedIndex;
-            var addr = (ushort)(DataPanel.TopAddress + DataList.SelectedIndex * DataPanel.ColCount + DataPanel.ActiveColumn);
+            var addr = (ushort)(DataPanel.TopAddress
+                                + DataPanel.ActiveLine * DataPanel.ColCount
+                                + DataPanel.ActiveColumn);
+            PokeAddress(addr);
+        }
+
+        private void DataPanel_DataClick(object sender, ushort addr)
+            => PokeAddress(addr);
+
+        /// <summary>Match WinForms: poke is allowed even while the CPU is running.</summary>
+        private void PokeAddress(ushort addr)
+        {
+            if (m_spectrum == null)
+                return;
+
             var poked = (int)m_spectrum.ReadMemory(addr);
             var service = Locator.TryResolve<IUserQuery>();
             if (service == null)
@@ -771,6 +828,9 @@ namespace Kozynax.UI
 
             DataList.Dock = Dock.Bottom;
             DataList.Margin = new Thickness(0, 1, 0, 0);
+            // Keep hex view at a fixed 8-row content height (MinHeight includes chrome).
+            DataList.MinHeight = 10;
+            DataList.VerticalAlignment = VerticalAlignment.Top;
             DasmList.Dock = Dock.Fill;
 
             var center = new DockPanel

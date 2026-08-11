@@ -33,6 +33,9 @@ namespace ZXMAK2.Host.SdlBackend.Views
             presenter.Attach(_ui.Root);
 
             var closed = false;
+            // Ignore Enter for a short time so the key that opened this dialog
+            // (or SDL key-repeat) does not immediately accept and dismiss it.
+            var ignoreEnterUntil = Environment.TickCount + 250;
             EventHandler onClose = (_, __) => closed = true;
             _ui.CloseRequested += onClose;
             try
@@ -57,12 +60,16 @@ namespace ZXMAK2.Host.SdlBackend.Views
                             return true;
                         }
 
+                        var isEnter = ev.Kind == TerminalEventKind.KeyDown
+                                      && TerminalKozuiPresenter.MapKey(ev.Key) == KozuiInputKey.Enter;
+                        if (isEnter && unchecked(Environment.TickCount - ignoreEnterUntil) < 0)
+                            return true;
+
                         if (TerminalDialogInput.Route(presenter, ev))
                             return false;
 
                         // Enter in the text field accepts (WinForms AcceptButton).
-                        if (ev.Kind == TerminalEventKind.KeyDown
-                            && TerminalKozuiPresenter.MapKey(ev.Key) == KozuiInputKey.Enter)
+                        if (isEnter)
                         {
                             _ui.OkButton.Click(_ui.OkButton, EventArgs.Empty);
                             return true;
