@@ -89,6 +89,12 @@ namespace ZXMAK2.Host.SdlBackend.Views
                         if (ev.Kind == TerminalEventKind.KeyDown && HandleDebugKey(ev.Key))
                             return true;
 
+                        if (ev.Kind == TerminalEventKind.KeyDown && TryHandlePanelKey(presenter, ev.Key))
+                            return true;
+
+                        if (ev.Kind == TerminalEventKind.MouseWheel && TryHandlePanelWheel(presenter, ev))
+                            return true;
+
                         if (TerminalDialogInput.IsEscape(ev))
                         {
                             var args = new CancelEventArgs();
@@ -100,6 +106,16 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
                         TerminalDialogInput.Route(presenter, ev);
                         return false;
+                    },
+                    beforeRender: () =>
+                    {
+                        if (_dialog == null)
+                            return;
+                        // List chrome uses 1-cell padding on each side (see TerminalKozuiPresenter).
+                        var dasmRows = Math.Max(0, _dialog.DasmList.ArrangedBounds.Height - 2);
+                        var dataRows = Math.Max(0, _dialog.DataList.ArrangedBounds.Height - 2);
+                        if (dasmRows > 0 || dataRows > 0)
+                            _dialog.FitVisibleLines(dasmRows, dataRows);
                     });
             }
             finally
@@ -177,6 +193,104 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 _sync.BeginInvoke(action, null);
             else
                 action();
+        }
+
+        private bool TryHandlePanelKey(TerminalKozuiPresenter presenter, TerminalKey key)
+        {
+            if (_dialog == null || presenter == null)
+                return false;
+
+            var focused = presenter.Focused;
+            if (ReferenceEquals(focused, _dialog.DasmList))
+            {
+                switch (key)
+                {
+                    case TerminalKey.Up:
+                        _dialog.DasmNavigateUp();
+                        return true;
+                    case TerminalKey.Down:
+                        _dialog.DasmNavigateDown();
+                        return true;
+                    case TerminalKey.PageUp:
+                        _dialog.DasmNavigatePageUp();
+                        return true;
+                    case TerminalKey.PageDown:
+                        _dialog.DasmNavigatePageDown();
+                        return true;
+                }
+            }
+
+            if (ReferenceEquals(focused, _dialog.DataList))
+            {
+                switch (key)
+                {
+                    case TerminalKey.Up:
+                        _dialog.DataNavigateUp();
+                        return true;
+                    case TerminalKey.Down:
+                        _dialog.DataNavigateDown();
+                        return true;
+                    case TerminalKey.PageUp:
+                        _dialog.DataNavigatePageUp();
+                        return true;
+                    case TerminalKey.PageDown:
+                        _dialog.DataNavigatePageDown();
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryHandlePanelWheel(TerminalKozuiPresenter presenter, TerminalEvent ev)
+        {
+            if (_dialog == null || presenter == null || ev.WheelDelta == 0)
+                return false;
+
+            var overDasm = IsPointOver(_dialog.DasmList, ev.X, ev.Y);
+            var overData = IsPointOver(_dialog.DataList, ev.X, ev.Y);
+            var focused = presenter.Focused;
+
+            if (overDasm || (!overData && ReferenceEquals(focused, _dialog.DasmList)))
+            {
+                if (ev.WheelDelta > 0)
+                    _dialog.DasmNavigateUp();
+                else
+                    _dialog.DasmNavigateDown();
+                return true;
+            }
+
+            if (overData || ReferenceEquals(focused, _dialog.DataList))
+            {
+                if (ev.WheelDelta > 0)
+                    _dialog.DataNavigateUp();
+                else
+                    _dialog.DataNavigateDown();
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsPointOver(
+            ZXMAK2.Host.WinForms.Lib.KozuiControl control,
+            int pixelX,
+            int pixelY)
+        {
+            if (control == null)
+                return false;
+            var bounds = control.ArrangedBounds;
+            if (bounds.Width <= 0 || bounds.Height <= 0)
+                return false;
+
+            const int cellW = 8;
+            const int cellH = 8;
+            var cellX = pixelX / cellW;
+            var cellY = pixelY / cellH;
+            return cellX >= bounds.X
+                   && cellX < bounds.X + bounds.Width
+                   && cellY >= bounds.Y
+                   && cellY < bounds.Y + bounds.Height;
         }
 
         private bool HandleDebugKey(TerminalKey key)

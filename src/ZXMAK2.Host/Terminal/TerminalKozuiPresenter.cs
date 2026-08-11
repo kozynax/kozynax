@@ -50,6 +50,9 @@ namespace ZXMAK2.Host.Terminal
 
         public KozuiControl Root => _root;
 
+        /// <summary>Currently focused interactive control, if any.</summary>
+        public KozuiControl Focused => FocusedControl();
+
         public void Attach(KozuiControl root)
         {
             _root = root;
