@@ -5,6 +5,19 @@ using System.Linq;
 
 namespace ZXMAK2.Host.WinForms.Lib
 {
+    /// <summary>Character span within a list item string (no focus prefix).</summary>
+    public readonly struct ListTextSpan
+    {
+        public ListTextSpan(int start, int length)
+        {
+            Start = start;
+            Length = length;
+        }
+
+        public int Start { get; }
+        public int Length { get; }
+    }
+
     /// <summary>Non-generic surface for presenters (item text + selection).</summary>
     public abstract class ListView : KozuiControl
     {
@@ -12,6 +25,23 @@ namespace ZXMAK2.Host.WinForms.Lib
 
         /// <summary>When true, releasing the mouse over a row activates it (selection still follows press/drag).</summary>
         public bool ActivateOnClick { get; set; }
+
+        /// <summary>
+        /// When true (default), a mouse-up on an already-selected row activates it
+        /// (second single-click). Disable for panels that require a real double-click.
+        /// </summary>
+        public bool ActivateOnSecondClick { get; set; } = true;
+
+        /// <summary>
+        /// When true, the selected row is not painted with a full-width background
+        /// (use <see cref="GetHighlightSpans"/> for partial highlights).
+        /// </summary>
+        public bool SuppressRowHighlight { get; set; }
+
+        /// <summary>
+        /// Optional per-row highlight spans in <see cref="GetItemText"/> coordinates.
+        /// </summary>
+        public Func<int, IReadOnlyList<ListTextSpan>> GetHighlightSpans { get; set; }
 
         public abstract int Count { get; }
         public abstract int SelectedIndex { get; set; }

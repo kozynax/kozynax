@@ -136,7 +136,7 @@ namespace Kozynax.UI
                     return false;
 
                 text = dialog.Value ?? string.Empty;
-                if (!TryParseInt(text, out var parsed))
+                if (!TryParseInt(text, format, out var parsed))
                 {
                     error = "Numeric value required";
                     continue;
@@ -159,13 +159,16 @@ namespace Kozynax.UI
             CloseRequested?.Invoke(this, EventArgs.Empty);
         }
 
-        private static bool TryParseInt(string input, out int value)
+        private static bool TryParseInt(string input, string format, out int value)
         {
             value = 0;
             if (string.IsNullOrWhiteSpace(input))
                 return false;
 
             var s = input.Trim();
+            // "#{0:X2}" / "{0:X4}" prompts: bare hex digits (e.g. FF) are accepted.
+            var preferHex = !string.IsNullOrEmpty(format)
+                            && format.IndexOf(":X", StringComparison.OrdinalIgnoreCase) >= 0;
             try
             {
                 if (s.Length > 0 && s[0] == '#')
@@ -178,6 +181,11 @@ namespace Kozynax.UI
                     value = Convert.ToInt32(s.Substring(2), 16);
                     return true;
                 }
+                if (preferHex && IsHexDigits(s))
+                {
+                    value = Convert.ToInt32(s, 16);
+                    return true;
+                }
                 value = Convert.ToInt32(s, 10);
                 return true;
             }
@@ -185,6 +193,22 @@ namespace Kozynax.UI
             {
                 return false;
             }
+        }
+
+        private static bool IsHexDigits(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                return false;
+            for (var i = 0; i < s.Length; i++)
+            {
+                var c = s[i];
+                var hex = (c >= '0' && c <= '9')
+                          || (c >= 'a' && c <= 'f')
+                          || (c >= 'A' && c <= 'F');
+                if (!hex)
+                    return false;
+            }
+            return true;
         }
     }
 }

@@ -13,6 +13,7 @@ namespace ZXMAK2.Host.SdlBackend
         private Texture* _backdrop;
         private int _backdropW;
         private int _backdropH;
+        private int _uiTextDepth;
 
         public SdlTerminal(SdlRuntimeContext runtime)
         {
@@ -142,12 +143,16 @@ namespace ZXMAK2.Host.SdlBackend
             _runtime.PrepareUiInput?.Invoke();
             _runtime.Sdl.SetRelativeMouseMode(SdlBool.False);
             _runtime.Sdl.ShowCursor(1);
+            if (_uiTextDepth++ == 0)
+                _runtime.Sdl.StartTextInput();
         }
 
         public override void EndUiInput()
         {
             if (!_runtime.IsReady)
                 return;
+            if (_uiTextDepth > 0 && --_uiTextDepth == 0)
+                _runtime.Sdl.StopTextInput();
             _runtime.EndUiInput?.Invoke();
         }
 
@@ -172,13 +177,34 @@ namespace ZXMAK2.Host.SdlBackend
                             return true;
                         }
                         break;
+                    case EventType.Textinput:
+                    {
+                        // Layout-aware characters (Shift+3 → '#', etc.).
+                        var ch = (char)e.Text.Text[0];
+                        if (ch >= 32 && ch < 127)
+                        {
+                            terminalEvent = TerminalEvent.KeyDown(TerminalKey.Unknown, ch);
+                            return true;
+                        }
+                        break;
+                    }
                     case EventType.Keydown:
                     {
                         var key = MapKey(e.Key.Keysym);
+                        // Printable chars come from TextInput while UI text mode is active
+                        // (avoids wrong unshifted glyphs and double-inserts).
                         var ch = '\0';
-                        var sym = (int)e.Key.Keysym.Sym;
-                        if (sym >= 32 && sym < 127)
-                            ch = (char)sym;
+                        if (_uiTextDepth <= 0)
+                        {
+                            var sym = (int)e.Key.Keysym.Sym;
+                            if (sym >= 32 && sym < 127)
+                                ch = (char)sym;
+                        }
+                        // Skip bare KeyDown for printable keys in text mode — TextInput follows.
+                        if (_uiTextDepth > 0
+                            && key == TerminalKey.Unknown
+                            && ch == '\0')
+                            break;
                         terminalEvent = TerminalEvent.KeyDown(key, ch);
                         return true;
                     }
