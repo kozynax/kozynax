@@ -379,6 +379,11 @@ namespace ZXMAK2.Host.Terminal
                 case ConsoleKey.PageUp: key = TerminalKey.PageUp; return true;
                 case ConsoleKey.PageDown: key = TerminalKey.PageDown; return true;
                 case ConsoleKey.Tab: key = TerminalKey.Tab; return true;
+                case ConsoleKey.F3: key = TerminalKey.F3; return true;
+                case ConsoleKey.F5: key = TerminalKey.F5; return true;
+                case ConsoleKey.F7: key = TerminalKey.F7; return true;
+                case ConsoleKey.F8: key = TerminalKey.F8; return true;
+                case ConsoleKey.F9: key = TerminalKey.F9; return true;
                 default:
                     var ch = char.ToUpperInvariant(info.KeyChar);
                     if (ch >= 'A' && ch <= 'Z')

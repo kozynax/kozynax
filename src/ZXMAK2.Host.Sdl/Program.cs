@@ -62,6 +62,8 @@ namespace ZXMAK2
             resolver.RegisterType<IAboutView, TerminalAboutView>();
             resolver.RegisterType<IKeyboardView, TerminalKeyboardHelpView>();
             resolver.RegisterType<IFddDebugView, TerminalFddDebugView>();
+            resolver.RegisterType<IDebuggerGeneralView, TerminalDebuggerView>();
+            resolver.RegisterType<IViewImplementation<DebuggerDialog>, TerminalDebuggerView>();
 
             resolver.RegisterType<IMainView, SdlMainView>();
             resolver.RegisterType<ILauncher, Launcher>(true);

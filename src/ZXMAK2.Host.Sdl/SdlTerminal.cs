@@ -288,6 +288,10 @@ namespace ZXMAK2.Host.SdlBackend
                 case KeyCode.KPrior: return TerminalKey.PageUp;
                 case KeyCode.KPagedown: return TerminalKey.PageDown;
                 case KeyCode.KTab: return TerminalKey.Tab;
+                case KeyCode.KF3: return TerminalKey.F3;
+                case KeyCode.KF5: return TerminalKey.F5;
+                case KeyCode.KF7: return TerminalKey.F7;
+                case KeyCode.KF8: return TerminalKey.F8;
                 case KeyCode.KF9: return TerminalKey.F9;
                 case KeyCode.KA: return TerminalKey.A;
                 case KeyCode.KB: return TerminalKey.B;
