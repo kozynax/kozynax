@@ -20,6 +20,10 @@ namespace ZXMAK2.Host.SdlBackend
         private IIconDescriptor[] _icons = NoIcons;
         private bool _hasFrame;
         private bool _disposed;
+        private int _startTact;
+        private double _updateTime;
+        private int _sampleRate;
+        private bool _isRefresh;
 
         public bool IsSyncSupported => true;
         public bool IsSynchronized { get; set; }
@@ -53,6 +57,10 @@ namespace ZXMAK2.Host.SdlBackend
                 _size = frame.Size;
                 _ratio = frame.Ratio;
                 _icons = info.Icons ?? NoIcons;
+                _startTact = info.StartTact;
+                _updateTime = info.UpdateTime;
+                _sampleRate = info.SampleRate;
+                _isRefresh = info.IsRefresh;
                 _hasFrame = true;
             }
 
@@ -64,6 +72,13 @@ namespace ZXMAK2.Host.SdlBackend
             => _cancelEvent.Set();
 
         public bool TryConsumeFrame(out int[] buffer, out Size size, out float ratio)
+            => TryConsumeFrame(out buffer, out size, out ratio, out _);
+
+        public bool TryConsumeFrame(
+            out int[] buffer,
+            out Size size,
+            out float ratio,
+            out SdlFrameDebugInfo debug)
         {
             lock (_sync)
             {
@@ -72,6 +87,7 @@ namespace ZXMAK2.Host.SdlBackend
                     buffer = null;
                     size = Size.Empty;
                     ratio = 1f;
+                    debug = default;
                     return false;
                 }
 
@@ -85,6 +101,7 @@ namespace ZXMAK2.Host.SdlBackend
                 buffer = _frontBuffer;
                 size = _size;
                 ratio = _ratio;
+                debug = new SdlFrameDebugInfo(_startTact, _updateTime, _sampleRate, _isRefresh);
                 _hasFrame = false;
                 return true;
             }
@@ -110,5 +127,21 @@ namespace ZXMAK2.Host.SdlBackend
             _frameEvent.Dispose();
             _cancelEvent.Dispose();
         }
+    }
+
+    public readonly struct SdlFrameDebugInfo
+    {
+        public SdlFrameDebugInfo(int startTact, double updateTime, int sampleRate, bool isRefresh)
+        {
+            StartTact = startTact;
+            UpdateTime = updateTime;
+            SampleRate = sampleRate;
+            IsRefresh = isRefresh;
+        }
+
+        public int StartTact { get; }
+        public double UpdateTime { get; }
+        public int SampleRate { get; }
+        public bool IsRefresh { get; }
     }
 }

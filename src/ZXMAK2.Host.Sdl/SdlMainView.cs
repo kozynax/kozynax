@@ -42,6 +42,7 @@ namespace ZXMAK2.Host.SdlBackend
 
         private SdlVideo _video;
         private SdlIconOverlay _icons;
+        private SdlDebugOverlay _debugOsd;
         private SdlSound _sound;
         private SdlKeyboard _keyboard;
         private SdlMouse _mouse;
@@ -121,6 +122,7 @@ namespace ZXMAK2.Host.SdlBackend
             _uiThreadId = Thread.CurrentThread.ManagedThreadId;
             _video = new SdlVideo();
             _icons = new SdlIconOverlay(_sdl);
+            _debugOsd = new SdlDebugOverlay();
             _sound = new SdlSound(_sdl);
             _keyboard = new SdlKeyboard();
             _mouse = new SdlMouse(_sdl);
@@ -542,6 +544,7 @@ namespace ZXMAK2.Host.SdlBackend
                 var dst = ComputeDestination(GetRenderScaleMode(), winW, winH, _frameWidth, _frameHeight, _frameRatio);
                 _sdl.RenderCopy(_renderer, _texture, null, &dst);
                 DrawOsdIcons(winW, winH);
+                DrawDebugOsd(winW, winH);
             }
 
             // Soft dim so menu text stays readable over moving video.
@@ -571,7 +574,9 @@ namespace ZXMAK2.Host.SdlBackend
             var dst = ComputeDestination(GetRenderScaleMode(), winW, winH, _frameWidth, _frameHeight, _frameRatio);
             _sdl.RenderCopy(_renderer, _texture, null, &dst);
             DrawOsdIcons(winW, winH);
+            DrawDebugOsd(winW, winH);
             _sdl.RenderPresent(_renderer);
+            _debugOsd?.OnPresent();
 
             // Cap present rate; re-blitting the last texture avoids black flicker
             // when the UI loop outruns the ~50 Hz emulator.
@@ -585,6 +590,15 @@ namespace ZXMAK2.Host.SdlBackend
             _icons.Draw(_renderer, winW, winH, _video.Icons);
         }
 
+        private void DrawDebugOsd(int winW, int winH)
+        {
+            if (_debugOsd == null || !IsDebugInfoEnabled())
+                return;
+
+            SyncDebugRunningState();
+            _debugOsd.Draw(_sdl, _renderer, winW, winH, GetDisplayRefreshRate());
+        }
+
         private bool IsDisplayIconEnabled()
         {
             var settings = _resolver.TryResolve<ISettingService>();
@@ -596,16 +610,45 @@ namespace ZXMAK2.Host.SdlBackend
             return command == null || command.Checked;
         }
 
+        private bool IsDebugInfoEnabled()
+        {
+            var settings = _resolver.TryResolve<ISettingService>();
+            if (settings != null)
+                return settings.RenderDebugInfo;
+
+            var prop = DataContext?.GetType().GetProperty("CommandViewDebugInfo");
+            var command = prop?.GetValue(DataContext) as ICommand;
+            return command != null && command.Checked;
+        }
+
+        private void SyncDebugRunningState()
+        {
+            if (_debugOsd == null)
+                return;
+            var prop = DataContext?.GetType().GetProperty("IsRunning");
+            if (prop != null && prop.GetValue(DataContext) is bool running)
+                _debugOsd.IsRunning = running;
+        }
+
+        private int GetDisplayRefreshRate()
+        {
+            DisplayMode mode;
+            if (_sdl.GetCurrentDisplayMode(0, &mode) == 0 && mode.RefreshRate > 0)
+                return mode.RefreshRate;
+            return 0;
+        }
+
         /// <returns>True when a new frame was consumed.</returns>
         private bool UpdateEmulatorTexture()
         {
-            if (!_video.TryConsumeFrame(out var buffer, out var size, out var ratio))
+            if (!_video.TryConsumeFrame(out var buffer, out var size, out var ratio, out var debug))
                 return false;
 
             EnsureTexture(size.Width, size.Height);
             _frameWidth = size.Width;
             _frameHeight = size.Height;
             _frameRatio = ratio;
+            _debugOsd?.OnFrame(debug, size, ratio);
 
             // Copy under the video lock lifetime: TryConsumeFrame returns the
             // shared buffer, so upload immediately before the next PushFrame.

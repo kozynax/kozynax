@@ -27,15 +27,36 @@ namespace ZXMAK2.Host.Terminal
             if (terminal == null || string.IsNullOrEmpty(text) || scale < 1)
                 return;
 
+            Draw((px, py, w, h, c) => terminal.FillRect(px, py, w, h, c), x, y, text, scale, color);
+        }
+
+        /// <summary>Draw glyphs via an arbitrary fill callback (e.g. SDL renderer).</summary>
+        public static void Draw(
+            Action<int, int, int, int, TerminalColor> fillRect,
+            int x,
+            int y,
+            string text,
+            int scale,
+            TerminalColor color)
+        {
+            if (fillRect == null || string.IsNullOrEmpty(text) || scale < 1)
+                return;
+
             var cx = x;
             foreach (var ch in text)
             {
-                DrawGlyph(terminal, ch, cx, y, scale, color);
+                DrawGlyph(fillRect, ch, cx, y, scale, color);
                 cx += GlyphWidth * scale;
             }
         }
 
-        private static void DrawGlyph(ITerminal terminal, char ch, int x, int y, int scale, TerminalColor color)
+        private static void DrawGlyph(
+            Action<int, int, int, int, TerminalColor> fillRect,
+            char ch,
+            int x,
+            int y,
+            int scale,
+            TerminalColor color)
         {
             var index = ch < 32 || ch > 126 ? '?' - 32 : ch - 32;
             var offset = index * GlyphHeight;
@@ -47,7 +68,7 @@ namespace ZXMAK2.Host.Terminal
                     // ZX Spectrum: bit 7 is leftmost
                     if ((bits & (0x80 >> col)) == 0)
                         continue;
-                    terminal.FillRect(x + col * scale, y + row * scale, scale, scale, color);
+                    fillRect(x + col * scale, y + row * scale, scale, scale, color);
                 }
             }
         }
