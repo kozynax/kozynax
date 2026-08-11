@@ -59,6 +59,7 @@ namespace ZXMAK2
             resolver.RegisterType<IViewImplementation<MachineSettings>, TerminalMachineSettingsView>();
             resolver.RegisterType<IViewImplementation<AddDeviceDialog>, TerminalAddDeviceDialogView>();
             resolver.RegisterType<IMemoryMapView, TerminalMemoryMapView>();
+            resolver.RegisterType<IAboutView, TerminalAboutView>();
 
             resolver.RegisterType<IMainView, SdlMainView>();
             resolver.RegisterType<ILauncher, Launcher>(true);
