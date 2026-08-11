@@ -323,6 +323,10 @@ namespace ZXMAK2.Host.SdlBackend
                 item.Item1(item.Item2);
         }
 
+        /// <summary>Drain BeginInvoke queue while a Terminal UI session owns the main loop.</summary>
+        public void PumpUiCallbacks()
+            => PumpInvokes();
+
         private void IdlePumpFrame()
         {
             PumpInvokes();
