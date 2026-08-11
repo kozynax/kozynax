@@ -111,7 +111,17 @@ namespace Kozynax.UI
             CloseButton.Clicked += (_, __) => CloseRequested?.Invoke(this, EventArgs.Empty);
 
             DasmList.ItemActivated += (_, __) => ToggleDasmBreakpoint();
+            DasmList.SelectedIndexChanged += (_, index) =>
+            {
+                if (index >= 0 && index < DasmPanel.VisibleLineCount)
+                    DasmPanel.ActiveLine = index;
+            };
             DataList.ItemActivated += (_, __) => EditDataAtSelection();
+            DataList.SelectedIndexChanged += (_, index) =>
+            {
+                if (index >= 0 && index < DataPanel.VisibleLineCount)
+                    DataPanel.ActiveLine = index;
+            };
             RegistersList.ItemActivated += (_, __) => EditSelectedRegister();
             FlagsList.ItemActivated += (_, __) =>
             {
@@ -177,23 +187,109 @@ namespace Kozynax.UI
 
         public void SyncPanelLists()
         {
-            var dasmSel = DasmList.SelectedIndex;
             var dasmLines = new List<string>();
             foreach (var line in DasmPanel.GetLines())
                 dasmLines.Add(FormatDasmLine(line));
             DasmList.Reset(dasmLines);
-            if (dasmSel >= 0 && dasmSel < DasmList.Count)
-                DasmList.SelectedIndex = dasmSel;
-            else if (DasmPanel.ActiveLine >= 0 && DasmPanel.ActiveLine < DasmList.Count)
+            if (DasmPanel.ActiveLine >= 0 && DasmPanel.ActiveLine < DasmList.Count)
                 DasmList.SelectedIndex = DasmPanel.ActiveLine;
+            else if (DasmList.Count > 0)
+                DasmList.SelectedIndex = 0;
 
-            var dataSel = DataList.SelectedIndex;
             var dataLines = new List<string>();
             foreach (var line in DataPanel.GetLines())
                 dataLines.Add(FormatDataLine(line));
             DataList.Reset(dataLines);
-            if (dataSel >= 0 && dataSel < DataList.Count)
-                DataList.SelectedIndex = dataSel;
+            if (DataPanel.ActiveLine >= 0 && DataPanel.ActiveLine < DataList.Count)
+                DataList.SelectedIndex = DataPanel.ActiveLine;
+            else if (DataList.Count > 0)
+                DataList.SelectedIndex = 0;
+        }
+
+        /// <summary>
+        /// Match WinForms panels: visible row count follows the arranged control height.
+        /// </summary>
+        public void FitVisibleLines(int dasmRows, int dataRows)
+        {
+            var changed = false;
+            if (dasmRows > 0 && DasmPanel.VisibleLineCount != dasmRows)
+            {
+                DasmPanel.VisibleLineCount = dasmRows;
+                if (DasmPanel.ActiveLine >= dasmRows)
+                    DasmPanel.ActiveLine = dasmRows - 1;
+                changed = true;
+            }
+
+            if (dataRows > 0 && DataPanel.VisibleLineCount != dataRows)
+            {
+                DataPanel.VisibleLineCount = dataRows;
+                if (DataPanel.ActiveLine >= dataRows)
+                    DataPanel.ActiveLine = dataRows - 1;
+                changed = true;
+            }
+
+            if (!changed)
+                return;
+
+            DasmPanel.UpdateLines();
+            DataPanel.UpdateLines();
+            SyncPanelLists();
+        }
+
+        public void DasmNavigateUp()
+        {
+            DasmPanel.ControlUp();
+            DasmPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DasmNavigateDown()
+        {
+            DasmPanel.ControlDown();
+            DasmPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DasmNavigatePageUp()
+        {
+            DasmPanel.ControlPageUp();
+            DasmPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DasmNavigatePageDown()
+        {
+            DasmPanel.ControlPageDown();
+            DasmPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DataNavigateUp()
+        {
+            DataPanel.ControlUp();
+            DataPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DataNavigateDown()
+        {
+            DataPanel.ControlDown();
+            DataPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DataNavigatePageUp()
+        {
+            DataPanel.ControlPageUp();
+            DataPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DataNavigatePageDown()
+        {
+            DataPanel.ControlPageDown();
+            DataPanel.Update();
+            SyncPanelLists();
         }
 
         private static string FormatDasmLine(Line line)
