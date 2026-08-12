@@ -92,6 +92,13 @@ namespace Kozynax.UI
                 BreakpointClick(this, fADDRS[lineNumber]);
             UpdateLines();
         }
+
+        public bool IsBreakpointLine(int line)
+        {
+            if (fBreakpoints == null || line < 0 || line >= VisibleLineCount)
+                return false;
+            return fBreakpoints[line];
+        }
         
         public List<Line> GetLines()
         {
