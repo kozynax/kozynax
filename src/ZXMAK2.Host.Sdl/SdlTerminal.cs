@@ -202,10 +202,13 @@ namespace ZXMAK2.Host.SdlBackend
                             if (sym >= 32 && sym < 127)
                                 ch = (char)sym;
                         }
-                        // Skip bare KeyDown for printable keys in text mode — TextInput follows.
+                        // Skip bare KeyDown for keys that TextInput will deliver (digits are
+                        // Unknown; letters are mapped A–Z — both must wait for TextInput).
+                        // Keep Ctrl/Alt+letter KeyDown (e.g. Ctrl+G) — TextInput does not follow.
                         if (_uiTextDepth > 0
-                            && key == TerminalKey.Unknown
-                            && ch == '\0')
+                            && ch == '\0'
+                            && (mods & (TerminalKeyModifiers.Ctrl | TerminalKeyModifiers.Alt)) == 0
+                            && (key == TerminalKey.Unknown || IsLetterKey(key)))
                             break;
                         terminalEvent = TerminalEvent.KeyDown(key, ch, mods);
                         return true;
@@ -278,6 +281,9 @@ namespace ZXMAK2.Host.SdlBackend
                 result |= TerminalKeyModifiers.Alt;
             return result;
         }
+
+        private static bool IsLetterKey(TerminalKey key)
+            => key >= TerminalKey.A && key <= TerminalKey.Z;
 
         private static TerminalMouseButton MapMouseButton(byte button)
         {
