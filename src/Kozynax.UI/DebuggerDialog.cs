@@ -607,8 +607,13 @@ namespace Kozynax.UI
 
         public void StepInto()
         {
-            if (m_spectrum == null || m_spectrum.IsRunning)
+            if (m_spectrum == null)
                 return;
+            if (m_spectrum.IsRunning)
+            {
+                Stop();
+                return;
+            }
             try
             {
                 m_spectrum.DoStepInto();
@@ -623,8 +628,13 @@ namespace Kozynax.UI
 
         public void StepOver()
         {
-            if (m_spectrum == null || m_spectrum.IsRunning)
+            if (m_spectrum == null)
                 return;
+            if (m_spectrum.IsRunning)
+            {
+                Stop();
+                return;
+            }
             try
             {
                 m_spectrum.DoStepOver();

@@ -45,26 +45,36 @@ namespace Kozynax.UI
 
         public ushort ActiveAddress
         {
-            get { if ((ActiveLine >= 0) && (ActiveLine < LineCount)) return fADDRS[ActiveLine]; return 0; }
+            get
+            {
+                if (fADDRS != null && ActiveLine >= 0 && ActiveLine < fADDRS.Length)
+                    return fADDRS[ActiveLine];
+                return 0;
+            }
             set
             {
-                for (int i = 0; i <= VisibleLineCount; i++)
-                    if (fADDRS[i] == value)
-                    {
-                        if (ActiveLine != i)
+                // fADDRS is only allocated by UpdateLines(); on the very first call
+                // (e.g. opening the debugger for the first time) it may still be null.
+                if (fADDRS != null)
+                {
+                    for (int i = 0; i <= VisibleLineCount; i++)
+                        if (fADDRS[i] == value)
                         {
-                            if (i == VisibleLineCount)
+                            if (ActiveLine != i)
                             {
-                                _topAddress = fADDRS[1];
-                                ActiveLine = i - 1;
+                                if (i == VisibleLineCount)
+                                {
+                                    _topAddress = fADDRS[1];
+                                    ActiveLine = i - 1;
+                                }
+                                else
+                                    ActiveLine = i;
                             }
-                            else
-                                ActiveLine = i;
+                            UpdateLines();
+                            Update();
+                            return;
                         }
-                        UpdateLines();
-                        Update();
-                        return;
-                    }
+                }
                 TopAddress = value;
             }
         }

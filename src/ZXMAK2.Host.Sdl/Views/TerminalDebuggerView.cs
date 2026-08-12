@@ -61,7 +61,10 @@ namespace ZXMAK2.Host.SdlBackend.Views
             _closeRequested = false;
             _loopActive = true;
             _terminal.PrepareForUiInput();
-            _terminal.CaptureBackdrop();
+            // Skip backdrop capture: reading back the just-presented frame (RenderReadPixels)
+            // can block indefinitely on some backends (observed hang on Wayland) when this is
+            // the first Terminal UI session opened directly from the bare emulator window
+            // (e.g. Esc). The dialog falls back to a solid background (see SdlTerminal.Clear).
 
             var presenter = new TerminalKozuiPresenter(_terminal);
             presenter.Attach(_dialog.Root);
