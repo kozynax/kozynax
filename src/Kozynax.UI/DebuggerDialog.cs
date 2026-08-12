@@ -8,10 +8,10 @@ using ZXMAK2.Dependency;
 using ZXMAK2.Engine.Cpu.Tools;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Host.WinForms.Lib.Layout;
-using Button = ZXMAK2.Host.WinForms.Lib.Button;
 
 namespace Kozynax.UI
 {
@@ -807,9 +807,30 @@ namespace Kozynax.UI
         }
 
         public delegate string GetFilenameFunc(string dialogTitle, string filter);
+
+        /// <summary>Load a binary block into memory (hex view Ctrl+L).</summary>
+        public void LoadMemoryBlock()
+        {
+            if (m_spectrum == null)
+                return;
+            SaveDataToFile(PickOpenFileName);
+            UpdateCPU(false);
+        }
+
+        /// <summary>Save a memory block to a binary file (hex view Ctrl+S).</summary>
+        public void SaveMemoryBlock()
+        {
+            if (m_spectrum == null)
+                return;
+            ReadDataFromFile(PickSaveFileName);
+        }
+
         public void SaveDataToFile(GetFilenameFunc getFilename)
         {
-            int s_addr = 0x4000;
+            if (m_spectrum == null || getFilename == null)
+                return;
+
+            int s_addr = DataPanel.TopAddress;
             int s_len = 6912;
 
             var fileName = getFilename("Load Block...", "All files (*.*)|*.*");
@@ -821,7 +842,9 @@ namespace Kozynax.UI
 
             if (s_len < 1)
                 return;
-            var service = Locator.Resolve<IUserQuery>();
+            var service = Locator.TryResolve<IUserQuery>();
+            if (service == null)
+                return;
             if (!service.QueryValue("Load Block", "Memory Address:", "#{0:X4}", ref s_addr, 0, 0xFFFF))
                 return;
             if (!service.QueryValue("Load Block", "Block Length:", "#{0:X4}", ref s_len, 0, 0x10000))
@@ -831,14 +854,21 @@ namespace Kozynax.UI
             using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                 fs.Read(data, 0, data.Length);
             m_spectrum.WriteMemory((ushort)s_addr, data, 0, s_len);
+            DataPanel.TopAddress = (ushort)s_addr;
+            SyncPanelLists();
         }
 
         public void ReadDataFromFile(GetFilenameFunc getFilename)
         {
-            int s_addr = 0x4000;
+            if (m_spectrum == null || getFilename == null)
+                return;
+
+            int s_addr = DataPanel.TopAddress;
             int s_len = 6912;
 
-            var service = Locator.Resolve<IUserQuery>();
+            var service = Locator.TryResolve<IUserQuery>();
+            if (service == null)
+                return;
             if (!service.QueryValue("Save Block", "Memory Address:", "#{0:X4}", ref s_addr, 0, 0xFFFF))
                 return;
             if (!service.QueryValue("Save Block", "Block Length:", "#{0:X4}", ref s_len, 0, 0x10000))
@@ -852,6 +882,42 @@ namespace Kozynax.UI
 
             using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Read))
                 fs.Write(data, 0, data.Length);
+        }
+
+        private static string PickOpenFileName(string title, string filter)
+        {
+            var dialog = Locator.TryResolve<IOpenFileDialog>();
+            if (dialog == null)
+                return null;
+            using (dialog)
+            {
+                dialog.Title = title;
+                dialog.Filter = filter;
+                dialog.FileName = string.Empty;
+                dialog.CheckFileExists = true;
+                dialog.ShowReadOnly = false;
+                if (dialog.ShowDialog(null) != DlgResult.OK)
+                    return null;
+                return dialog.FileName;
+            }
+        }
+
+        private static string PickSaveFileName(string title, string filter)
+        {
+            var dialog = Locator.TryResolve<ISaveFileDialog>();
+            if (dialog == null)
+                return null;
+            using (dialog)
+            {
+                dialog.Title = title;
+                dialog.Filter = filter;
+                dialog.DefaultExt = "bin";
+                dialog.FileName = string.Empty;
+                dialog.OverwritePrompt = true;
+                if (dialog.ShowDialog(null) != DlgResult.OK)
+                    return null;
+                return dialog.FileName;
+            }
         }
 
         private Panel BuildTree()

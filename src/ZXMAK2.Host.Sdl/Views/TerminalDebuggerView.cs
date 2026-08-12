@@ -107,6 +107,9 @@ namespace ZXMAK2.Host.SdlBackend.Views
                         if (ev.Kind == TerminalEventKind.KeyDown && TryHandleGotoAddress(presenter, ev))
                             return true;
 
+                        if (ev.Kind == TerminalEventKind.KeyDown && TryHandleHexBlockIo(presenter, ev))
+                            return true;
+
                         if (ev.Kind == TerminalEventKind.KeyDown && TryHandlePanelKey(presenter, ev.Key))
                             return true;
 
@@ -275,6 +278,28 @@ namespace ZXMAK2.Host.SdlBackend.Views
             if (ReferenceEquals(focused, _dialog.DataList))
             {
                 _dialog.DataGoToAddress();
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryHandleHexBlockIo(TerminalKozuiPresenter presenter, TerminalEvent ev)
+        {
+            if (_dialog == null || presenter == null || !ev.Ctrl)
+                return false;
+            if (!ReferenceEquals(presenter.Focused, _dialog.DataList))
+                return false;
+
+            if (ev.Key == TerminalKey.L)
+            {
+                _dialog.LoadMemoryBlock();
+                return true;
+            }
+
+            if (ev.Key == TerminalKey.S)
+            {
+                _dialog.SaveMemoryBlock();
                 return true;
             }
 
