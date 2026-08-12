@@ -180,8 +180,9 @@ namespace ZXMAK2.Host.SdlBackend
                     case EventType.Textinput:
                     {
                         // Layout-aware characters (Shift+3 → '#', etc.).
+                        // Space (32) is TerminalKey.Space on KeyDown — skip the TextInput duplicate.
                         var ch = (char)e.Text.Text[0];
-                        if (ch >= 32 && ch < 127)
+                        if (ch > 32 && ch < 127)
                         {
                             terminalEvent = TerminalEvent.KeyDown(TerminalKey.Unknown, ch);
                             return true;
@@ -191,6 +192,7 @@ namespace ZXMAK2.Host.SdlBackend
                     case EventType.Keydown:
                     {
                         var key = MapKey(e.Key.Keysym);
+                        var mods = MapModifiers();
                         // Printable chars come from TextInput while UI text mode is active
                         // (avoids wrong unshifted glyphs and double-inserts).
                         var ch = '\0';
@@ -205,11 +207,11 @@ namespace ZXMAK2.Host.SdlBackend
                             && key == TerminalKey.Unknown
                             && ch == '\0')
                             break;
-                        terminalEvent = TerminalEvent.KeyDown(key, ch);
+                        terminalEvent = TerminalEvent.KeyDown(key, ch, mods);
                         return true;
                     }
                     case EventType.Keyup:
-                        terminalEvent = TerminalEvent.KeyUp(MapKey(e.Key.Keysym));
+                        terminalEvent = TerminalEvent.KeyUp(MapKey(e.Key.Keysym), MapModifiers());
                         return true;
                     case EventType.Mousebuttondown:
                     {
@@ -264,6 +266,19 @@ namespace ZXMAK2.Host.SdlBackend
             rendererY = windowY * outH / winH;
         }
 
+        private TerminalKeyModifiers MapModifiers()
+        {
+            var mods = (Keymod)_runtime.Sdl.GetModState();
+            var result = TerminalKeyModifiers.None;
+            if ((mods & (Keymod.Ctrl | Keymod.Lctrl | Keymod.Rctrl)) != 0)
+                result |= TerminalKeyModifiers.Ctrl;
+            if ((mods & (Keymod.Shift | Keymod.Lshift | Keymod.Rshift)) != 0)
+                result |= TerminalKeyModifiers.Shift;
+            if ((mods & (Keymod.Alt | Keymod.Lalt | Keymod.Ralt)) != 0)
+                result |= TerminalKeyModifiers.Alt;
+            return result;
+        }
+
         private static TerminalMouseButton MapMouseButton(byte button)
         {
             switch (button)
@@ -296,6 +311,8 @@ namespace ZXMAK2.Host.SdlBackend
                     return TerminalKey.Left;
                 case Scancode.ScancodeRight:
                     return TerminalKey.Right;
+                case Scancode.ScancodeSpace:
+                    return TerminalKey.Space;
             }
 
             var key = (KeyCode)keySym.Sym;
@@ -314,6 +331,7 @@ namespace ZXMAK2.Host.SdlBackend
                 case KeyCode.KPrior: return TerminalKey.PageUp;
                 case KeyCode.KPagedown: return TerminalKey.PageDown;
                 case KeyCode.KTab: return TerminalKey.Tab;
+                case KeyCode.KSpace: return TerminalKey.Space;
                 case KeyCode.KF3: return TerminalKey.F3;
                 case KeyCode.KF5: return TerminalKey.F5;
                 case KeyCode.KF7: return TerminalKey.F7;

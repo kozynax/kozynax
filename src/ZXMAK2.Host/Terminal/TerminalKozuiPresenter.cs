@@ -1021,10 +1021,18 @@ namespace ZXMAK2.Host.Terminal
                 var pw = content.Width * cellW;
                 var selected = index == listView.SelectedIndex;
                 var spans = listView.GetHighlightSpans?.Invoke(index);
+                var rowColors = listView.GetRowColors?.Invoke(index);
                 var rowHighlight = selected && !listView.SuppressRowHighlight;
-
+                // Selection overrides row tint (same order as WinForms DasmPanel).
                 if (rowHighlight)
                     _terminal.FillRect(px, py, pw, cellH, SelectedBg);
+                else if (rowColors.HasValue)
+                    _terminal.FillRect(
+                        px,
+                        py,
+                        pw,
+                        cellH,
+                        TerminalColor.Rgb(rowColors.Value.BgR, rowColors.Value.BgG, rowColors.Value.BgB));
 
                 var prefix = rowHighlight ? ">" : " ";
                 var itemText = listView.GetItemText(index) ?? string.Empty;
@@ -1033,7 +1041,9 @@ namespace ZXMAK2.Host.Terminal
                     ? Disabled
                     : rowHighlight
                         ? Accent
-                        : Fg;
+                        : rowColors.HasValue
+                            ? TerminalColor.Rgb(rowColors.Value.FgR, rowColors.Value.FgG, rowColors.Value.FgB)
+                            : Fg;
                 _terminal.DrawText(px, py, text, _scale, color);
 
                 if (spans == null || spans.Count == 0 || !listView.Enabled)

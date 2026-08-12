@@ -62,7 +62,9 @@ namespace Kozynax.UI
             DasmList = new ListView<string>
             {
                 ItemTextSelector = s => s ?? string.Empty,
-                ActivateOnClick = true,
+                // Enter still toggles; mouse needs a real double-click (WinForms-style).
+                ActivateOnClick = false,
+                ActivateOnSecondClick = false,
                 Dock = Dock.Fill,
                 MinWidth = 48,
                 MinHeight = 12,
@@ -80,6 +82,7 @@ namespace Kozynax.UI
                 MinHeight = 10,
             };
             DataList.GetHighlightSpans = GetDataHighlightSpans;
+            DasmList.GetRowColors = GetDasmRowColors;
             RegistersList = new ListView<string>
             {
                 ItemTextSelector = s => s ?? string.Empty,
@@ -90,14 +93,18 @@ namespace Kozynax.UI
             FlagsList = new ListView<string>
             {
                 ItemTextSelector = s => s ?? string.Empty,
-                ActivateOnClick = true,
+                // Enter still toggles; mouse needs a real double-click.
+                ActivateOnClick = false,
+                ActivateOnSecondClick = false,
                 MinWidth = 10,
                 MinHeight = 8,
             };
             StatesList = new ListView<string>
             {
                 ItemTextSelector = s => s ?? string.Empty,
-                ActivateOnClick = true,
+                // Enter still toggles; mouse needs a real double-click.
+                ActivateOnClick = false,
+                ActivateOnSecondClick = false,
                 MinWidth = 18,
                 MinHeight = 8,
             };
@@ -364,6 +371,19 @@ namespace Kozynax.UI
             };
         }
 
+        private ListRowColors? GetDasmRowColors(int row)
+        {
+            if (!DasmPanel.IsBreakpointLine(row))
+                return null;
+
+            // Match WinForms DasmPanel: BreakColor paper + BreakForeColor ink.
+            var bg = DasmPanel.BreakColor;
+            var fg = DasmPanel.BreakForeColor;
+            return new ListRowColors(
+                bg.R, bg.G, bg.B,
+                fg.R, fg.G, fg.B);
+        }
+
         private static char DisplayChar(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -499,6 +519,30 @@ namespace Kozynax.UI
             DasmPanel.ActiveAddress = m_spectrum.CPU.regs.PC;
             DasmPanel.UpdateLines();
             DasmPanel.Update();
+            SyncPanelLists();
+        }
+
+        public void DasmGoToAddress()
+        {
+            int addr = DasmPanel.TopAddress;
+            var service = Locator.TryResolve<IUserQuery>();
+            if (service == null)
+                return;
+            if (!service.QueryValue("Disassembly Address", "New Address:", "#{0:X4}", ref addr, 0, 0xFFFF))
+                return;
+            DasmPanel.TopAddress = (ushort)addr;
+            SyncPanelLists();
+        }
+
+        public void DataGoToAddress()
+        {
+            int addr = DataPanel.TopAddress;
+            var service = Locator.TryResolve<IUserQuery>();
+            if (service == null)
+                return;
+            if (!service.QueryValue("Data Panel Address", "New Address:", "#{0:X4}", ref addr, 0, 0xFFFF))
+                return;
+            DataPanel.TopAddress = (ushort)addr;
             SyncPanelLists();
         }
 
@@ -679,6 +723,20 @@ namespace Kozynax.UI
             DasmPanel.ToggleBreakpoint(DasmList.SelectedIndex);
             UpdateCPU(false);
         }
+
+        /// <summary>Select a disassembly row (mouse click).</summary>
+        public void DasmSelectLine(int line)
+        {
+            if (line < 0 || line >= DasmPanel.VisibleLineCount)
+                return;
+            DasmPanel.ActiveLine = line;
+            if (line < DasmList.Count)
+                DasmList.SelectedIndex = line;
+        }
+
+        /// <summary>Toggle breakpoint on the selected disassembly row.</summary>
+        public void ToggleSelectedDasmBreakpoint()
+            => ToggleDasmBreakpoint();
 
         /// <summary>Open the POKE dialog for the currently selected hex byte.</summary>
         public void EditSelectedDataByte()

@@ -353,15 +353,28 @@ namespace ZXMAK2.Host.Terminal
                     if (terminalKey == TerminalKey.Unknown && ch == '\0')
                         continue;
 
-                    _events.Enqueue(TerminalEvent.KeyDown(terminalKey, ch));
+                    var mods = MapModifiers(keyInfo.Modifiers);
+                    _events.Enqueue(TerminalEvent.KeyDown(terminalKey, ch, mods));
                     if (terminalKey != TerminalKey.Unknown)
-                        _events.Enqueue(TerminalEvent.KeyUp(terminalKey));
+                        _events.Enqueue(TerminalEvent.KeyUp(terminalKey, mods));
                 }
             }
             catch
             {
                 // stdin closed / disposed
             }
+        }
+
+        private static TerminalKeyModifiers MapModifiers(ConsoleModifiers consoleMods)
+        {
+            var mods = TerminalKeyModifiers.None;
+            if ((consoleMods & ConsoleModifiers.Control) != 0)
+                mods |= TerminalKeyModifiers.Ctrl;
+            if ((consoleMods & ConsoleModifiers.Shift) != 0)
+                mods |= TerminalKeyModifiers.Shift;
+            if ((consoleMods & ConsoleModifiers.Alt) != 0)
+                mods |= TerminalKeyModifiers.Alt;
+            return mods;
         }
 
         private static bool TryMapKey(ConsoleKeyInfo info, out TerminalKey key)
@@ -379,6 +392,7 @@ namespace ZXMAK2.Host.Terminal
                 case ConsoleKey.PageUp: key = TerminalKey.PageUp; return true;
                 case ConsoleKey.PageDown: key = TerminalKey.PageDown; return true;
                 case ConsoleKey.Tab: key = TerminalKey.Tab; return true;
+                case ConsoleKey.Spacebar: key = TerminalKey.Space; return true;
                 case ConsoleKey.F3: key = TerminalKey.F3; return true;
                 case ConsoleKey.F5: key = TerminalKey.F5; return true;
                 case ConsoleKey.F7: key = TerminalKey.F7; return true;

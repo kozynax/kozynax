@@ -1,3 +1,5 @@
+using System;
+
 namespace ZXMAK2.Host.Terminal
 {
     public enum TerminalEventKind
@@ -20,6 +22,15 @@ namespace ZXMAK2.Host.Terminal
         Middle,
     }
 
+    [Flags]
+    public enum TerminalKeyModifiers
+    {
+        None = 0,
+        Ctrl = 1,
+        Shift = 2,
+        Alt = 4,
+    }
+
     public readonly struct TerminalEvent
     {
         public TerminalEvent(
@@ -29,7 +40,8 @@ namespace ZXMAK2.Host.Terminal
             int y = 0,
             TerminalMouseButton button = TerminalMouseButton.None,
             int wheelDelta = 0,
-            char ch = '\0')
+            char ch = '\0',
+            TerminalKeyModifiers modifiers = TerminalKeyModifiers.None)
         {
             Kind = kind;
             Key = key;
@@ -38,6 +50,7 @@ namespace ZXMAK2.Host.Terminal
             Button = button;
             WheelDelta = wheelDelta;
             Char = ch;
+            Modifiers = modifiers;
         }
 
         public TerminalEventKind Kind { get; }
@@ -51,14 +64,22 @@ namespace ZXMAK2.Host.Terminal
         public int WheelDelta { get; }
         /// <summary>Printable character when available (text input).</summary>
         public char Char { get; }
+        public TerminalKeyModifiers Modifiers { get; }
+
+        public bool Ctrl => (Modifiers & TerminalKeyModifiers.Ctrl) != 0;
 
         public static TerminalEvent QuitEvent => new TerminalEvent(TerminalEventKind.Quit);
 
-        public static TerminalEvent KeyDown(TerminalKey key, char ch = '\0')
-            => new TerminalEvent(TerminalEventKind.KeyDown, key, ch: ch);
+        public static TerminalEvent KeyDown(
+            TerminalKey key,
+            char ch = '\0',
+            TerminalKeyModifiers modifiers = TerminalKeyModifiers.None)
+            => new TerminalEvent(TerminalEventKind.KeyDown, key, ch: ch, modifiers: modifiers);
 
-        public static TerminalEvent KeyUp(TerminalKey key)
-            => new TerminalEvent(TerminalEventKind.KeyUp, key);
+        public static TerminalEvent KeyUp(
+            TerminalKey key,
+            TerminalKeyModifiers modifiers = TerminalKeyModifiers.None)
+            => new TerminalEvent(TerminalEventKind.KeyUp, key, modifiers: modifiers);
 
         public static TerminalEvent MouseDown(int x, int y, TerminalMouseButton button)
             => new TerminalEvent(TerminalEventKind.MouseDown, x: x, y: y, button: button);

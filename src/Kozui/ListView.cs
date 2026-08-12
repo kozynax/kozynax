@@ -18,6 +18,27 @@ namespace ZXMAK2.Host.WinForms.Lib
         public int Length { get; }
     }
 
+    /// <summary>Optional full-row tint (e.g. breakpoint red background).</summary>
+    public readonly struct ListRowColors
+    {
+        public ListRowColors(byte bgR, byte bgG, byte bgB, byte fgR, byte fgG, byte fgB)
+        {
+            BgR = bgR;
+            BgG = bgG;
+            BgB = bgB;
+            FgR = fgR;
+            FgG = fgG;
+            FgB = fgB;
+        }
+
+        public byte BgR { get; }
+        public byte BgG { get; }
+        public byte BgB { get; }
+        public byte FgR { get; }
+        public byte FgG { get; }
+        public byte FgB { get; }
+    }
+
     /// <summary>Non-generic surface for presenters (item text + selection).</summary>
     public abstract class ListView : KozuiControl
     {
@@ -42,6 +63,11 @@ namespace ZXMAK2.Host.WinForms.Lib
         /// Optional per-row highlight spans in <see cref="GetItemText"/> coordinates.
         /// </summary>
         public Func<int, IReadOnlyList<ListTextSpan>> GetHighlightSpans { get; set; }
+
+        /// <summary>
+        /// Optional full-row colors for non-selected rows (selection still uses the presenter theme).
+        /// </summary>
+        public Func<int, ListRowColors?> GetRowColors { get; set; }
 
         public abstract int Count { get; }
         public abstract int SelectedIndex { get; set; }
