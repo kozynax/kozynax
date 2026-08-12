@@ -458,13 +458,53 @@ namespace ZXMAK2.Host.SdlBackend
             {
                 var fs = DataContext.GetType().GetProperty("IsFullScreen");
                 if (fs != null && (bool)fs.GetValue(DataContext))
+                {
                     TryExecuteCommand("CommandViewFullScreen");
-                else
-                    TryExecuteCommand("CommandFileExit");
+                    return true;
+                }
+
+                // In the bare emulator window, Esc stops the CPU and opens the debugger
+                // instead of quitting. Falls back to Exit if no debugger is available
+                // (e.g. unsupported board).
+                if (TryOpenDebuggerAndStop())
+                    return true;
+
+                TryExecuteCommand("CommandFileExit");
                 return true;
             }
 
             return false;
+        }
+
+        private bool TryOpenDebuggerAndStop()
+        {
+            var debuggerCommand = _commands.Find(c => c.Text == "Debugger");
+            if (debuggerCommand == null || !debuggerCommand.CanExecute(this))
+                return false;
+
+            var runningProp = DataContext?.GetType().GetProperty("IsRunning");
+            var wasRunning = runningProp != null
+                && runningProp.GetValue(DataContext) is bool running
+                && running;
+            if (wasRunning)
+                TryExecuteCommand("CommandVmPause");
+
+            _keyboard.Reset();
+            debuggerCommand.Execute(this);
+            _keyboard.Reset();
+
+            // Debugger.Execute blocks until the dialog is closed. Resume emulation
+            // if it was running before we paused it for the debugger, unless the
+            // user already resumed it (e.g. pressed Run/F9) while inside.
+            if (wasRunning
+                && runningProp != null
+                && runningProp.GetValue(DataContext) is bool nowRunning
+                && !nowRunning)
+            {
+                TryExecuteCommand("CommandVmPause");
+            }
+
+            return true;
         }
 
         private bool IsHostHotKey(KeyCode key)

@@ -6,12 +6,15 @@ namespace ZXMAK2.Logging
 	{
 		private static void WriteFormat(ILog logger, ErrorLevel level, string fmt, object[] args)
 		{
-            
+			var msg = args != null && args.Length > 0 ? string.Format(fmt, args) : fmt;
+			Console.Error.WriteLine("[{0:HH:mm:ss.fff}] {1}: {2}", DateTime.Now, level, msg);
 		}
 
 		private static void WriteException(ILog logger, ErrorLevel level, string msg, Exception exception)
 		{
-            
+			Console.Error.WriteLine("[{0:HH:mm:ss.fff}] {1}: {2}", DateTime.Now, level, msg);
+			if (exception != null)
+				Console.Error.WriteLine(exception);
 		}
         
 		public static void DebugFormat(this ILog logger, string fmt, object[] args)
