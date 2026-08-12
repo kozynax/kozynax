@@ -111,6 +111,14 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
     public sealed class SdlSaveFileDialog : ISaveFileDialog
     {
+        private readonly ITerminal _terminal;
+
+        public SdlSaveFileDialog(ITerminal terminal)
+        {
+            _terminal = terminal;
+            OverwritePrompt = true;
+        }
+
         public string Title { get; set; }
         public string Filter { get; set; }
         public string DefaultExt { get; set; }
@@ -119,8 +127,26 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
         public DlgResult ShowDialog(object owner)
         {
-            Console.WriteLine("Save file dialog is not available in SDL host.");
-            return DlgResult.Cancel;
+            _terminal.PrepareForUiInput();
+            try
+            {
+                var picker = new FilePickerScreen(_terminal);
+                if (!picker.TryPickSave(
+                        Title ?? "Save...",
+                        Filter,
+                        DefaultExt,
+                        FileName,
+                        OverwritePrompt,
+                        out var path))
+                    return DlgResult.Cancel;
+
+                FileName = path;
+                return DlgResult.OK;
+            }
+            finally
+            {
+                _terminal.EndUiInput();
+            }
         }
 
         public void Dispose() { }
