@@ -126,8 +126,18 @@ namespace ZXMAK2.Host.SdlBackend
             _sound = new SdlSound(_sdl);
             _keyboard = new SdlKeyboard();
             _mouse = new SdlMouse(_sdl);
-            runtime.PrepareUiInput = _mouse.SuspendForUi;
-            runtime.EndUiInput = _mouse.ResumeAfterUi;
+            // Terminal UI steals SDL key events; clear the Spectrum matrix on enter/leave
+            // so keyups missed while overlays were open cannot leave stuck keys.
+            runtime.PrepareUiInput = () =>
+            {
+                _keyboard.Reset();
+                _mouse.SuspendForUi();
+            };
+            runtime.EndUiInput = () =>
+            {
+                _keyboard.Reset();
+                _mouse.ResumeAfterUi();
+            };
             _joystick = new SdlJoystick(_sdl);
             _host = new HostService(_video, _sound, _keyboard, _mouse, _joystick);
 
