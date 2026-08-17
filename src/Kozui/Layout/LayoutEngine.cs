@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace ZXMAK2.Host.WinForms.Lib.Layout
 {
@@ -130,13 +131,49 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
             var spacing = Math.Max(0, stack.Spacing);
             if (stack.Orientation == Orientation.Vertical)
             {
-                var y = inner.Y;
+                var visible = new List<KozuiControl>();
                 foreach (var child in stack.Children)
                 {
-                    if (!child.Visible)
-                        continue;
+                    if (child.Visible)
+                        visible.Add(child);
+                }
+
+                var fixedHeight = 0;
+                var stretchCount = 0;
+                for (var i = 0; i < visible.Count; i++)
+                {
+                    var child = visible[i];
+                    if (CanStretchStackMainAxis(child, vertical: true))
+                        stretchCount++;
+                    else
+                        fixedHeight += child.DesiredSize.Height;
+                }
+
+                var spacingTotal = visible.Count > 1 ? spacing * (visible.Count - 1) : 0;
+                var leftover = Math.Max(0, inner.Height - fixedHeight - spacingTotal);
+                var stretchBase = stretchCount > 0 ? leftover / stretchCount : 0;
+                var stretchRem = stretchCount > 0 ? leftover % stretchCount : 0;
+
+                var y = inner.Y;
+                for (var i = 0; i < visible.Count; i++)
+                {
+                    var child = visible[i];
                     var desired = child.DesiredSize;
-                    var childHeight = desired.Height;
+                    int childHeight;
+                    if (CanStretchStackMainAxis(child, vertical: true))
+                    {
+                        childHeight = Math.Max(desired.Height, stretchBase);
+                        if (stretchRem > 0)
+                        {
+                            childHeight++;
+                            stretchRem--;
+                        }
+                    }
+                    else
+                    {
+                        childHeight = desired.Height;
+                    }
+
                     var childWidth = AlignWidth(child, desired.Width, inner.Width);
                     var x = AlignX(child, childWidth, inner.X, inner.Width);
                     Arrange(child, new LayoutRect(x, y, childWidth, childHeight));
@@ -145,19 +182,68 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
             }
             else
             {
-                var x = inner.X;
+                var visible = new List<KozuiControl>();
                 foreach (var child in stack.Children)
                 {
-                    if (!child.Visible)
-                        continue;
+                    if (child.Visible)
+                        visible.Add(child);
+                }
+
+                var fixedWidth = 0;
+                var stretchCount = 0;
+                for (var i = 0; i < visible.Count; i++)
+                {
+                    var child = visible[i];
+                    if (CanStretchStackMainAxis(child, vertical: false))
+                        stretchCount++;
+                    else
+                        fixedWidth += child.DesiredSize.Width;
+                }
+
+                var spacingTotal = visible.Count > 1 ? spacing * (visible.Count - 1) : 0;
+                var leftover = Math.Max(0, inner.Width - fixedWidth - spacingTotal);
+                var stretchBase = stretchCount > 0 ? leftover / stretchCount : 0;
+                var stretchRem = stretchCount > 0 ? leftover % stretchCount : 0;
+
+                var x = inner.X;
+                for (var i = 0; i < visible.Count; i++)
+                {
+                    var child = visible[i];
                     var desired = child.DesiredSize;
-                    var childWidth = desired.Width;
+                    int childWidth;
+                    if (CanStretchStackMainAxis(child, vertical: false))
+                    {
+                        childWidth = Math.Max(desired.Width, stretchBase);
+                        if (stretchRem > 0)
+                        {
+                            childWidth++;
+                            stretchRem--;
+                        }
+                    }
+                    else
+                    {
+                        childWidth = desired.Width;
+                    }
+
                     var childHeight = AlignHeight(child, desired.Height, inner.Height);
                     var y = AlignY(child, childHeight, inner.Y, inner.Height);
                     Arrange(child, new LayoutRect(x, y, childWidth, childHeight));
                     x += childWidth + spacing;
                 }
             }
+        }
+
+        /// <summary>
+        /// Labels/buttons default to Stretch but must not eat leftover stack space;
+        /// only content panes (lists, etc.) grow along the stack main axis.
+        /// </summary>
+        private static bool CanStretchStackMainAxis(KozuiControl child, bool vertical)
+        {
+            if (child is Label || child is Button || child is CheckBox)
+                return false;
+            return vertical
+                ? child.VerticalAlignment == VerticalAlignment.Stretch
+                : child.HorizontalAlignment == HorizontalAlignment.Stretch;
         }
 
         private static LayoutSize MeasureDock(DockPanel dock, LayoutSize available)
@@ -394,10 +480,26 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                         width = Math.Max(width, Math.Min(40, text.Length + 1));
                 }
 
-                var rows = Math.Max(3, count > 0 ? count : 3);
+                // MinHeight is a fixed viewport (includes 1-cell panel chrome top+bottom),
+                // not a floor that grows with item count — otherwise a long list inside a
+                // vertical StackPanel (unconstrained measure) overlaps siblings below.
+                int rows;
                 if (available.Height < int.MaxValue / 8)
-                    rows = Math.Max(3, Math.Min(rows, available.Height));
-                return new LayoutSize(width, Math.Max(control.MinHeight, rows));
+                {
+                    var minRows = control.MinHeight > 0 ? control.MinHeight : 3;
+                    var natural = Math.Max(minRows, count > 0 ? count : minRows);
+                    rows = Math.Max(minRows, Math.Min(natural, available.Height));
+                }
+                else if (control.MinHeight > 0)
+                {
+                    rows = control.MinHeight;
+                }
+                else
+                {
+                    rows = Math.Max(3, count > 0 ? count : 3);
+                }
+
+                return new LayoutSize(width, rows);
             }
 
             if (control is ImageView)

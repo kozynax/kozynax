@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using Kozynax.UI;
-using Silk.NET.SDL;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Terminal;
@@ -10,35 +9,29 @@ namespace ZXMAK2.Host.SdlBackend.Services
 {
     public sealed class SdlUserMessage : IUserMessage
     {
-        private readonly Sdl _sdl;
-
-        public SdlUserMessage(Sdl sdl)
-        {
-            _sdl = sdl;
-        }
-
         public void ErrorDetails(Exception ex)
-            => Show(MessageBoxFlags.Error, "Error", ex?.ToString() ?? "Unknown error");
+            => Show("Error", ex?.ToString() ?? "Unknown error");
 
         public void Error(Exception ex)
-            => Show(MessageBoxFlags.Error, "Error", ex?.Message ?? "Unknown error");
+            => Show("Error", ex?.Message ?? "Unknown error");
 
         public void Error(string fmt, params object[] args)
-            => Show(MessageBoxFlags.Error, "Error", string.Format(fmt, args));
+            => Show("Error", string.Format(fmt, args));
 
         public void Warning(Exception ex)
-            => Show(MessageBoxFlags.Warning, "Warning", ex?.Message ?? "Unknown warning");
+            => Show("Warning", ex?.Message ?? "Unknown warning");
 
         public void Warning(string fmt, params object[] args)
-            => Show(MessageBoxFlags.Warning, "Warning", string.Format(fmt, args));
+            => Show("Warning", string.Format(fmt, args));
 
         public void Info(string fmt, params object[] args)
-            => Show(MessageBoxFlags.Information, "Info", string.Format(fmt, args));
+            => Show("Info", string.Format(fmt, args));
 
-        private unsafe void Show(MessageBoxFlags flags, string title, string message)
+        private static void Show(string title, string message)
         {
             Logger.Error("{0}: {1}", title, message);
-            _sdl.ShowSimpleMessageBox((uint)flags, title, message, null);
+            ConfirmDialog.ForButtonSet(message, title, DlgButtonSet.OK)
+                .ShowDialog(null);
         }
     }
 
@@ -51,7 +44,7 @@ namespace ZXMAK2.Host.SdlBackend.Services
         }
 
         public object ObjectSelector(object[] objArray, string caption)
-            => objArray != null && objArray.Length > 0 ? objArray[0] : null;
+            => ObjectSelectorDialog.Select(objArray, caption);
 
         public bool QueryText(string caption, string text, ref string value)
             => InputDialog.Query(caption, text, ref value);

@@ -30,7 +30,7 @@ namespace ZXMAK2.Host.Terminal
         private KozuiControl _root;
         private readonly List<KozuiControl> _focusables = new List<KozuiControl>();
         private int _focusIndex;
-        private int _listScroll;
+        private readonly Dictionary<ListView, int> _listScrollByView = new Dictionary<ListView, int>();
         private KozuiControl _activeRegion;
         private bool _needsInitialFocus;
         private Button _pressedButton;
@@ -64,7 +64,7 @@ namespace ZXMAK2.Host.Terminal
         public void Attach(KozuiControl root)
         {
             _root = root;
-            _listScroll = 0;
+            _listScrollByView.Clear();
             _needsInitialFocus = true;
             _focusIndex = 0;
             ClearPointerPress();
@@ -384,7 +384,7 @@ namespace ZXMAK2.Host.Terminal
             if (cellY < content.Y || cellY >= content.Y + content.Height)
                 return -1;
 
-            var index = _listScroll + (cellY - content.Y);
+            var index = GetListScroll(listView) + (cellY - content.Y);
             if (index < 0 || index >= listView.Count)
                 return -1;
             return index;
@@ -529,15 +529,55 @@ namespace ZXMAK2.Host.Terminal
             }
         }
 
+        private int GetListScroll(ListView listView)
+        {
+            if (listView == null)
+                return 0;
+            return _listScrollByView.TryGetValue(listView, out var scroll) ? scroll : 0;
+        }
+
+        private void SetListScroll(ListView listView, int scroll)
+        {
+            if (listView == null)
+                return;
+            if (scroll <= 0)
+                _listScrollByView.Remove(listView);
+            else
+                _listScrollByView[listView] = scroll;
+        }
+
         private void EnsureListVisible(ListView listView, int visible)
         {
+            if (listView == null)
+                return;
+
+            var count = listView.Count;
+            visible = Math.Max(1, visible);
+            var scroll = GetListScroll(listView);
+
+            // No scrolling needed when everything fits.
+            if (count <= visible)
+            {
+                SetListScroll(listView, 0);
+                return;
+            }
+
             var selected = listView.SelectedIndex;
-            if (selected < _listScroll)
-                _listScroll = selected;
-            else if (selected >= _listScroll + visible)
-                _listScroll = selected - visible + 1;
-            if (_listScroll < 0)
-                _listScroll = 0;
+            if (selected < 0)
+                selected = 0;
+
+            if (selected < scroll)
+                scroll = selected;
+            else if (selected >= scroll + visible)
+                scroll = selected - visible + 1;
+
+            var maxScroll = Math.Max(0, count - visible);
+            if (scroll < 0)
+                scroll = 0;
+            else if (scroll > maxScroll)
+                scroll = maxScroll;
+
+            SetListScroll(listView, scroll);
         }
 
         private void MoveFocus(int delta)
@@ -1006,12 +1046,13 @@ namespace ZXMAK2.Host.Terminal
             var focused = ReferenceEquals(listView, FocusedControl());
             var visible = Math.Max(1, content.Height);
             EnsureListVisible(listView, visible);
+            var scroll = GetListScroll(listView);
             var cellW = TerminalFont.GlyphWidth * _scale;
             var cellH = TerminalFont.GlyphHeight * _scale;
 
             for (var row = 0; row < visible; row++)
             {
-                var index = _listScroll + row;
+                var index = scroll + row;
                 if (index >= listView.Count)
                     break;
 

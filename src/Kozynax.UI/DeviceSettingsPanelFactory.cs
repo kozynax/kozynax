@@ -48,12 +48,13 @@ namespace Kozynax.UI
 
         private static object TryCreateSettings(BusManager bus, IHostService host, BusDeviceBase device)
         {
+            var deviceType = device.GetType();
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 Type settingsType;
                 try
                 {
-                    settingsType = FindDeviceSettingsType(device.GetType(), asm);
+                    settingsType = FindDeviceSettingsType(deviceType, asm);
                 }
                 catch
                 {
@@ -66,13 +67,7 @@ namespace Kozynax.UI
                 try
                 {
                     var settings = Activator.CreateInstance(settingsType);
-                    var init = settingsType.GetMethod("Init", new[] { typeof(BusManager), typeof(IHostService), device.GetType() });
-                    if (init == null)
-                    {
-                        // Try interface / base argument
-                        init = settingsType.GetMethods()
-                            .FirstOrDefault(m => m.Name == "Init" && m.GetParameters().Length == 3);
-                    }
+                    var init = FindInitMethod(settingsType, deviceType);
                     if (init == null)
                         continue;
                     init.Invoke(settings, new object[] { bus, host, device });
@@ -84,6 +79,27 @@ namespace Kozynax.UI
                 }
             }
 
+            return null;
+        }
+
+        private static MethodInfo FindInitMethod(Type settingsType, Type deviceType)
+        {
+            foreach (var method in settingsType.GetMethods(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (method.Name != "Init")
+                    continue;
+                var parameters = method.GetParameters();
+                if (parameters.Length != 3)
+                    continue;
+                if (parameters[0].ParameterType != typeof(BusManager))
+                    continue;
+                if (parameters[1].ParameterType != typeof(IHostService))
+                    continue;
+                // DeviceSettings<T>.Init(..., T device) — T must accept this device.
+                if (!parameters[2].ParameterType.IsAssignableFrom(deviceType))
+                    continue;
+                return method;
+            }
             return null;
         }
 
@@ -104,18 +120,17 @@ namespace Kozynax.UI
             }
 
             var candidates = new List<Type>();
-            foreach (var type in IterateTypes(deviceType))
+            foreach (var t in types)
             {
-                foreach (var t in types)
-                {
-                    if (t == null || !t.IsClass || t.IsAbstract)
-                        continue;
-                    var arg = GetDeviceSettingsArg(t);
-                    if (arg == null)
-                        continue;
-                    if (arg.IsAssignableFrom(type) || type.IsAssignableFrom(arg) || arg == type)
-                        candidates.Add(t);
-                }
+                if (t == null || !t.IsClass || t.IsAbstract)
+                    continue;
+                var arg = GetDeviceSettingsArg(t);
+                if (arg == null)
+                    continue;
+                // Only DeviceSettings<T> where the device is a T (not the reverse —
+                // BusDeviceBase.IsAssignableFrom(HayesModem) wrongly matched every device).
+                if (arg.IsAssignableFrom(deviceType))
+                    candidates.Add(t);
             }
 
             return candidates
@@ -147,17 +162,6 @@ namespace Kozynax.UI
             if (arg.IsAssignableFrom(deviceType))
                 return 50;
             return 0;
-        }
-
-        private static IEnumerable<Type> IterateTypes(Type type)
-        {
-            while (type != null && type != typeof(object))
-            {
-                yield return type;
-                foreach (var iface in type.GetInterfaces())
-                    yield return iface;
-                type = type.BaseType;
-            }
         }
 
         private static DevicePanel BuildKnownPanel(object settings)
@@ -215,6 +219,8 @@ namespace Kozynax.UI
             {
                 Orientation = Orientation.Vertical,
                 Spacing = 1,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
             };
             stack.Add(memory.TypeTitle);
             stack.Add(memory.TypeList);
