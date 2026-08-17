@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using Kozui.Interfaces;
 using Kozynax.UI;
@@ -7,6 +8,7 @@ using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Terminal;
 using ZXMAK2.Host.WinForms.Lib;
+using ZXMAK2.Mvvm;
 
 namespace ZXMAK2.Host.SdlBackend.Views
 {
@@ -111,6 +113,12 @@ namespace ZXMAK2.Host.SdlBackend.Views
                             return true;
 
                         if (ev.Kind == TerminalEventKind.KeyDown && TryHandlePanelKey(presenter, ev.Key))
+                            return true;
+
+                        // Right-click context menus (WinForms FormCPU parity).
+                        if (ev.Kind == TerminalEventKind.MouseDown
+                            && ev.Button == TerminalMouseButton.Right
+                            && TryShowPanelContextMenu(presenter, ev))
                             return true;
 
                         // Hex click: select byte (and poke on double-click). May fall through to Route.
@@ -408,6 +416,78 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
             return true;
         }
+
+        private bool TryShowPanelContextMenu(TerminalKozuiPresenter presenter, TerminalEvent ev)
+        {
+            if (_dialog == null || presenter == null)
+                return false;
+
+            IReadOnlyList<MenuNode> items = null;
+            if (IsPointOver(_dialog.DasmList, ev.X, ev.Y))
+            {
+                if (TryHitDasmRow(ev.X, ev.Y, out var dasmRow))
+                    _dialog.DasmSelectLine(dasmRow);
+                presenter.Focus(_dialog.DasmList);
+                items = BuildDasmContextMenu();
+            }
+            else if (IsPointOver(_dialog.DataList, ev.X, ev.Y))
+            {
+                if (TryHitDataCell(ev.X, ev.Y, out var dataRow, out var dataCol))
+                    _dialog.DataSelectCell(dataRow, dataCol);
+                presenter.Focus(_dialog.DataList);
+                items = BuildDataContextMenu();
+            }
+            else
+            {
+                return false;
+            }
+
+            var menu = new ContextMenuScreen(_terminal)
+            {
+                Underlay = () =>
+                {
+                    var dasmRows = Math.Max(0, _dialog.DasmList.ArrangedBounds.Height - 2);
+                    if (dasmRows > 0)
+                        _dialog.FitVisibleLines(dasmRows);
+                    presenter.DrawFrame();
+                },
+            };
+            menu.Run(items, ev.X, ev.Y);
+            return true;
+        }
+
+        private IReadOnlyList<MenuNode> BuildDasmContextMenu()
+            => new[]
+            {
+                Cmd("Goto address...", () => _dialog.DasmGoToAddress()),
+                Cmd("Goto PC", () => _dialog.DasmGoToPC()),
+                MenuPopupOverlay.SeparatorNode(),
+                Cmd("Reset breakpoints", () => _dialog.ClearBreakpoints()),
+                MenuPopupOverlay.SeparatorNode(),
+                Cmd("Load Block...", () => _dialog.LoadMemoryBlock()),
+                Cmd("Save Block...", () => _dialog.SaveMemoryBlock()),
+                MenuPopupOverlay.SeparatorNode(),
+                Cmd("Refresh", () => _dialog.DasmRefresh()),
+            };
+
+        private IReadOnlyList<MenuNode> BuildDataContextMenu()
+            => new[]
+            {
+                Cmd("Goto Address...", () => _dialog.DataGoToAddress()),
+                Cmd("Set column count...", () => _dialog.SetDataColumnCount()),
+                MenuPopupOverlay.SeparatorNode(),
+                Cmd("Load Block...", () => _dialog.LoadMemoryBlock()),
+                Cmd("Save Block...", () => _dialog.SaveMemoryBlock()),
+                MenuPopupOverlay.SeparatorNode(),
+                Cmd("Refresh", () => _dialog.DataRefresh()),
+            };
+
+        private static MenuNode Cmd(string caption, Action action)
+            => new MenuNode
+            {
+                Caption = caption,
+                Command = new CommandDelegate(action, () => true, caption),
+            };
 
         /// <summary>
         /// Handles disasm-panel mouse down. Single click selects; double-click toggles breakpoint.
