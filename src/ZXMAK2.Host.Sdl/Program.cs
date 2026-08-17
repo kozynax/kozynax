@@ -53,6 +53,7 @@ namespace ZXMAK2
             resolver.RegisterType<ISaveFileDialog, SdlSaveFileDialog>();
             resolver.RegisterType<IViewImplementation<ConfirmDialog>, TerminalConfirmDialogView>();
             resolver.RegisterType<IViewImplementation<InputDialog>, TerminalInputDialogView>();
+            resolver.RegisterType<IViewImplementation<ObjectSelectorDialog>, TerminalObjectSelectorView>();
             resolver.RegisterType<ITapeView, TerminalTapeView>();
             resolver.RegisterType<IViewImplementation<TapeSettings>, TerminalTapeView>();
             resolver.RegisterType<IMachineSettingsView, TerminalMachineSettingsView>();
