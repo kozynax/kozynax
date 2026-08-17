@@ -11,6 +11,7 @@ namespace Kozynax.UI
     /// Pick one object from a list (WinForms ObjectSelectorDialog equivalent).
     /// Used when a ZIP contains multiple loadable entries.
     /// </summary>
+    [KozuiDialog(CaptureBackdrop = true)]
     public class ObjectSelectorDialog : ViewDescription<ObjectSelectorDialog>
     {
         public event EventHandler CloseRequested;
@@ -72,7 +73,7 @@ namespace Kozynax.UI
             {
                 ItemTextSelector = FormatItem,
                 ActivateOnClick = false,
-                ActivateOnSecondClick = false,
+                ActivateOnSecondClick = true,
                 Dock = Dock.Fill,
                 MinWidth = 36,
                 MinHeight = 10,

@@ -10,6 +10,7 @@ namespace Kozynax.UI
     /// Kozui text/value prompt (WinForms InputBox equivalent).
     /// Root fills the screen; <see cref="Frame"/> is a centered bordered card.
     /// </summary>
+    [KozuiDialog(CaptureBackdrop = true)]
     public class InputDialog : ViewDescription<InputDialog>
     {
         public event EventHandler CloseRequested;

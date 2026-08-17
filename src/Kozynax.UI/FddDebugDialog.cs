@@ -1,5 +1,7 @@
 using System;
+using Kozui.Abstract;
 using ZXMAK2.Hardware.Circuits.Fdd;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Host.WinForms.Lib.Layout;
 using Button = ZXMAK2.Host.WinForms.Lib.Button;
@@ -10,7 +12,8 @@ namespace Kozynax.UI
     /// <summary>
     /// Kozui WD1793 / Beta Disk debug tool window (live <see cref="Wd1793.DumpState"/>).
     /// </summary>
-    public sealed class FddDebugDialog
+    [KozuiDialog(CaptureBackdrop = true)]
+    public sealed class FddDebugDialog : ViewDescription<FddDebugDialog>
     {
         private const string Missing = "Beta Disk interface not found";
 
@@ -18,6 +21,8 @@ namespace Kozynax.UI
         private string _lastDump;
 
         public event EventHandler CloseRequested;
+
+        public DlgResult DialogResult { get; private set; } = DlgResult.Cancel;
 
         public Panel Root { get; }
         public Label TitleLabel { get; }
@@ -49,10 +54,17 @@ namespace Kozynax.UI
             UpdateTimer.OnTick += (_, __) => Refresh();
 
             CloseButton = new Button { Text = "Close" };
-            CloseButton.Clicked += (_, __) => CloseRequested?.Invoke(this, EventArgs.Empty);
+            CloseButton.Clicked += (_, __) => Accept();
 
             Root = BuildTree();
             Refresh();
+        }
+
+        public void Accept()
+        {
+            DialogResult = DlgResult.OK;
+            UpdateTimer.Enabled = false;
+            CloseRequested?.Invoke(this, EventArgs.Empty);
         }
 
         public void Refresh()

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Kozui.Abstract;
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine.Attributes;
 using ZXMAK2.Hardware;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Host.WinForms.Lib.Layout;
@@ -15,7 +17,8 @@ namespace Kozynax.UI
     /// <summary>
     /// Kozui tree for the memory map tool window (CMR, windows, hardware props).
     /// </summary>
-    public sealed class MemoryMap
+    [KozuiDialog(CaptureBackdrop = false)]
+    public sealed class MemoryMap : ViewDescription<MemoryMap>
     {
         private const string Unknown = "???";
 
@@ -23,6 +26,8 @@ namespace Kozynax.UI
         private readonly List<HardwareProp> _props = new List<HardwareProp>();
 
         public event EventHandler CloseRequested;
+
+        public DlgResult DialogResult { get; private set; } = DlgResult.Cancel;
 
         public Panel Root { get; }
         public Label Cmr0Value { get; }
@@ -68,7 +73,7 @@ namespace Kozynax.UI
             UpdateTimer.OnTick += (_, __) => Refresh();
 
             CloseButton = new Button { Text = "Close" };
-            CloseButton.Clicked += (_, __) => CloseRequested?.Invoke(this, EventArgs.Empty);
+            CloseButton.Clicked += (_, __) => Accept();
 
             Cmr0Edit = new Button { Text = "Edit" };
             Cmr1Edit = new Button { Text = "Edit" };
@@ -78,6 +83,13 @@ namespace Kozynax.UI
             Root = BuildTree();
             CollectHardwareProps();
             Refresh();
+        }
+
+        public void Accept()
+        {
+            DialogResult = DlgResult.OK;
+            UpdateTimer.Enabled = false;
+            CloseRequested?.Invoke(this, EventArgs.Empty);
         }
 
         public void Refresh()
