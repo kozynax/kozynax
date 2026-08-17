@@ -18,13 +18,24 @@ namespace ZXMAK2.Host.Terminal
 
         public static bool IsUiActive => UiDepth > 0;
 
+        /// <summary>Invoked when the outermost UI session starts (depth 0→1).</summary>
+        public static Action Entered { get; set; }
+
+        /// <summary>Invoked when the outermost UI session ends (depth 1→0).</summary>
+        public static Action Left { get; set; }
+
         public static void NotifyEnter()
-            => UiDepth++;
+        {
+            if (UiDepth++ == 0)
+                Entered?.Invoke();
+        }
 
         public static void NotifyLeave()
         {
-            if (UiDepth > 0)
-                UiDepth--;
+            if (UiDepth <= 0)
+                return;
+            if (--UiDepth == 0)
+                Left?.Invoke();
         }
 
         /// <summary>

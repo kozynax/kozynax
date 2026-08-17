@@ -54,6 +54,12 @@ namespace ZXMAK2.Host.SdlBackend
         private int _uiThreadId;
         private string _title = "ZXMAK2 (SDL)";
         private readonly List<ICommand> _commands = new List<ICommand>();
+        /// <summary>
+        /// When true, Spectrum keyboard/mouse SDL events are ignored while a Terminal UI
+        /// session is active (SdlTerminal shares the SDL event queue with the emulator).
+        /// Stdio Kozui reads stdin instead, so the SDL window can keep driving the Spectrum.
+        /// </summary>
+        private bool _muteEmulatorInputDuringUi;
 
         public SdlMainView(IResolver resolver)
         {
@@ -126,22 +132,32 @@ namespace ZXMAK2.Host.SdlBackend
             _sound = new SdlSound(_sdl);
             _keyboard = new SdlKeyboard();
             _mouse = new SdlMouse(_sdl);
-            // Terminal UI steals SDL key events; clear the Spectrum matrix on enter/leave
-            // so keyups missed while overlays were open cannot leave stuck keys.
-            runtime.PrepareUiInput = () =>
-            {
-                _keyboard.Reset();
-                _mouse.SuspendForUi();
-            };
-            runtime.EndUiInput = () =>
-            {
-                _keyboard.Reset();
-                _mouse.ResumeAfterUi();
-            };
             _joystick = new SdlJoystick(_sdl);
             _host = new HostService(_video, _sound, _keyboard, _mouse, _joystick);
 
             var terminal = _resolver.Resolve<ITerminal>();
+            // Stdio Kozui uses stdin; keep SDL window keys/mouse for the Spectrum.
+            _muteEmulatorInputDuringUi = !(terminal is StdioTerminal);
+
+            // Clear Spectrum keys on UI enter/leave. When Terminal shares the SDL event
+            // queue (SdlTerminal), also release mouse capture for the overlay.
+            Action prepareUi = () =>
+            {
+                _keyboard.Reset();
+                if (_muteEmulatorInputDuringUi)
+                    _mouse.SuspendForUi();
+            };
+            Action endUi = () =>
+            {
+                _keyboard.Reset();
+                if (_muteEmulatorInputDuringUi)
+                    _mouse.ResumeAfterUi();
+            };
+            runtime.PrepareUiInput = prepareUi;
+            runtime.EndUiInput = endUi;
+            TerminalUiSession.Entered = prepareUi;
+            TerminalUiSession.Left = endUi;
+
             if (terminal is StdioTerminal)
             {
                 // Keep the SDL window updating while Kozui runs on stdout.
@@ -168,6 +184,8 @@ namespace ZXMAK2.Host.SdlBackend
             CleanupHost();
             CleanupSdl();
             TerminalUiSession.IdlePump = null;
+            TerminalUiSession.Entered = null;
+            TerminalUiSession.Left = null;
             runtime.IdlePump = null;
             if (terminal is IDisposable disposableTerminal)
                 disposableTerminal.Dispose();
@@ -348,7 +366,8 @@ namespace ZXMAK2.Host.SdlBackend
 
         private void ProcessEvents()
         {
-            var uiActive = TerminalUiSession.IsUiActive;
+            // Mute only when Terminal UI consumes the same SDL event stream (SdlTerminal).
+            var muteInput = _muteEmulatorInputDuringUi && TerminalUiSession.IsUiActive;
             Event e;
             while (_sdl.PollEvent(&e) != 0)
             {
@@ -358,15 +377,23 @@ namespace ZXMAK2.Host.SdlBackend
                         _quit = true;
                         break;
                     case EventType.Keydown:
-                        // Console Kozui owns input while a TTY UI session is active.
-                        if (uiActive)
+                        // SdlTerminal shares this queue with Kozui — mute while UI is up.
+                        // Stdio Kozui uses stdin; SDL keys still drive the Spectrum.
+                        if (muteInput)
                             break;
+                        if (TerminalUiSession.IsUiActive)
+                        {
+                            // Console UI already open: feed Spectrum keys only (no nested F9/Esc UI).
+                            if (!IsHostHotKey((KeyCode)e.Key.Keysym.Sym))
+                                _keyboard.OnKeyEvent((KeyCode)e.Key.Keysym.Sym, true);
+                            break;
+                        }
                         if (HandleHotKey((KeyCode)e.Key.Keysym.Sym, true))
                             break;
                         _keyboard.OnKeyEvent((KeyCode)e.Key.Keysym.Sym, true);
                         break;
                     case EventType.Keyup:
-                        if (uiActive)
+                        if (muteInput)
                             break;
                         // Drop host hotkey chords so they never stick in the Spectrum matrix.
                         if (IsHostHotKey((KeyCode)e.Key.Keysym.Sym))
@@ -374,16 +401,18 @@ namespace ZXMAK2.Host.SdlBackend
                         _keyboard.OnKeyEvent((KeyCode)e.Key.Keysym.Sym, false);
                         break;
                     case EventType.Mousemotion:
-                        if (uiActive)
+                        if (muteInput)
                             break;
                         _mouse.OnMouseMotion(e.Motion.Xrel, e.Motion.Yrel);
                         break;
                     case EventType.Mousebuttondown:
-                        if (uiActive)
+                        if (muteInput)
                             break;
                         // SDL: 1=left, 2=middle, 3=right — menu only while uncaptured.
                         if (e.Button.Button == 3 && !_mouse.IsCaptured)
                         {
+                            if (TerminalUiSession.IsUiActive)
+                                break;
                             _keyboard.Reset();
                             ShowMainMenu();
                             _keyboard.Reset();
@@ -394,7 +423,7 @@ namespace ZXMAK2.Host.SdlBackend
                         _mouse.OnMouseButton(e.Button.Button, true);
                         break;
                     case EventType.Mousebuttonup:
-                        if (uiActive)
+                        if (muteInput)
                             break;
                         _mouse.OnMouseButton(e.Button.Button, false);
                         break;
