@@ -1,4 +1,6 @@
 using System;
+using Kozui.Abstract;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Host.WinForms.Lib.Layout;
 using ZXMAK2.Resources;
@@ -8,12 +10,15 @@ namespace Kozynax.UI
     /// <summary>
     /// Kozui Keyboard Help dialog — Spectrum keyboard legend image + Close.
     /// </summary>
-    public sealed class KeyboardHelpDialog
+    [KozuiDialog(CaptureBackdrop = true, RequireImagePainter = true)]
+    public sealed class KeyboardHelpDialog : ViewDescription<KeyboardHelpDialog>
     {
         public const int ImagePixelWidth = 541;
         public const int ImagePixelHeight = 201;
 
         public event EventHandler CloseRequested;
+
+        public DlgResult DialogResult { get; private set; } = DlgResult.Cancel;
 
         public Panel Root { get; }
         public Label TitleLabel { get; }
@@ -39,9 +44,15 @@ namespace Kozynax.UI
             };
 
             CloseButton = new Button { Text = "Close" };
-            CloseButton.Clicked += (_, __) => CloseRequested?.Invoke(this, EventArgs.Empty);
+            CloseButton.Clicked += (_, __) => Accept();
 
             Root = BuildTree();
+        }
+
+        public void Accept()
+        {
+            DialogResult = DlgResult.OK;
+            CloseRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private Panel BuildTree()

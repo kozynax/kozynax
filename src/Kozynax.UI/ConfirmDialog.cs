@@ -10,6 +10,7 @@ namespace Kozynax.UI
     /// Small Kozui-tree dialog (Label + OK/Cancel) used to prove portable layout
     /// before migrating MachineSettings.
     /// </summary>
+    [KozuiDialog(CaptureBackdrop = true)]
     public class ConfirmDialog : ViewDescription<ConfirmDialog>
     {
         public event EventHandler CloseRequested;

@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using Kozui.Abstract;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Host.WinForms.Lib.Layout;
 
@@ -9,7 +11,8 @@ namespace Kozynax.UI
     /// <summary>
     /// Kozui About dialog (title, version, project URL, license text).
     /// </summary>
-    public sealed class AboutDialog
+    [KozuiDialog(CaptureBackdrop = true)]
+    public sealed class AboutDialog : ViewDescription<AboutDialog>
     {
         public const string ProjectUrl = "https://github.com/zxmak/ZXMAK2";
 
@@ -42,6 +45,8 @@ Portions of this software are copyright (c) ZEK
 Portions of this software are copyright (c) Eltaron (Alexander Tsidaev)";
 
         public event EventHandler CloseRequested;
+
+        public DlgResult DialogResult { get; private set; } = DlgResult.Cancel;
 
         public Panel Root { get; }
         public Label TitleLabel { get; }
@@ -85,9 +90,15 @@ Portions of this software are copyright (c) Eltaron (Alexander Tsidaev)";
             LicenseList.Reset(LicenseText.Replace("\r\n", "\n").Split('\n'));
 
             OkButton = new Button { Text = "OK" };
-            OkButton.Clicked += (_, __) => CloseRequested?.Invoke(this, EventArgs.Empty);
+            OkButton.Clicked += (_, __) => Accept();
 
             Root = BuildTree();
+        }
+
+        public void Accept()
+        {
+            DialogResult = DlgResult.OK;
+            CloseRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private Panel BuildTree()
