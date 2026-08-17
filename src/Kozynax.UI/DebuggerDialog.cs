@@ -546,6 +546,18 @@ namespace Kozynax.UI
             SyncPanelLists();
         }
 
+        public void SetDataColumnCount()
+        {
+            int cols = DataPanel.ColCount;
+            var service = Locator.TryResolve<IUserQuery>();
+            if (service == null)
+                return;
+            if (!service.QueryValue("Data Panel Columns", "Column Count:", "{0}", ref cols, 1, 32))
+                return;
+            DataPanel.ColCount = cols;
+            SyncPanelLists();
+        }
+
         public void ClearBreakpoints()
         {
             if (m_spectrum == null)

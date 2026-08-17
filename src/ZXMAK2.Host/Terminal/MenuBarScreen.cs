@@ -22,20 +22,18 @@ namespace ZXMAK2.Host.Terminal
     public sealed class MenuBarScreen
     {
         private static readonly TerminalColor BarBg = TerminalColor.Rgb(28, 32, 48);
-        private static readonly TerminalColor PopupBg = TerminalColor.Rgb(22, 26, 38);
         private static readonly TerminalColor Border = TerminalColor.Rgb(55, 65, 90);
         private static readonly TerminalColor Fg = TerminalColor.Rgb(230, 230, 230);
-        private static readonly TerminalColor Disabled = TerminalColor.Rgb(90, 95, 110);
-        private static readonly TerminalColor SelectedBg = TerminalColor.Rgb(30, 100, 210);
         private static readonly TerminalColor Accent = TerminalColor.Rgb(240, 220, 120);
+        private static readonly TerminalColor SelectedBg = TerminalColor.Rgb(30, 100, 210);
 
         private readonly ITerminal _terminal;
         private readonly object _commandParameter;
         private readonly int _scale;
+        private readonly MenuPopupOverlay _popups;
 
         private MenuNode _root;
         private readonly List<TopItem> _tops = new List<TopItem>();
-        private readonly List<Popup> _popups = new List<Popup>();
         private int _topIndex;
         private bool _open;
         private int _barHeight;
@@ -68,6 +66,7 @@ namespace ZXMAK2.Host.Terminal
             _terminal = terminal ?? throw new ArgumentNullException(nameof(terminal));
             _commandParameter = commandParameter;
             _scale = Math.Max(1, scale);
+            _popups = new MenuPopupOverlay(terminal, commandParameter, scale);
         }
 
         /// <summary>
@@ -178,8 +177,8 @@ namespace ZXMAK2.Host.Terminal
                     color);
             }
 
-            foreach (var popup in _popups)
-                DrawPopup(popup);
+            _popups.ClampMinY = ChromeBottom;
+            _popups.Draw();
         }
 
         private void DrawFrame()
@@ -206,22 +205,13 @@ namespace ZXMAK2.Host.Terminal
                 return MenuBarCloseReason.Dismissed;
             }
 
-            if (key == TerminalKey.Escape)
-            {
-                if (_popups.Count > 0)
-                {
-                    _popups.RemoveAt(_popups.Count - 1);
-                    if (_popups.Count == 0)
-                        _open = false;
-                    return null;
-                }
-
-                ClosedByUser = true;
-                return MenuBarCloseReason.Dismissed;
-            }
-
             if (!_open)
             {
+                if (key == TerminalKey.Escape)
+                {
+                    ClosedByUser = true;
+                    return MenuBarCloseReason.Dismissed;
+                }
                 if (key == TerminalKey.Left)
                 {
                     MoveTop(-1);
@@ -240,11 +230,12 @@ namespace ZXMAK2.Host.Terminal
                 return null;
             }
 
+            // Open: Left/Right without a nested child switches top menus (WinForms-style).
             if (key == TerminalKey.Left)
             {
-                if (_popups.Count > 1)
+                if (_popups.Depth > 1)
                 {
-                    _popups.RemoveAt(_popups.Count - 1);
+                    _popups.ProcessEvent(TerminalEvent.KeyDown(TerminalKey.Left));
                     return null;
                 }
                 MoveTop(-1);
@@ -254,37 +245,42 @@ namespace ZXMAK2.Host.Terminal
 
             if (key == TerminalKey.Right)
             {
-                var deepest = Deepest();
-                if (deepest != null)
-                {
-                    var node = SelectedNode(deepest);
-                    if (node != null && node.HasChildren)
-                    {
-                        OpenChildPopup(deepest, node);
-                        return null;
-                    }
-                }
+                if (_popups.TryOpenSelectedChild())
+                    return null;
                 MoveTop(1);
                 OpenTop(_topIndex);
                 return null;
             }
 
-            if (key == TerminalKey.Up)
+            var overlayReason = _popups.ProcessEvent(TerminalEvent.KeyDown(key));
+            if (overlayReason == MenuBarCloseReason.Dismissed && key == TerminalKey.Escape)
             {
-                MovePopupSel(-1);
+                // Esc closed the last popup — return to top-bar browsing (not leave menu).
+                _open = false;
                 return null;
             }
 
-            if (key == TerminalKey.Down)
-            {
-                MovePopupSel(1);
+            return MapOverlayReason(overlayReason);
+        }
+
+        private MenuBarCloseReason? MapOverlayReason(MenuBarCloseReason? reason)
+        {
+            if (reason == null)
                 return null;
+            if (reason == MenuBarCloseReason.Dismissed)
+            {
+                ClosedByUser = true;
+                _open = false;
+                _popups.Clear();
             }
-
-            if (key == TerminalKey.Enter)
-                return ActivateSelected();
-
-            return null;
+            else if (reason == MenuBarCloseReason.CommandExecuted
+                     || reason == MenuBarCloseReason.Quit)
+            {
+                ClosedByUser = reason == MenuBarCloseReason.Quit;
+                _open = false;
+                _popups.Clear();
+            }
+            return reason;
         }
 
         private MenuBarCloseReason? HandleMouseDown(int x, int y)
@@ -304,7 +300,7 @@ namespace ZXMAK2.Host.Terminal
             if (y >= MenuY && y < ChromeBottom)
                 return null;
 
-            if (_open && HitPopup(x, y, out _, out _))
+            if (_open && _popups.ContainsPoint(x, y))
                 return null;
 
             ClosedByUser = true;
@@ -316,20 +312,10 @@ namespace ZXMAK2.Host.Terminal
             if (!_open)
                 return null;
 
-            if (!HitPopup(x, y, out var popupIndex, out var itemIndex))
+            if (!_popups.HitTest(x, y, out var popupIndex, out var itemIndex))
                 return null;
 
-            var popup = _popups[popupIndex];
-            popup.SelectedIndex = itemIndex;
-            TruncatePopups(popupIndex + 1);
-            var node = popup.Items[itemIndex];
-            if (node.HasChildren)
-            {
-                OpenChildPopup(popup, node);
-                return null;
-            }
-
-            return ActivateNode(node);
+            return MapOverlayReason(_popups.ActivateAt(popupIndex, itemIndex));
         }
 
         private void HandleMouseMove(int x, int y)
@@ -346,61 +332,10 @@ namespace ZXMAK2.Host.Terminal
             if (!_open)
                 return;
 
-            if (!HitPopup(x, y, out var popupIndex, out var itemIndex))
+            if (!_popups.HitTest(x, y, out var popupIndex, out var itemIndex))
                 return;
 
-            var popup = _popups[popupIndex];
-            if (popup.SelectedIndex != itemIndex)
-            {
-                popup.SelectedIndex = itemIndex;
-                TruncatePopups(popupIndex + 1);
-            }
-
-            var node = popup.Items[itemIndex];
-            if (node.HasChildren)
-                OpenChildPopup(popup, node);
-            else
-                TruncatePopups(popupIndex + 1);
-        }
-
-        private MenuBarCloseReason? ActivateSelected()
-        {
-            if (!_open || _popups.Count == 0)
-            {
-                OpenTop(_topIndex);
-                return null;
-            }
-
-            var deepest = Deepest();
-            var node = SelectedNode(deepest);
-            if (node == null)
-                return null;
-
-            if (node.HasChildren)
-            {
-                OpenChildPopup(deepest, node);
-                return null;
-            }
-
-            return ActivateNode(node);
-        }
-
-        private MenuBarCloseReason? ActivateNode(MenuNode node)
-        {
-            if (node?.Command == null)
-                return null;
-
-            var param = ResolveParameter(node);
-            if (!node.Command.CanExecute(param))
-                return null;
-
-            node.Command.Execute(param);
-
-            if (IsToggleCommand(node))
-                return null;
-
-            ClosedByUser = false;
-            return MenuBarCloseReason.CommandExecuted;
+            _popups.SelectItem(popupIndex, itemIndex);
         }
 
         private void OpenTop(int index)
@@ -410,72 +345,17 @@ namespace ZXMAK2.Host.Terminal
 
             _topIndex = index;
             _open = true;
-            _popups.Clear();
+            _popups.ClampMinY = ChromeBottom;
 
             var top = _tops[index];
             var items = top.Node.Children ?? new List<MenuNode>();
             if (items.Count == 0)
-                return;
-
-            var popup = BuildPopup(items, top.X, ChromeBottom);
-            popup.SelectedIndex = 0;
-            _popups.Add(popup);
-        }
-
-        private void OpenChildPopup(Popup parent, MenuNode node)
-        {
-            if (node == null || !node.HasChildren)
-                return;
-
-            var parentIndex = _popups.IndexOf(parent);
-            if (parentIndex < 0)
-                return;
-
-            if (_popups.Count > parentIndex + 1
-                && ReferenceEquals(_popups[parentIndex + 1].Source, node))
-                return;
-
-            TruncatePopups(parentIndex + 1);
-
-            var rowY = parent.Y + parent.SelectedIndex * _lineH;
-            var popup = BuildPopup(node.Children, parent.X + parent.Width - _scale, rowY);
-            popup.Source = node;
-            popup.SelectedIndex = 0;
-            _popups.Add(popup);
-        }
-
-        private Popup BuildPopup(List<MenuNode> items, int preferredX, int preferredY)
-        {
-            var filtered = items.Where(i => i != null).ToList();
-            var maxText = 0;
-            foreach (var item in filtered)
-                maxText = Math.Max(maxText, _terminal.MeasureTextWidth(FormatItem(item), _scale));
-
-            var width = Math.Max(maxText + _pad * 2, TerminalFont.GlyphWidth * _scale * 8);
-            var height = Math.Max(filtered.Count, 1) * _lineH + _pad;
-            var winW = Math.Max(_terminal.Width, 1);
-            var winH = Math.Max(_terminal.Height, 1);
-
-            var x = preferredX;
-            var y = preferredY;
-            if (x + width > winW)
-                x = Math.Max(0, winW - width);
-            if (y + height > winH)
-                y = Math.Max(ChromeBottom, winH - height);
-            if (x < 0)
-                x = 0;
-            if (y < ChromeBottom)
-                y = ChromeBottom;
-
-            return new Popup
             {
-                Items = filtered,
-                X = x,
-                Y = y,
-                Width = width,
-                Height = height,
-                SelectedIndex = 0,
-            };
+                _popups.Clear();
+                return;
+            }
+
+            _popups.OpenRoot(items, top.X, ChromeBottom);
         }
 
         private void ClosePopups()
@@ -484,52 +364,11 @@ namespace ZXMAK2.Host.Terminal
             _open = false;
         }
 
-        private void TruncatePopups(int keepCount)
-        {
-            while (_popups.Count > keepCount)
-                _popups.RemoveAt(_popups.Count - 1);
-            if (_popups.Count == 0)
-                _open = false;
-        }
-
-        private void SyncCascadeFromHover()
-        {
-            if (_popups.Count == 0)
-                return;
-            var deepest = Deepest();
-            var node = SelectedNode(deepest);
-            if (node != null && node.HasChildren)
-                OpenChildPopup(deepest, node);
-            else
-                TruncatePopups(_popups.Count);
-        }
-
         private void MoveTop(int delta)
         {
             if (_tops.Count == 0)
                 return;
             _topIndex = (_topIndex + delta + _tops.Count) % _tops.Count;
-        }
-
-        private void MovePopupSel(int delta)
-        {
-            var deepest = Deepest();
-            if (deepest == null || deepest.Items.Count == 0)
-                return;
-            deepest.SelectedIndex = (deepest.SelectedIndex + delta + deepest.Items.Count) % deepest.Items.Count;
-            var deepestIndex = _popups.Count - 1;
-            TruncatePopups(deepestIndex + 1);
-            SyncCascadeFromHover();
-        }
-
-        private Popup Deepest()
-            => _popups.Count > 0 ? _popups[_popups.Count - 1] : null;
-
-        private static MenuNode SelectedNode(Popup popup)
-        {
-            if (popup == null || popup.SelectedIndex < 0 || popup.SelectedIndex >= popup.Items.Count)
-                return null;
-            return popup.Items[popup.SelectedIndex];
         }
 
         private int HitTop(int x, int y)
@@ -543,27 +382,6 @@ namespace ZXMAK2.Host.Terminal
                     return i;
             }
             return -1;
-        }
-
-        private bool HitPopup(int x, int y, out int popupIndex, out int itemIndex)
-        {
-            popupIndex = -1;
-            itemIndex = -1;
-            for (var i = _popups.Count - 1; i >= 0; i--)
-            {
-                var p = _popups[i];
-                if (x < p.X || x >= p.X + p.Width || y < p.Y || y >= p.Y + p.Height)
-                    continue;
-
-                var row = (y - p.Y - _pad / 2) / _lineH;
-                if (row < 0 || row >= p.Items.Count)
-                    return false;
-
-                popupIndex = i;
-                itemIndex = row;
-                return true;
-            }
-            return false;
         }
 
         private void RebuildMetrics()
@@ -596,92 +414,12 @@ namespace ZXMAK2.Host.Terminal
                 _topIndex = Math.Max(0, _tops.Count - 1);
         }
 
-        private void DrawPopup(Popup popup)
-        {
-            _terminal.FillRect(popup.X, popup.Y, popup.Width, popup.Height, PopupBg);
-            DrawBorder(popup.X, popup.Y, popup.Width, popup.Height);
-
-            for (var i = 0; i < popup.Items.Count; i++)
-            {
-                var item = popup.Items[i];
-                var rowY = popup.Y + _pad / 2 + i * _lineH;
-                if (i == popup.SelectedIndex)
-                    _terminal.FillRect(popup.X + _scale, rowY, popup.Width - 2 * _scale, _lineH, SelectedBg);
-
-                var enabled = IsEnabled(item);
-                var color = !enabled ? Disabled : (i == popup.SelectedIndex ? Accent : Fg);
-                var text = FormatItem(item);
-                _terminal.DrawText(popup.X + _pad, rowY + (_lineH - TerminalFont.GlyphHeight * _scale) / 2, text, _scale, color);
-            }
-        }
-
-        private void DrawBorder(int x, int y, int w, int h)
-        {
-            var t = Math.Max(1, _scale);
-            _terminal.FillRect(x, y, w, t, Border);
-            _terminal.FillRect(x, y + h - t, w, t, Border);
-            _terminal.FillRect(x, y, t, h, Border);
-            _terminal.FillRect(x + w - t, y, t, h, Border);
-        }
-
-        private bool IsEnabled(MenuNode node)
-        {
-            if (node?.Command == null)
-                return node != null && node.HasChildren;
-            return node.Command.CanExecute(ResolveParameter(node.Parameter, node.Command, node.IsChecked != null));
-        }
-
-        private object ResolveParameter(MenuNode node)
-            => ResolveParameter(node.Parameter, node.Command, node.IsChecked != null);
-
-        private object ResolveParameter(object parameter, ZXMAK2.Mvvm.ICommand command, bool isToggle)
-        {
-            if (parameter != null)
-                return parameter;
-            if (isToggle || (command != null && command.CanExecute(null)))
-                return null;
-            return _commandParameter;
-        }
-
-        private static string FormatItem(MenuNode node)
-        {
-            if (node == null)
-                return string.Empty;
-
-            var text = node.Command != null
-                ? (node.Command.Text ?? node.Caption ?? string.Empty)
-                : (node.Caption ?? string.Empty);
-
-            string prefix;
-            if (node.IsChecked != null)
-                prefix = node.IsChecked() ? "[x] " : "[ ] ";
-            else
-                prefix = "    ";
-
-            var suffix = node.HasChildren ? " >" : string.Empty;
-            return prefix + text + suffix;
-        }
-
-        internal static bool IsToggleCommand(MenuNode node)
-            => node?.IsChecked != null;
-
         private sealed class TopItem
         {
             public MenuNode Node;
             public string Text;
             public int X;
             public int Width;
-        }
-
-        private sealed class Popup
-        {
-            public MenuNode Source;
-            public List<MenuNode> Items;
-            public int X;
-            public int Y;
-            public int Width;
-            public int Height;
-            public int SelectedIndex;
         }
     }
 }

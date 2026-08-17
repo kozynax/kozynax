@@ -94,6 +94,16 @@ namespace ZXMAK2.Host.Terminal
 
         public void Render()
         {
+            DrawFrame();
+            if (_terminal.IsAvailable)
+                _terminal.Present();
+        }
+
+        /// <summary>
+        /// Clear + draw the attached tree without presenting (for overlays that compose a frame).
+        /// </summary>
+        public void DrawFrame()
+        {
             if (_root == null || !_terminal.IsAvailable)
                 return;
 
@@ -101,7 +111,6 @@ namespace ZXMAK2.Host.Terminal
             _activeRegion = FindActiveRegion();
             _terminal.Clear(Bg);
             DrawControl(_root);
-            _terminal.Present();
         }
 
         public bool RouteInput(KozuiInput input)
