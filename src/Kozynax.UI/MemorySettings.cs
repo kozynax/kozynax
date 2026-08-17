@@ -6,6 +6,7 @@ using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Hardware;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.WinForms.Lib;
+using ZXMAK2.Host.WinForms.Lib.Layout;
 
 namespace Kozynax.UI
 {
@@ -30,16 +31,20 @@ namespace Kozynax.UI
             TypeTitle = new Label { Text = "Type:" };
             TypeList = new ListView<BusDeviceDescriptor>
             {
-                MinHeight = 6,
+                MinHeight = 4,
                 ActivateOnClick = false,
                 ActivateOnSecondClick = false,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
             };
             RomSetTitle = new Label { Text = "ROM-set:" };
             RomSetList = new ListView<string>
             {
-                MinHeight = 6,
+                MinHeight = 4,
                 ActivateOnClick = false,
                 ActivateOnSecondClick = false,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
             };
 
             TypeList.SelectedIndexChanged += (_, __) => OnTypeSelectionChanged();
