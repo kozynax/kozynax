@@ -110,12 +110,9 @@ namespace Kozynax.UI
                 {
                     if (t == null || !t.IsClass || t.IsAbstract)
                         continue;
-                    var baseType = t.BaseType;
-                    if (baseType == null || !baseType.IsGenericType)
+                    var arg = GetDeviceSettingsArg(t);
+                    if (arg == null)
                         continue;
-                    if (baseType.GetGenericTypeDefinition() != typeof(DeviceSettings<>))
-                        continue;
-                    var arg = baseType.GetGenericArguments()[0];
                     if (arg.IsAssignableFrom(type) || type.IsAssignableFrom(arg) || arg == type)
                         candidates.Add(t);
                 }
@@ -126,9 +123,25 @@ namespace Kozynax.UI
                 .FirstOrDefault();
         }
 
+        /// <summary>
+        /// Walks the inheritance chain so <see cref="SingleListViewDeviceSettings{TDevice,TListItem}"/>
+        /// subclasses are discovered (not only direct <see cref="DeviceSettings{T}"/>).
+        /// </summary>
+        private static Type GetDeviceSettingsArg(Type settingsType)
+        {
+            for (var t = settingsType; t != null && t != typeof(object); t = t.BaseType)
+            {
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(DeviceSettings<>))
+                    return t.GetGenericArguments()[0];
+            }
+            return null;
+        }
+
         private static int Specificity(Type settingsType, Type deviceType)
         {
-            var arg = settingsType.BaseType.GetGenericArguments()[0];
+            var arg = GetDeviceSettingsArg(settingsType);
+            if (arg == null)
+                return 0;
             if (arg == deviceType)
                 return 100;
             if (arg.IsAssignableFrom(deviceType))
@@ -154,6 +167,9 @@ namespace Kozynax.UI
 
             if (settings is BetaDiskSettings beta)
                 return BuildBetaDisk(beta);
+
+            if (settings is MemorySettings memory)
+                return BuildMemory(memory);
 
             var type = settings.GetType();
             var baseType = type.BaseType;
@@ -186,6 +202,25 @@ namespace Kozynax.UI
             }
 
             return null;
+        }
+
+        private static DevicePanel BuildMemory(MemorySettings memory)
+        {
+            memory.TypeList.HorizontalAlignment = HorizontalAlignment.Stretch;
+            memory.TypeList.VerticalAlignment = VerticalAlignment.Stretch;
+            memory.RomSetList.HorizontalAlignment = HorizontalAlignment.Stretch;
+            memory.RomSetList.VerticalAlignment = VerticalAlignment.Stretch;
+
+            var stack = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                Spacing = 1,
+            };
+            stack.Add(memory.TypeTitle);
+            stack.Add(memory.TypeList);
+            stack.Add(memory.RomSetTitle);
+            stack.Add(memory.RomSetList);
+            return new DevicePanel(stack, memory.Apply);
         }
 
         private static DevicePanel BuildSound(GenericSoundSettings sound)
