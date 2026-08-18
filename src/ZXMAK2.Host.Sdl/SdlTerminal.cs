@@ -309,6 +309,10 @@ namespace ZXMAK2.Host.SdlBackend
                     return TerminalKey.PageUp;
                 case Scancode.ScancodePagedown:
                     return TerminalKey.PageDown;
+                case Scancode.ScancodeHome:
+                    return TerminalKey.Home;
+                case Scancode.ScancodeEnd:
+                    return TerminalKey.End;
                 case Scancode.ScancodeUp:
                     return TerminalKey.Up;
                 case Scancode.ScancodeDown:
@@ -336,6 +340,8 @@ namespace ZXMAK2.Host.SdlBackend
                 case KeyCode.KPageup:
                 case KeyCode.KPrior: return TerminalKey.PageUp;
                 case KeyCode.KPagedown: return TerminalKey.PageDown;
+                case KeyCode.KHome: return TerminalKey.Home;
+                case KeyCode.KEnd: return TerminalKey.End;
                 case KeyCode.KTab: return TerminalKey.Tab;
                 case KeyCode.KSpace: return TerminalKey.Space;
                 case KeyCode.KF3: return TerminalKey.F3;

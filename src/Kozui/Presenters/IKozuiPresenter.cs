@@ -90,6 +90,8 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
         Down,
         PageUp,
         PageDown,
+        Home,
+        End,
         Backspace,
     }
 }

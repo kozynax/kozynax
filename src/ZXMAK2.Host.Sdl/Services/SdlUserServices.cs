@@ -3,7 +3,6 @@ using System.ComponentModel;
 using Kozynax.UI;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Interfaces;
-using ZXMAK2.Host.Terminal;
 
 namespace ZXMAK2.Host.SdlBackend.Services
 {
@@ -62,11 +61,8 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
     public sealed class SdlOpenFileDialog : IOpenFileDialog
     {
-        private readonly ITerminal _terminal;
-
-        public SdlOpenFileDialog(ITerminal terminal)
+        public SdlOpenFileDialog()
         {
-            _terminal = terminal;
             ReadOnlyChecked = true;
         }
 
@@ -81,22 +77,14 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
         public DlgResult ShowDialog(object owner)
         {
-            _terminal.PrepareForUiInput();
-            try
-            {
-                var picker = new FilePickerScreen(_terminal);
-                if (!picker.TryPickOpen(Title ?? "Open...", Filter, out var path))
-                    return DlgResult.Cancel;
+            var path = FilePickerDialog.PickOpen(Title ?? "Open...", Filter);
+            if (string.IsNullOrEmpty(path))
+                return DlgResult.Cancel;
 
-                FileName = path;
-                var args = new CancelEventArgs();
-                FileOk?.Invoke(this, args);
-                return args.Cancel ? DlgResult.Cancel : DlgResult.OK;
-            }
-            finally
-            {
-                _terminal.EndUiInput();
-            }
+            FileName = path;
+            var args = new CancelEventArgs();
+            FileOk?.Invoke(this, args);
+            return args.Cancel ? DlgResult.Cancel : DlgResult.OK;
         }
 
         public void Dispose() { }
@@ -104,11 +92,8 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
     public sealed class SdlSaveFileDialog : ISaveFileDialog
     {
-        private readonly ITerminal _terminal;
-
-        public SdlSaveFileDialog(ITerminal terminal)
+        public SdlSaveFileDialog()
         {
-            _terminal = terminal;
             OverwritePrompt = true;
         }
 
@@ -120,26 +105,17 @@ namespace ZXMAK2.Host.SdlBackend.Services
 
         public DlgResult ShowDialog(object owner)
         {
-            _terminal.PrepareForUiInput();
-            try
-            {
-                var picker = new FilePickerScreen(_terminal);
-                if (!picker.TryPickSave(
-                        Title ?? "Save...",
-                        Filter,
-                        DefaultExt,
-                        FileName,
-                        OverwritePrompt,
-                        out var path))
-                    return DlgResult.Cancel;
+            var path = FilePickerDialog.PickSave(
+                Title ?? "Save...",
+                Filter,
+                DefaultExt,
+                FileName,
+                OverwritePrompt);
+            if (string.IsNullOrEmpty(path))
+                return DlgResult.Cancel;
 
-                FileName = path;
-                return DlgResult.OK;
-            }
-            finally
-            {
-                _terminal.EndUiInput();
-            }
+            FileName = path;
+            return DlgResult.OK;
         }
 
         public void Dispose() { }
