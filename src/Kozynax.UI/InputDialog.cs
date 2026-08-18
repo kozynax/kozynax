@@ -104,6 +104,8 @@ namespace Kozynax.UI
         public void SetError(string message)
             => ErrorLabel.Text = message ?? string.Empty;
 
+        public void Accept() => Complete(DlgResult.OK);
+
         public void Cancel() => Complete(DlgResult.Cancel);
 
         public static bool Query(string caption, string prompt, ref string value)

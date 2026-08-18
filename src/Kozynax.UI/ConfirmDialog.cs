@@ -13,6 +13,9 @@ namespace Kozynax.UI
     [KozuiDialog(CaptureBackdrop = true)]
     public class ConfirmDialog : ViewDescription<ConfirmDialog>
     {
+        private readonly DlgResult _acceptResult;
+        private readonly DlgResult _rejectResult;
+
         public event EventHandler CloseRequested;
 
         public Panel Root { get; }
@@ -36,6 +39,9 @@ namespace Kozynax.UI
             string acceptText,
             string rejectText)
         {
+            _acceptResult = acceptResult;
+            _rejectResult = rejectResult;
+
             TitleLabel = new Label
             {
                 Text = string.IsNullOrEmpty(caption) ? "Confirm" : caption,
@@ -89,8 +95,8 @@ namespace Kozynax.UI
             Root = new Panel();
             Root.Add(frame);
 
-            OkButton.Clicked += (_, __) => Complete(acceptResult);
-            CancelButton.Clicked += (_, __) => Complete(rejectResult);
+            OkButton.Clicked += (_, __) => Accept();
+            CancelButton.Clicked += (_, __) => Complete(_rejectResult);
         }
 
         public static ConfirmDialog ForButtonSet(string message, string caption, DlgButtonSet buttonSet)
@@ -113,7 +119,9 @@ namespace Kozynax.UI
             }
         }
 
-        public void Cancel() => Complete(DlgResult.Cancel);
+        public void Accept() => Complete(_acceptResult);
+
+        public void Cancel() => Complete(_rejectResult);
 
         private void Complete(DlgResult result)
         {
