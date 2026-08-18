@@ -129,7 +129,11 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
         private static void TryCancel(object ui)
         {
-            var method = ui?.GetType().GetMethod("Cancel", Type.EmptyTypes);
+            if (ui == null)
+                return;
+            var type = ui.GetType();
+            var method = type.GetMethod("Cancel", Type.EmptyTypes)
+                         ?? type.GetMethod("RequestCancel", Type.EmptyTypes);
             if (method != null)
                 method.Invoke(ui, null);
             else

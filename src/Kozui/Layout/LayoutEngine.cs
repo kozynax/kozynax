@@ -234,12 +234,12 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
         }
 
         /// <summary>
-        /// Labels/buttons default to Stretch but must not eat leftover stack space;
-        /// only content panes (lists, etc.) grow along the stack main axis.
+        /// Labels/buttons/checkboxes/nested stacks default to Stretch but must not eat
+        /// leftover stack space; only fill panes (lists, placeholders, etc.) grow.
         /// </summary>
         private static bool CanStretchStackMainAxis(KozuiControl child, bool vertical)
         {
-            if (child is Label || child is Button || child is CheckBox)
+            if (child is Label || child is Button || child is CheckBox || child is StackPanel)
                 return false;
             return vertical
                 ? child.VerticalAlignment == VerticalAlignment.Stretch

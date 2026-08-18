@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Xml;
 using Kozui.Abstract;
@@ -15,23 +16,29 @@ using ZXMAK2.Host.WinForms.Lib.Layout;
 
 namespace Kozynax.UI
 {
+    [KozuiDialog(CaptureBackdrop = true)]
     public class MachineSettings : ViewDescription<MachineSettings>
     {
         public class MachineConfiguration
         {
             public string Name { get; set; }
             public XmlNode Config { get; set; }
+
+            public override string ToString() => Name ?? string.Empty;
         }
 
         public delegate void ShowWizardEventHandler(object sender, IList<MachineConfiguration> machines);
 
         public event ShowWizardEventHandler ShowWizard;
+        /// <summary>WinForms host closes on this; Terminal host uses <see cref="CloseRequested"/>.</summary>
         public event EventHandler Closed;
+        public event EventHandler CloseRequested;
         /// <summary>Raised before bus Apply so hosts can flush device-settings panels.</summary>
         public event EventHandler Applying;
 
         public BusManager WorkBus { get; private set; }
         public IHostService Host { get; private set; }
+        public DlgResult DialogResult { get; private set; } = DlgResult.Cancel;
 
         public Panel Root { get; }
         public Button Up { get; }
@@ -47,6 +54,8 @@ namespace Kozynax.UI
         private IVirtualMachine m_vm;
         private readonly MachinesConfig m_machines = new MachinesConfig();
         private List<MachineConfiguration> _knownMachines;
+        private readonly Dictionary<BusDeviceBase, DeviceSettingsPanelFactory.DevicePanel> _panels =
+            new Dictionary<BusDeviceBase, DeviceSettingsPanelFactory.DevicePanel>();
 
         public MachineSettings()
         {
@@ -80,6 +89,7 @@ namespace Kozynax.UI
                 VerticalAlignment = VerticalAlignment.Stretch,
             };
             Devices.SelectedIndexChanged += Devices_SelectedIndexChanged;
+            Devices.List.ListChanged += Devices_ListChanged;
 
             DeviceProperties = new Placeholder
             {
@@ -88,6 +98,7 @@ namespace Kozynax.UI
             };
 
             Root = BuildTree();
+            SyncSelectedPanel();
         }
 
         private Panel BuildTree()
@@ -170,14 +181,20 @@ namespace Kozynax.UI
         }
 
         private void Cancel_Clicked(object sender, EventArgs e)
+            => RequestClose(DlgResult.Cancel);
+
+        private void RequestClose(DlgResult result)
         {
-            Closed?.Invoke(sender, e);
+            DialogResult = result;
+            Closed?.Invoke(this, EventArgs.Empty);
+            CloseRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private void Apply_Clicked(object sender, EventArgs e)
         {
             try
             {
+                ApplyDevicePanels();
                 Applying?.Invoke(this, EventArgs.Empty);
 
                 if (WorkBus.FindDevice<IUlaDevice>() == null)
@@ -225,7 +242,7 @@ namespace Kozynax.UI
                 if (running)
                     m_vm.DoRun();
                 GC.Collect();
-                Closed?.Invoke(this, EventArgs.Empty);
+                RequestClose(DlgResult.OK);
             }
             catch (Exception ex)
             {
@@ -238,7 +255,24 @@ namespace Kozynax.UI
 
         private void Wizard_Clicked(object sender, EventArgs e)
         {
-            ShowWizard?.Invoke(sender, _knownMachines);
+            if (ShowWizard != null)
+            {
+                ShowWizard.Invoke(sender, _knownMachines);
+                return;
+            }
+
+            PickMachineBuiltin();
+        }
+
+        private void PickMachineBuiltin()
+        {
+            if (_knownMachines == null || _knownMachines.Count == 0)
+                return;
+
+            var items = _knownMachines.Cast<object>().ToArray();
+            var picked = ObjectSelectorDialog.Select(items, "Select machine") as MachineConfiguration;
+            if (picked != null)
+                CreateMachine(picked);
         }
 
         public void Init(IHostService host, IVirtualMachine vm)
@@ -263,6 +297,9 @@ namespace Kozynax.UI
             {
                 Logger.Error(ex);
             }
+
+            SyncPanels();
+            SyncSelectedPanel();
         }
 
         private void initWorkBus()
@@ -290,6 +327,58 @@ namespace Kozynax.UI
             RemoveDevice.Enabled = allowRemove;
             Up.Enabled = IsMoveUpAllowed();
             Down.Enabled = IsMoveDownAllowed();
+            SyncSelectedPanel();
+        }
+
+        private void Devices_ListChanged(object sender, ListChangedEventArgs e)
+        {
+            SyncPanels();
+            SyncSelectedPanel();
+        }
+
+        private void ApplyDevicePanels()
+        {
+            foreach (var panel in _panels.Values)
+                panel.Apply();
+        }
+
+        private void SyncPanels()
+        {
+            if (WorkBus == null)
+                return;
+
+            var devices = Devices.List;
+            foreach (var device in devices)
+            {
+                if (_panels.ContainsKey(device))
+                    continue;
+                _panels[device] = DeviceSettingsPanelFactory.Create(WorkBus, Host, device);
+            }
+
+            foreach (var key in new List<BusDeviceBase>(_panels.Keys))
+            {
+                if (!devices.Contains(key))
+                    _panels.Remove(key);
+            }
+        }
+
+        private void SyncSelectedPanel()
+        {
+            var index = Devices.SelectedIndex;
+            if (index < 0 || index >= Devices.List.Count)
+            {
+                DeviceProperties.Content = new Label { Text = "No device selected" };
+                return;
+            }
+
+            var device = Devices.List[index];
+            if (!_panels.TryGetValue(device, out var panel))
+            {
+                panel = DeviceSettingsPanelFactory.Create(WorkBus, Host, device);
+                _panels[device] = panel;
+            }
+
+            DeviceProperties.Content = panel.Root;
         }
 
         private bool IsMoveUpAllowed()
