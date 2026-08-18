@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Kozui.Abstract;
 using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Host.WinForms.Lib.Layout;
 using ZXMAK2.Model.Tape.Interfaces;
@@ -13,12 +14,15 @@ using Timer = ZXMAK2.Host.WinForms.Lib.Timer;
 
 namespace Kozynax.UI
 {
+    [KozuiDialog(CaptureBackdrop = true)]
     public class TapeSettings : ViewDescription<TapeSettings>, INotifyPropertyChanged
     {
         private readonly ITapeDevice _tape;
         private bool _isTapePlaying;
+        private bool _detached;
 
         public event PropertyChangedEventHandler PropertyChanged;
+        public event EventHandler CloseRequested;
 
         public Panel Root { get; }
         public Button Rewind { get; }
@@ -27,9 +31,12 @@ namespace Kozynax.UI
         public Button Next { get; }
         public ProgressBar ProgressBar { get; }
         public Timer ProgressTimer { get; }
+        /// <summary>Alias so the generic dialog host can tick progress.</summary>
+        public Timer UpdateTimer => ProgressTimer;
         public CheckBox UseTraps { get; }
         public CheckBox UseAutoPlay { get; }
         public ListView<ITapeBlock> Blocks { get; }
+        public DlgResult DialogResult { get; private set; } = DlgResult.Cancel;
 
         public TapeSettings(ITapeDevice tape)
         {
@@ -137,7 +144,19 @@ namespace Kozynax.UI
             root.Add(options);
             root.Add(help);
             root.Add(Blocks);
-            return root;
+
+            // Placeholder paints solid panel chrome over the backdrop so toolbar
+            // gaps between buttons are not see-through.
+            var frame = new Placeholder
+            {
+                Content = root,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Margin = new Thickness(1),
+            };
+            var host = new Panel();
+            host.Add(frame);
+            return host;
         }
 
         public bool IsTapePlaying
@@ -212,8 +231,24 @@ namespace Kozynax.UI
             ProgressBar.Value = position;
         }
 
-        public void Close()
+        public void Accept()
         {
+            DialogResult = DlgResult.OK;
+            Detach();
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void Cancel() => Accept();
+
+        public void Close()
+            => Detach();
+
+        private void Detach()
+        {
+            if (_detached)
+                return;
+            _detached = true;
+            ProgressTimer.Enabled = false;
             _tape.TapeStateChanged -= Tape_TapeStateChanged;
         }
 

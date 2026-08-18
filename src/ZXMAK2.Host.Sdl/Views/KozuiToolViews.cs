@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Kozynax.UI;
 using ZXMAK2.Hardware;
 using ZXMAK2.Hardware.Circuits.Fdd;
+using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Presentation.Interfaces;
 
 namespace ZXMAK2.Host.SdlBackend.Views
@@ -82,5 +83,34 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
         protected override void ShowDialogCore(IMainView parent)
             => new FddDebugDialog(_wd1793).ShowDialog(parent);
+    }
+
+    public sealed class TapeToolView : ModalKozuiToolView, ITapeView
+    {
+        private TapeSettings _settings;
+
+        public void Init(TapeSettings tapeSettings)
+            => _settings = tapeSettings ?? throw new ArgumentNullException(nameof(tapeSettings));
+
+        public DlgResult ShowDialog(object owner)
+        {
+            Show(owner as IMainView);
+            return DlgResult.OK;
+        }
+
+        protected override void ShowDialogCore(IMainView parent)
+        {
+            if (_settings == null)
+                return;
+            try
+            {
+                _settings.ShowDialog(parent);
+            }
+            finally
+            {
+                _settings.Close();
+                _settings = null;
+            }
+        }
     }
 }
