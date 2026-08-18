@@ -415,7 +415,16 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                 Math.Max(0, available.Width - pad * 2),
                 Math.Max(0, available.Height - pad * 2));
             var content = Measure(placeholder.Content, inner);
-            return new LayoutSize(content.Width + pad * 2, content.Height + pad * 2);
+            var width = content.Width + pad * 2;
+            var height = content.Height + pad * 2;
+            // Stretch placeholders (e.g. full-screen file picker) claim the slot.
+            if (placeholder.HorizontalAlignment == HorizontalAlignment.Stretch
+                && available.Width < int.MaxValue / 8)
+                width = Math.Max(width, available.Width);
+            if (placeholder.VerticalAlignment == VerticalAlignment.Stretch
+                && available.Height < int.MaxValue / 8)
+                height = Math.Max(height, available.Height);
+            return new LayoutSize(width, height);
         }
 
         private static LayoutSize MeasureLeaf(KozuiControl control, LayoutSize available)

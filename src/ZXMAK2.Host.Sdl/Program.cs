@@ -54,6 +54,7 @@ namespace ZXMAK2
             resolver.RegisterType<IViewImplementation<ConfirmDialog>, TerminalKozuiDialogHost<ConfirmDialog>>();
             resolver.RegisterType<IViewImplementation<InputDialog>, TerminalKozuiDialogHost<InputDialog>>();
             resolver.RegisterType<IViewImplementation<ObjectSelectorDialog>, TerminalKozuiDialogHost<ObjectSelectorDialog>>();
+            resolver.RegisterType<IViewImplementation<FilePickerDialog>, TerminalKozuiDialogHost<FilePickerDialog>>();
             resolver.RegisterType<IViewImplementation<AboutDialog>, TerminalKozuiDialogHost<AboutDialog>>();
             resolver.RegisterType<IViewImplementation<KeyboardHelpDialog>, TerminalKozuiDialogHost<KeyboardHelpDialog>>();
             resolver.RegisterType<IViewImplementation<MemoryMap>, TerminalKozuiDialogHost<MemoryMap>>();

@@ -15,6 +15,8 @@ namespace ZXMAK2.Host.Terminal
         Right,
         PageUp,
         PageDown,
+        Home,
+        End,
         Tab,
         Space,
         F3,

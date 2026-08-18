@@ -391,6 +391,8 @@ namespace ZXMAK2.Host.Terminal
                 case ConsoleKey.RightArrow: key = TerminalKey.Right; return true;
                 case ConsoleKey.PageUp: key = TerminalKey.PageUp; return true;
                 case ConsoleKey.PageDown: key = TerminalKey.PageDown; return true;
+                case ConsoleKey.Home: key = TerminalKey.Home; return true;
+                case ConsoleKey.End: key = TerminalKey.End; return true;
                 case ConsoleKey.Tab: key = TerminalKey.Tab; return true;
                 case ConsoleKey.Spacebar: key = TerminalKey.Space; return true;
                 case ConsoleKey.F3: key = TerminalKey.F3; return true;

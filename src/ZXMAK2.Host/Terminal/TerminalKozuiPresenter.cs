@@ -261,6 +261,8 @@ namespace ZXMAK2.Host.Terminal
                 case TerminalKey.Down: return KozuiInputKey.Down;
                 case TerminalKey.PageUp: return KozuiInputKey.PageUp;
                 case TerminalKey.PageDown: return KozuiInputKey.PageDown;
+                case TerminalKey.Home: return KozuiInputKey.Home;
+                case TerminalKey.End: return KozuiInputKey.End;
                 default: return KozuiInputKey.None;
             }
         }
@@ -531,6 +533,14 @@ namespace ZXMAK2.Host.Terminal
                     return true;
                 case KozuiInputKey.PageDown:
                     listView.SelectedIndex = Math.Min(count - 1, Math.Max(0, listView.SelectedIndex) + visible);
+                    EnsureListVisible(listView, visible);
+                    return true;
+                case KozuiInputKey.Home:
+                    listView.SelectedIndex = 0;
+                    EnsureListVisible(listView, visible);
+                    return true;
+                case KozuiInputKey.End:
+                    listView.SelectedIndex = count - 1;
                     EnsureListVisible(listView, visible);
                     return true;
                 default:
