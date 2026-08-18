@@ -10,6 +10,7 @@ using ZXMAK2.Host.WinForms.Lib.Layout;
 
 namespace Kozynax.UI
 {
+	[KozuiDialog(CaptureBackdrop = true)]
 	public class AddDeviceDialog : ViewDescription<AddDeviceDialog>
 	{
 		public event EventHandler CloseRequested;
@@ -105,6 +106,9 @@ namespace Kozynax.UI
 		}
 
 		private void Finish_Clicked(object sender, EventArgs e)
+			=> Accept();
+
+		public void Accept()
 		{
 			var deviceIndex = Devices.SelectedIndex;
 			if (deviceIndex < 0 || deviceIndex >= Devices.List.Count)
@@ -131,6 +135,7 @@ namespace Kozynax.UI
 			CloseRequested?.Invoke(this, EventArgs.Empty);
 		}
 
+		/// <summary>Esc / host cancel path (button is named <see cref="Cancel"/>).</summary>
 		public void RequestCancel() => Complete(DlgResult.Cancel);
 
 		private void Devices_SelectedIndexChanged(object sender, int index)

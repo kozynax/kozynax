@@ -1,9 +1,11 @@
 using System;
 using System.ComponentModel;
 using Kozynax.UI;
+using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Hardware;
 using ZXMAK2.Hardware.Circuits.Fdd;
 using ZXMAK2.Host.Entities;
+using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Presentation.Interfaces;
 
 namespace ZXMAK2.Host.SdlBackend.Views
@@ -112,5 +114,33 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 _settings = null;
             }
         }
+    }
+
+    public sealed class MachineSettingsToolView : ModalKozuiToolView, IMachineSettingsView
+    {
+        private MachineSettings _settings;
+
+        public void Init(MachineSettings machineSettings)
+        {
+            _settings = machineSettings ?? throw new ArgumentNullException(nameof(machineSettings));
+            _settings.Init();
+        }
+
+        public void Init(IHostService host, IVirtualMachine vm)
+        {
+            if (_settings == null)
+                throw new InvalidOperationException("Init(MachineSettings) must be called first.");
+            _settings.Init(host, vm);
+        }
+
+        public DlgResult ShowDialog(object owner)
+        {
+            if (_settings == null)
+                return DlgResult.Cancel;
+            return _settings.ShowDialog(owner);
+        }
+
+        protected override void ShowDialogCore(IMainView parent)
+            => ShowDialog(parent);
     }
 }

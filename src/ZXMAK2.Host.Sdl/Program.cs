@@ -61,9 +61,9 @@ namespace ZXMAK2
             resolver.RegisterType<IViewImplementation<FddDebugDialog>, TerminalKozuiDialogHost<FddDebugDialog>>();
             resolver.RegisterType<ITapeView, TapeToolView>();
             resolver.RegisterType<IViewImplementation<TapeSettings>, TerminalKozuiDialogHost<TapeSettings>>();
-            resolver.RegisterType<IMachineSettingsView, TerminalMachineSettingsView>();
-            resolver.RegisterType<IViewImplementation<MachineSettings>, TerminalMachineSettingsView>();
-            resolver.RegisterType<IViewImplementation<AddDeviceDialog>, TerminalAddDeviceDialogView>();
+            resolver.RegisterType<IMachineSettingsView, MachineSettingsToolView>();
+            resolver.RegisterType<IViewImplementation<MachineSettings>, TerminalKozuiDialogHost<MachineSettings>>();
+            resolver.RegisterType<IViewImplementation<AddDeviceDialog>, TerminalKozuiDialogHost<AddDeviceDialog>>();
             resolver.RegisterType<IMemoryMapView, MemoryMapToolView>();
             resolver.RegisterType<IAboutView, AboutToolView>();
             resolver.RegisterType<IKeyboardView, KeyboardHelpToolView>();

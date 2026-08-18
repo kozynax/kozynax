@@ -7,8 +7,7 @@ using ZXMAK2.Host.WinForms.Lib.Layout;
 namespace Kozynax.UI
 {
     /// <summary>
-    /// Small Kozui-tree dialog (Label + OK/Cancel) used to prove portable layout
-    /// before migrating MachineSettings.
+    /// Small Kozui-tree dialog (Label + OK/Cancel).
     /// </summary>
     [KozuiDialog(CaptureBackdrop = true)]
     public class ConfirmDialog : ViewDescription<ConfirmDialog>
