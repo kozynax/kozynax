@@ -22,7 +22,8 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
             int y = 0,
             KozuiMouseButton button = KozuiMouseButton.None,
             int wheelDelta = 0,
-            char ch = '\0')
+            char ch = '\0',
+            KozuiInputModifiers modifiers = KozuiInputModifiers.None)
         {
             Kind = kind;
             Key = key;
@@ -31,6 +32,7 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
             Button = button;
             WheelDelta = wheelDelta;
             Char = ch;
+            Modifiers = modifiers;
         }
 
         public KozuiInputKind Kind { get; }
@@ -40,9 +42,14 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
         public KozuiMouseButton Button { get; }
         public int WheelDelta { get; }
         public char Char { get; }
+        public KozuiInputModifiers Modifiers { get; }
 
-        public static KozuiInput KeyDown(KozuiInputKey key)
-            => new KozuiInput(KozuiInputKind.KeyDown, key);
+        public bool Shift => (Modifiers & KozuiInputModifiers.Shift) != 0;
+
+        public static KozuiInput KeyDown(
+            KozuiInputKey key,
+            KozuiInputModifiers modifiers = KozuiInputModifiers.None)
+            => new KozuiInput(KozuiInputKind.KeyDown, key, modifiers: modifiers);
 
         public static KozuiInput TextInput(char ch)
             => new KozuiInput(KozuiInputKind.KeyDown, ch: ch);
@@ -58,6 +65,15 @@ namespace ZXMAK2.Host.WinForms.Lib.Presenters
 
         public static KozuiInput MouseWheel(int x, int y, int delta)
             => new KozuiInput(KozuiInputKind.MouseWheel, x: x, y: y, wheelDelta: delta);
+    }
+
+    [System.Flags]
+    public enum KozuiInputModifiers
+    {
+        None = 0,
+        Ctrl = 1,
+        Shift = 2,
+        Alt = 4,
     }
 
     public enum KozuiInputKind
