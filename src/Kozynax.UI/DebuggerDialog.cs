@@ -948,7 +948,7 @@ namespace Kozynax.UI
         {
             var title = new Label
             {
-                Text = "Debugger",
+                Text = TitleText,
                 Dock = Dock.Top,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 0, 0, 1),
@@ -968,21 +968,13 @@ namespace Kozynax.UI
             toolbar.Add(GotoPcButton);
             toolbar.Add(CloseButton);
 
-            RegistersList.Dock = Dock.Top;
-            RegistersList.Margin = new Thickness(0, 0, 0, 1);
-            FlagsList.Dock = Dock.Top;
-            FlagsList.Margin = new Thickness(0, 0, 0, 1);
-            StatesList.Dock = Dock.Fill;
-
             var side = new DockPanel
             {
                 Dock = Dock.Right,
-                MinWidth = 20,
+                MinWidth = SidePanelMinWidth,
                 Margin = new Thickness(1, 0, 0, 0),
             };
-            side.Add(RegistersList);
-            side.Add(FlagsList);
-            side.Add(StatesList);
+            ConfigureSidePanel(side);
 
             DataList.Dock = Dock.Bottom;
             DataList.Margin = new Thickness(0, 1, 0, 0);
@@ -1032,6 +1024,26 @@ namespace Kozynax.UI
             var root = new Panel();
             root.Add(frame);
             return root;
+        }
+
+        protected virtual string TitleText => "Debugger";
+
+        protected virtual int SidePanelMinWidth => 20;
+
+        /// <summary>
+        /// Right column: registers / flags / CPU state. Sprinter adds extended vars at the bottom.
+        /// </summary>
+        protected virtual void ConfigureSidePanel(DockPanel side)
+        {
+            RegistersList.Dock = Dock.Top;
+            RegistersList.Margin = new Thickness(0, 0, 0, 1);
+            FlagsList.Dock = Dock.Top;
+            FlagsList.Margin = new Thickness(0, 0, 0, 1);
+            StatesList.Dock = Dock.Fill;
+
+            side.Add(RegistersList);
+            side.Add(FlagsList);
+            side.Add(StatesList);
         }
     }
 }
