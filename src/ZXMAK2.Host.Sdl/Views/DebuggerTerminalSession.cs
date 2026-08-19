@@ -1,11 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using Kozui.Interfaces;
 using Kozynax.UI;
-using ZXMAK2.Engine.Interfaces;
-using ZXMAK2.Host.Entities;
-using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Terminal;
 using ZXMAK2.Host.WinForms.Lib;
 using ZXMAK2.Mvvm;
@@ -13,18 +8,14 @@ using ZXMAK2.Mvvm;
 namespace ZXMAK2.Host.SdlBackend.Views
 {
     /// <summary>
-    /// Terminal/SDL host for the regular (non-Sprinter) <see cref="DebuggerDialog"/>.
+    /// Debugger-specific Terminal input (F-keys, panel nav, mouse, context menus).
     /// </summary>
-    public sealed class TerminalDebuggerView : IDebuggerGeneralView
+    internal sealed class DebuggerTerminalSession : IKozuiTerminalSession
     {
         private readonly ITerminal _terminal;
-        private DebuggerDialog _dialog;
-        private ISynchronizeInvoke _sync;
-        private IMainView _parent;
-        private bool _loopActive;
+        private readonly DebuggerDialog _dialog;
+        private readonly Func<bool> _tryClose;
         private bool _closeRequested;
-        private bool _resumeOnClose;
-        private bool _wired;
         private int _dataClickTick;
         private int _dataClickRow = -1;
         private int _dataClickCol = -1;
@@ -34,246 +25,88 @@ namespace ZXMAK2.Host.SdlBackend.Views
         private int _sideClickRow = -1;
         private object _sideClickList;
 
-        public TerminalDebuggerView(ITerminal terminal)
+        public DebuggerTerminalSession(ITerminal terminal, DebuggerDialog dialog, Func<bool> tryClose)
         {
             _terminal = terminal ?? throw new ArgumentNullException(nameof(terminal));
+            _dialog = dialog ?? throw new ArgumentNullException(nameof(dialog));
+            _tryClose = tryClose ?? throw new ArgumentNullException(nameof(tryClose));
         }
 
-        public event EventHandler ViewClosed;
-        public event CancelEventHandler ViewClosing;
+        public bool ShouldClose => _closeRequested;
 
-        public void Init(DebuggerDialog ui)
+        public void RequestClose() => _closeRequested = true;
+
+        public void OnSessionStart(object owner, TerminalKozuiPresenter presenter)
+            => _dialog.UpdateCPU(true);
+
+        public void OnSessionEnd()
         {
-            Unwire();
-            _dialog = ui ?? throw new ArgumentNullException(nameof(ui));
-            Wire();
         }
 
-        public void Init(IDebuggable dbg)
+        public void BeforeRender(TerminalKozuiPresenter presenter)
         {
-            if (_dialog == null)
-                throw new InvalidOperationException("Call Init(DebuggerDialog) before Init(IDebuggable).");
-            _dialog.Init(dbg);
+            var dasmRows = Math.Max(0, _dialog.DasmList.ArrangedBounds.Height - 2);
+            if (dasmRows > 0)
+                _dialog.FitVisibleLines(dasmRows);
         }
 
-        public DlgResult ShowDialog(object owner)
+        public bool TryHandleEvent(TerminalKozuiPresenter presenter, TerminalEvent ev)
         {
-            Show(owner as IMainView);
-            return DlgResult.OK;
-        }
-
-        public void Show(IMainView parent)
-        {
-            if (_dialog == null || !_terminal.IsAvailable || _loopActive)
-                return;
-
-            _parent = parent ?? _parent;
-            _sync = parent as ISynchronizeInvoke;
-            _closeRequested = false;
-            _loopActive = true;
-            _terminal.PrepareForUiInput();
-            // Skip backdrop capture: reading back the just-presented frame (RenderReadPixels)
-            // can block indefinitely on some backends (observed hang on Wayland) when this is
-            // the first Terminal UI session opened directly from the bare emulator window
-            // (e.g. Esc). The dialog falls back to a solid background (see SdlTerminal.Clear).
-
-            var presenter = new TerminalKozuiPresenter(_terminal);
-            presenter.Attach(_dialog.Root);
-            _dialog.UpdateCPU(true);
-
-            var previousIdle = TerminalUiSession.IdlePump;
-            var sdlView = parent as SdlMainView;
-            TerminalUiSession.IdlePump = () =>
+            if (ev.Kind == TerminalEventKind.Quit)
             {
-                previousIdle?.Invoke();
-                sdlView?.PumpUiCallbacks();
-            };
-
-            try
-            {
-                TerminalUiSession.Run(
-                    _terminal,
-                    presenter,
-                    () => _closeRequested,
-                    ev =>
-                    {
-                        if (ev.Kind == TerminalEventKind.Quit)
-                        {
-                            Close();
-                            return true;
-                        }
-
-                        if (ev.Kind == TerminalEventKind.KeyDown && HandleDebugKey(ev.Key))
-                            return true;
-
-                        if (ev.Kind == TerminalEventKind.KeyDown && TryHandleGotoAddress(presenter, ev))
-                            return true;
-
-                        if (ev.Kind == TerminalEventKind.KeyDown && TryHandleHexBlockIo(presenter, ev))
-                            return true;
-
-                        if (ev.Kind == TerminalEventKind.KeyDown && TryHandlePanelKey(presenter, ev.Key))
-                            return true;
-
-                        // Right-click context menus (WinForms FormCPU parity).
-                        if (ev.Kind == TerminalEventKind.MouseDown
-                            && ev.Button == TerminalMouseButton.Right
-                            && TryShowPanelContextMenu(presenter, ev))
-                            return true;
-
-                        // Hex click: select byte (and poke on double-click). May fall through to Route.
-                        if (ev.Kind == TerminalEventKind.MouseDown
-                            && TryHandleDataMouseDown(presenter, ev, out var consumeMouse)
-                            && consumeMouse)
-                            return true;
-
-                        // Disasm click: select line; double-click toggles breakpoint.
-                        if (ev.Kind == TerminalEventKind.MouseDown
-                            && TryHandleDasmMouseDown(presenter, ev, out var consumeDasm)
-                            && consumeDasm)
-                            return true;
-
-                        // Flags / states: select on click; toggle on double-click.
-                        if (ev.Kind == TerminalEventKind.MouseDown
-                            && TryHandleSideListMouseDown(presenter, ev, out var consumeSide)
-                            && consumeSide)
-                            return true;
-
-                        if (ev.Kind == TerminalEventKind.MouseWheel && TryHandlePanelWheel(presenter, ev))
-                            return true;
-
-                        if (TerminalDialogInput.IsEscape(ev))
-                        {
-                            var args = new CancelEventArgs();
-                            ViewClosing?.Invoke(this, args);
-                            if (!args.Cancel)
-                                Close();
-                            return true;
-                        }
-
-                        TerminalDialogInput.Route(presenter, ev);
-                        return false;
-                    },
-                    beforeRender: () =>
-                    {
-                        if (_dialog == null)
-                            return;
-                        var dasmRows = Math.Max(0, _dialog.DasmList.ArrangedBounds.Height - 2);
-                        if (dasmRows > 0)
-                            _dialog.FitVisibleLines(dasmRows);
-                    });
+                _tryClose();
+                _closeRequested = true;
+                return true;
             }
-            finally
+
+            if (ev.Kind == TerminalEventKind.KeyDown && HandleDebugKey(ev.Key))
+                return true;
+
+            if (ev.Kind == TerminalEventKind.KeyDown && TryHandleGotoAddress(presenter, ev))
+                return true;
+
+            if (ev.Kind == TerminalEventKind.KeyDown && TryHandleHexBlockIo(presenter, ev))
+                return true;
+
+            if (ev.Kind == TerminalEventKind.KeyDown && TryHandlePanelKey(presenter, ev.Key))
+                return true;
+
+            if (ev.Kind == TerminalEventKind.MouseDown
+                && ev.Button == TerminalMouseButton.Right
+                && TryShowPanelContextMenu(presenter, ev))
+                return true;
+
+            if (ev.Kind == TerminalEventKind.MouseDown
+                && TryHandleDataMouseDown(presenter, ev, out var consumeMouse)
+                && consumeMouse)
+                return true;
+
+            if (ev.Kind == TerminalEventKind.MouseDown
+                && TryHandleDasmMouseDown(presenter, ev, out var consumeDasm)
+                && consumeDasm)
+                return true;
+
+            if (ev.Kind == TerminalEventKind.MouseDown
+                && TryHandleSideListMouseDown(presenter, ev, out var consumeSide)
+                && consumeSide)
+                return true;
+
+            if (ev.Kind == TerminalEventKind.MouseWheel && TryHandlePanelWheel(presenter, ev))
+                return true;
+
+            if (TerminalDialogInput.IsEscape(ev))
             {
-                TerminalUiSession.IdlePump = previousIdle;
-                _loopActive = false;
-                _terminal.ReleaseBackdrop();
-                _terminal.EndUiInput();
-                TryResumeAfterClose();
+                _tryClose();
+                _closeRequested = true;
+                return true;
             }
-        }
 
-        private void TryResumeAfterClose()
-        {
-            if (!_resumeOnClose)
-                return;
-            _resumeOnClose = false;
-            var target = _dialog?.Target;
-            if (target == null || target.IsRunning)
-                return;
-            try
-            {
-                target.DoRun();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-            }
-        }
-
-        public void Hide()
-            => _closeRequested = true;
-
-        public void Close()
-        {
-            _closeRequested = true;
-            Unwire();
-            _dialog?.Close();
-            ViewClosed?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void Dispose()
-        {
-            Unwire();
-            _dialog = null;
-        }
-
-        private void Wire()
-        {
-            if (_dialog == null || _wired)
-                return;
-            _dialog.CloseRequested += OnCloseRequested;
-            _dialog.UpdateState += OnUpdateState;
-            _dialog.Breakpoint += OnBreakpoint;
-            _wired = true;
-        }
-
-        private void Unwire()
-        {
-            if (_dialog == null || !_wired)
-                return;
-            _dialog.CloseRequested -= OnCloseRequested;
-            _dialog.UpdateState -= OnUpdateState;
-            _dialog.Breakpoint -= OnBreakpoint;
-            _wired = false;
-        }
-
-        private void OnCloseRequested(object sender, EventArgs e)
-            => _closeRequested = true;
-
-        private void OnUpdateState(object sender, EventArgs e)
-            => InvokeOnUi(() =>
-            {
-                if (_dialog == null || !_loopActive)
-                    return;
-                _dialog.UpdateCPU(true);
-            });
-
-        private void OnBreakpoint(object sender, EventArgs e)
-            => InvokeOnUi(() =>
-            {
-                if (_dialog == null)
-                    return;
-
-                // Already open: refresh like WinForms FormCPU.
-                if (_loopActive)
-                {
-                    _dialog.UpdateCPU(true);
-                    return;
-                }
-
-                // Hidden/closed: open automatically so the hit is visible.
-                // Esc/Close should continue execution (same as Esc→debugger).
-                if (_parent != null)
-                {
-                    _resumeOnClose = true;
-                    Show(_parent);
-                }
-            });
-
-        private void InvokeOnUi(Action action)
-        {
-            if (action == null)
-                return;
-            if (_sync != null && _sync.InvokeRequired)
-                _sync.BeginInvoke(action, null);
-            else
-                action();
+            return false;
         }
 
         private bool TryHandleGotoAddress(TerminalKozuiPresenter presenter, TerminalEvent ev)
         {
-            if (_dialog == null || presenter == null || !ev.Ctrl || ev.Key != TerminalKey.G)
+            if (presenter == null || !ev.Ctrl || ev.Key != TerminalKey.G)
                 return false;
 
             var focused = presenter.Focused;
@@ -294,7 +127,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
         private bool TryHandleHexBlockIo(TerminalKozuiPresenter presenter, TerminalEvent ev)
         {
-            if (_dialog == null || presenter == null || !ev.Ctrl)
+            if (presenter == null || !ev.Ctrl)
                 return false;
             if (!ReferenceEquals(presenter.Focused, _dialog.DataList))
                 return false;
@@ -316,7 +149,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
         private bool TryHandlePanelKey(TerminalKozuiPresenter presenter, TerminalKey key)
         {
-            if (_dialog == null || presenter == null)
+            if (presenter == null)
                 return false;
 
             var focused = presenter.Focused;
@@ -374,17 +207,13 @@ namespace ZXMAK2.Host.SdlBackend.Views
             return false;
         }
 
-        /// <summary>
-        /// Handles hex-panel mouse down. Returns false when the event is not over the hex list.
-        /// When true, <paramref name="consume"/> indicates whether Route should be skipped.
-        /// </summary>
         private bool TryHandleDataMouseDown(
             TerminalKozuiPresenter presenter,
             TerminalEvent ev,
             out bool consume)
         {
             consume = false;
-            if (_dialog == null || presenter == null || ev.Button != TerminalMouseButton.Left)
+            if (presenter == null || ev.Button != TerminalMouseButton.Left)
                 return false;
             if (!TryHitDataCell(ev.X, ev.Y, out var row, out var col))
                 return false;
@@ -397,8 +226,6 @@ namespace ZXMAK2.Host.SdlBackend.Views
             var isDoubleClick = row == _dataClickRow
                                 && col == _dataClickCol
                                 && unchecked(now - _dataClickTick) <= doubleClickMs;
-            // Always consume hex clicks so the presenter cannot treat a second
-            // single-click as activate — only a real double-click opens poke.
             consume = true;
             if (isDoubleClick)
             {
@@ -419,7 +246,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
         private bool TryShowPanelContextMenu(TerminalKozuiPresenter presenter, TerminalEvent ev)
         {
-            if (_dialog == null || presenter == null)
+            if (presenter == null)
                 return false;
 
             IReadOnlyList<MenuNode> items = null;
@@ -489,16 +316,13 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 Command = new CommandDelegate(action, () => true, caption),
             };
 
-        /// <summary>
-        /// Handles disasm-panel mouse down. Single click selects; double-click toggles breakpoint.
-        /// </summary>
         private bool TryHandleDasmMouseDown(
             TerminalKozuiPresenter presenter,
             TerminalEvent ev,
             out bool consume)
         {
             consume = false;
-            if (_dialog == null || presenter == null || ev.Button != TerminalMouseButton.Left)
+            if (presenter == null || ev.Button != TerminalMouseButton.Left)
                 return false;
             if (!TryHitDasmRow(ev.X, ev.Y, out var row))
                 return false;
@@ -529,7 +353,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
         private bool TryHitDasmRow(int pixelX, int pixelY, out int row)
         {
             row = -1;
-            if (_dialog == null || !IsPointOver(_dialog.DasmList, pixelX, pixelY))
+            if (!IsPointOver(_dialog.DasmList, pixelX, pixelY))
                 return false;
 
             const int cellH = 8;
@@ -544,16 +368,13 @@ namespace ZXMAK2.Host.SdlBackend.Views
             return true;
         }
 
-        /// <summary>
-        /// Flags/states: single click selects; double-click activates (toggle).
-        /// </summary>
         private bool TryHandleSideListMouseDown(
             TerminalKozuiPresenter presenter,
             TerminalEvent ev,
             out bool consume)
         {
             consume = false;
-            if (_dialog == null || presenter == null || ev.Button != TerminalMouseButton.Left)
+            if (presenter == null || ev.Button != TerminalMouseButton.Left)
                 return false;
 
             ListView list = null;
@@ -612,10 +433,9 @@ namespace ZXMAK2.Host.SdlBackend.Views
         {
             row = -1;
             col = 0;
-            if (_dialog == null || !IsPointOver(_dialog.DataList, pixelX, pixelY))
+            if (!IsPointOver(_dialog.DataList, pixelX, pixelY))
                 return false;
 
-            // Match DrawListView: 8x8 cells, 1-cell list chrome, leading focus prefix.
             const int cellW = 8;
             const int cellH = 8;
             const int pad = 1;
@@ -629,7 +449,6 @@ namespace ZXMAK2.Host.SdlBackend.Views
             if (row < 0 || row >= contentH || row >= _dialog.DataPanel.VisibleLineCount)
                 return false;
 
-            // Text: "XXXX  HH HH ...  cccc" after the focus prefix.
             var relX = cellX - contentX - 1;
             if (relX >= 6)
                 col = Math.Min(_dialog.DataPanel.ColCount - 1, Math.Max(0, (relX - 6) / 3));
@@ -638,7 +457,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
         private bool TryHandlePanelWheel(TerminalKozuiPresenter presenter, TerminalEvent ev)
         {
-            if (_dialog == null || presenter == null || ev.WheelDelta == 0)
+            if (presenter == null || ev.WheelDelta == 0)
                 return false;
 
             var overDasm = IsPointOver(_dialog.DasmList, ev.X, ev.Y);
@@ -666,10 +485,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             return false;
         }
 
-        private static bool IsPointOver(
-            ZXMAK2.Host.WinForms.Lib.KozuiControl control,
-            int pixelX,
-            int pixelY)
+        private static bool IsPointOver(KozuiControl control, int pixelX, int pixelY)
         {
             if (control == null)
                 return false;
@@ -689,9 +505,6 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
         private bool HandleDebugKey(TerminalKey key)
         {
-            if (_dialog == null)
-                return false;
-
             switch (key)
             {
                 case TerminalKey.F3:
