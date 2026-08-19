@@ -76,7 +76,10 @@ namespace ZXMAK2.Hardware.Evo
 
         public override void BusDisconnect()
         {
+            if (card == null)
+                return;
             card.Close();
+            card = null;
         }
 
         #endregion
@@ -87,7 +90,7 @@ namespace ZXMAK2.Hardware.Evo
         protected virtual void Reset()
         {
             card_cs = false;
-            card.Reset();
+            card?.Reset();
             buf = 0xFF;
         }
 
