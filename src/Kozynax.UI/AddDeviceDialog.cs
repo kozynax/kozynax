@@ -97,12 +97,22 @@ namespace Kozynax.UI
 			lists.Add(Categories);
 			lists.Add(Devices);
 
-			var root = new DockPanel { Margin = new Thickness(1) };
-			root.Add(title);
-			root.Add(desc);
-			root.Add(buttons);
-			root.Add(lists);
-			return root;
+			var content = new DockPanel { Margin = new Thickness(1) };
+			content.Add(title);
+			content.Add(desc);
+			content.Add(buttons);
+			content.Add(lists);
+
+			var frame = new Placeholder
+			{
+				Content = content,
+				HorizontalAlignment = HorizontalAlignment.Stretch,
+				VerticalAlignment = VerticalAlignment.Stretch,
+				Margin = new Thickness(1),
+			};
+			var host = new Panel();
+			host.Add(frame);
+			return host;
 		}
 
 		private void Finish_Clicked(object sender, EventArgs e)

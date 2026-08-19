@@ -23,7 +23,8 @@ namespace ZXMAK2.Host.Terminal
         private static readonly TerminalColor BarFg = TerminalColor.Rgb(80, 160, 220);
         private static readonly TerminalColor PanelBg = TerminalColor.Rgb(22, 26, 38);
         private static readonly TerminalColor PanelBgActive = TerminalColor.Rgb(36, 46, 68);
-        private static readonly TerminalColor PanelBorder = TerminalColor.Rgb(55, 65, 90);
+        private static readonly TerminalColor PanelBorder = TerminalColor.Rgb(90, 105, 140);
+        private static readonly TerminalColor PanelBorderActive = TerminalColor.Rgb(160, 180, 220);
 
         private readonly ITerminal _terminal;
         private readonly int _scale;
@@ -772,8 +773,9 @@ namespace ZXMAK2.Host.Terminal
             var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
             var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
             _terminal.FillRect(px, py, pw, ph, active ? PanelBgActive : PanelBg);
-            if (!active)
-                DrawRectOutline(px, py, pw, ph, PanelBorder, 1);
+            // Always outline panels so list/detail/window edges stay readable.
+            var thickness = Math.Max(1, _scale);
+            DrawRectOutline(px, py, pw, ph, active ? PanelBorderActive : PanelBorder, thickness);
         }
 
         private static LayoutRect InsetPanelContent(LayoutRect bounds)
@@ -856,10 +858,11 @@ namespace ZXMAK2.Host.Terminal
 
             if (control is Placeholder placeholder)
             {
-                // Modal overlays always paint frame chrome so the dialog reads as a window.
-                var showChrome = IsActiveRegion(placeholder) || _terminal.HasBackdrop;
-                if (showChrome)
-                    DrawPanelChrome(placeholder.ArrangedBounds, active: true);
+                // Fill chrome over backdrop (and when focused); active state follows focus
+                // so nested detail panels keep distinct borders from the window frame.
+                var active = IsActiveRegion(placeholder);
+                if (active || _terminal.HasBackdrop)
+                    DrawPanelChrome(placeholder.ArrangedBounds, active);
                 if (placeholder.Content != null)
                     DrawControl(placeholder.Content);
                 return;
