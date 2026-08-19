@@ -163,7 +163,7 @@ namespace ZXMAK2.Host.Terminal
             switch (input.Key)
             {
                 case KozuiInputKey.Tab:
-                    MoveFocus(1);
+                    MoveFocus(input.Shift ? -1 : 1);
                     return true;
                 case KozuiInputKey.Right:
                     if (!(focused is ListView) && !(focused is TrackBar) && !(focused is TextBox))
@@ -224,7 +224,7 @@ namespace ZXMAK2.Host.Terminal
                     var key = MapKey(ev.Key);
                     if (key == KozuiInputKey.None || key == KozuiInputKey.Escape)
                         return false;
-                    input = KozuiInput.KeyDown(key);
+                    input = KozuiInput.KeyDown(key, MapModifiers(ev.Modifiers));
                     return true;
                 }
                 case TerminalEventKind.MouseDown:
@@ -266,6 +266,18 @@ namespace ZXMAK2.Host.Terminal
                 case TerminalKey.End: return KozuiInputKey.End;
                 default: return KozuiInputKey.None;
             }
+        }
+
+        private static KozuiInputModifiers MapModifiers(TerminalKeyModifiers mods)
+        {
+            var result = KozuiInputModifiers.None;
+            if ((mods & TerminalKeyModifiers.Ctrl) != 0)
+                result |= KozuiInputModifiers.Ctrl;
+            if ((mods & TerminalKeyModifiers.Shift) != 0)
+                result |= KozuiInputModifiers.Shift;
+            if ((mods & TerminalKeyModifiers.Alt) != 0)
+                result |= KozuiInputModifiers.Alt;
+            return result;
         }
 
         private bool HandleMouseDown(KozuiInput input)
