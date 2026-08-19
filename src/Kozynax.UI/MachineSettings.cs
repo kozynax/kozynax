@@ -155,11 +155,22 @@ namespace Kozynax.UI
             body.Add(Devices);
             body.Add(DeviceProperties);
 
-            var root = new DockPanel { Margin = new Thickness(1) };
-            root.Add(title);
-            root.Add(footer);
-            root.Add(body);
-            return root;
+            var content = new DockPanel { Margin = new Thickness(1) };
+            content.Add(title);
+            content.Add(footer);
+            content.Add(body);
+
+            // Placeholder paints solid panel chrome over the backdrop.
+            var frame = new Placeholder
+            {
+                Content = content,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Margin = new Thickness(1),
+            };
+            var host = new Panel();
+            host.Add(frame);
+            return host;
         }
 
         private void AddDevice_Clicked(object sender, EventArgs e)
