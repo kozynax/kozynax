@@ -15,7 +15,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
     /// and shows <see cref="DebuggerDialog"/> via <see cref="TerminalKozuiDialogHost{T}"/>
     /// with a <see cref="DebuggerTerminalSession"/>.
     /// </summary>
-    public sealed class DebuggerToolView : IDebuggerGeneralView
+    public class DebuggerToolView : IDebuggerGeneralView
     {
         private readonly ITerminal _terminal;
         private readonly SdlRuntimeContext _runtime;

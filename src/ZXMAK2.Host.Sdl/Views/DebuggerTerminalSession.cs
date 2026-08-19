@@ -382,6 +382,9 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 list = _dialog.FlagsList;
             else if (TryHitListRow(_dialog.StatesList, ev.X, ev.Y, out row))
                 list = _dialog.StatesList;
+            else if (_dialog is SprinterDebuggerDialog sprinter
+                     && TryHitListRow(sprinter.ExtendedVariables, ev.X, ev.Y, out row))
+                list = sprinter.ExtendedVariables;
             else
                 return false;
 
