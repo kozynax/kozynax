@@ -15,6 +15,11 @@ using ZXMAK2.Host.WinForms.Lib.Layout;
 
 namespace Kozynax.UI
 {
+    /// <summary>
+    /// Regular (non-Sprinter) debugger. Backdrop capture is off: reading back the
+    /// just-presented frame can hang on some backends when this is the first UI.
+    /// </summary>
+    [KozuiDialog(CaptureBackdrop = false)]
     public class DebuggerDialog : ViewDescription<DebuggerDialog>
     {
         public event EventHandler Breakpoint;
@@ -43,6 +48,7 @@ namespace Kozynax.UI
         public Button StopButton { get; }
         public Button GotoPcButton { get; }
         public Button CloseButton { get; }
+        public DlgResult DialogResult { get; private set; } = DlgResult.Cancel;
 
         public IDebuggable Target => m_spectrum;
 
@@ -121,7 +127,7 @@ namespace Kozynax.UI
             RunButton.Clicked += (_, __) => Run();
             StopButton.Clicked += (_, __) => Stop();
             GotoPcButton.Clicked += (_, __) => DasmGoToPC();
-            CloseButton.Clicked += (_, __) => CloseRequested?.Invoke(this, EventArgs.Empty);
+            CloseButton.Clicked += (_, __) => RequestCancel();
 
             DasmList.ItemActivated += (_, __) => ToggleDasmBreakpoint();
             DasmList.SelectedIndexChanged += (_, index) =>
@@ -176,6 +182,12 @@ namespace Kozynax.UI
                 m_spectrum.UpdateState -= spectrum_OnUpdateState;
                 m_spectrum.Breakpoint -= spectrum_OnBreakpoint;
             }
+        }
+
+        public void RequestCancel()
+        {
+            DialogResult = DlgResult.Cancel;
+            CloseRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private void spectrum_OnUpdateState(object sender, EventArgs args)

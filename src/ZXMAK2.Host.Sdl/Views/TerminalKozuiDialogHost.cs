@@ -11,6 +11,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
     /// <summary>
     /// Generic Terminal host for any Kozui dialog that exposes <c>Root</c> + <c>CloseRequested</c>
     /// (typically a <see cref="ViewDescription{T}"/>). Replaces per-dialog Terminal*View classes.
+    /// Optional <see cref="Session"/> covers debugger-style custom input.
     /// </summary>
     public sealed class TerminalKozuiDialogHost<T> : IViewImplementation<T>
         where T : class
@@ -26,6 +27,9 @@ namespace ZXMAK2.Host.SdlBackend.Views
             _runtime = runtime;
         }
 
+        /// <summary>Optional debugger/tool session hooks (input, fit, idle).</summary>
+        public IKozuiTerminalSession Session { get; set; }
+
         public void Init(T ui)
         {
             _ui = ui ?? throw new ArgumentNullException(nameof(ui));
@@ -38,6 +42,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 return DlgResult.Cancel;
 
             var options = _binding.Options;
+            var session = Session;
             _terminal.PrepareForUiInput();
             if (options.CaptureBackdrop)
                 _terminal.CaptureBackdrop();
@@ -58,14 +63,31 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
             var ignoreEnterUntil = Environment.TickCount + 250;
             var lastTick = Environment.TickCount;
+
+            Action previousIdle = null;
+            var sdlView = owner as SdlMainView;
+            if (session != null)
+            {
+                previousIdle = TerminalUiSession.IdlePump;
+                TerminalUiSession.IdlePump = () =>
+                {
+                    previousIdle?.Invoke();
+                    sdlView?.PumpUiCallbacks();
+                };
+                session.OnSessionStart(owner, presenter);
+            }
+
             try
             {
                 TerminalUiSession.Run(
                     _terminal,
                     presenter,
-                    () => closed,
+                    () => closed || (session != null && session.ShouldClose),
                     ev =>
                     {
+                        if (session != null && session.TryHandleEvent(presenter, ev))
+                            return true;
+
                         if (ev.Kind == TerminalEventKind.Quit)
                         {
                             closed = true;
@@ -97,6 +119,8 @@ namespace ZXMAK2.Host.SdlBackend.Views
                     },
                     beforeRender: () =>
                     {
+                        session?.BeforeRender(presenter);
+
                         var timer = _binding.UpdateTimer;
                         if (timer == null || !timer.Enabled)
                             return;
@@ -113,6 +137,18 @@ namespace ZXMAK2.Host.SdlBackend.Views
             }
             finally
             {
+                if (session != null)
+                {
+                    try
+                    {
+                        session.OnSessionEnd();
+                    }
+                    finally
+                    {
+                        TerminalUiSession.IdlePump = previousIdle;
+                    }
+                }
+
                 _binding.RemoveCloseHandler(onClose);
                 imagePainter?.Dispose();
                 if (options.CaptureBackdrop)
@@ -142,6 +178,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
         public void Dispose()
         {
+            Session = null;
             _ui = null;
             _binding = null;
         }
