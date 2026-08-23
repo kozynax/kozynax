@@ -8,6 +8,8 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>Kozynax.Sdl</AssemblyName>
     <DefineConstants>$(DefineConstants);SDL_HOST</DefineConstants>
+    <Version>0.0.0</Version>
+    <InformationalVersion>$(Version)</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

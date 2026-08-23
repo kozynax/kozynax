@@ -4,6 +4,7 @@
     <TargetFramework>net46</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace />
+    <AssemblyName>Kozynax</AssemblyName>
     <!-- Properties/AssemblyInfo.cs already defines assembly attributes. -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
@@ -18,13 +19,9 @@
 
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="ZXMAK2.DirectX">
-      <HintPath>..\musor\_bindebug\ZXMAK2.DirectX.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="1.2.0.9" />
+    <!-- Lets CI/SDK build net46 without a full Framework install. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net46" Version="1.0.3" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,12 +35,10 @@
     <Compile Remove="ZXMAK2.Hardware\GeneralSoundDevice.cs" />
     <Compile Remove="ZXMAK2.DirectX\DirectSound\Blob.cs" />
     <Compile Remove="ZXMAK2.Host.WinForms\Mdx\Renderers.mdx\**" />
+    <!-- Prefer C# DirectX sources over legacy .il fragments. -->
+    <Compile Remove="ZXMAK2.DirectX\**\*.il" />
     <None Remove="ZXMAK2.DirectX\Native\NativeHelper.il" />
-    <Compile Include="ZXMAK2.DirectX\Native\NativeHelper.il" />
     <None Remove="ZXMAK2.DirectX\Direct3D\Direct3DDevice9.il" />
-    <Compile Include="ZXMAK2.DirectX\Direct3D\Direct3DDevice9.il" />
-    <Compile Remove="ZXMAK2.DirectX\**" />
-    <None Remove="ZXMAK2.DirectX\**" />
   </ItemGroup>
 
 </Project>
