@@ -27,7 +27,6 @@
     <Compile Remove="ZXMAK2.Host.WinForms\**" />
     <Compile Remove="ZXMAK2.Hardware.WinForms\**" />
     <Compile Remove="ZXMAK2\Program.cs" />
-    <Compile Remove="ZXMAK2.Hardware\GeneralSoundDevice.cs" />
     <Compile Remove="Properties\AssemblyInfo.cs" />
 
     <EmbeddedResource Remove="ZXMAK2.DirectX\**" />

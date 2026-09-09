@@ -190,7 +190,6 @@ jobs:
           # Data files copied by the project when present.
           bash packaging/pack-roms.sh "$STAGE"
           [[ -f src/ZXMAK2/ROMS.PAK ]] && cp -n src/ZXMAK2/ROMS.PAK "$STAGE/" || true
-          [[ -f src/ZXMAK2/bootgs.rom ]] && cp -n src/ZXMAK2/bootgs.rom "$STAGE/" || true
 
       - name: Merge managed DLLs into Kozynax.exe
         shell: bash

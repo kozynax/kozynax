@@ -45,7 +45,6 @@
     <!-- Linux TTY backend (net5+/libc); not used by WinForms -->
     <Compile Remove="ZXMAK2.Host\Terminal\StdioTerminal.cs" />
 
-    <Compile Remove="ZXMAK2.Hardware\GeneralSoundDevice.cs" />
     <Compile Remove="ZXMAK2.DirectX\DirectSound\Blob.cs" />
     <Compile Remove="ZXMAK2.Host.WinForms\Mdx\Renderers.mdx\**" />
     <!-- Prefer C# DirectX sources over legacy .il fragments. -->

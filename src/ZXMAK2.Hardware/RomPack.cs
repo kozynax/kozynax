@@ -55,7 +55,7 @@ namespace ZXMAK2.Hardware
             throw new FileNotFoundException(string.Format("ROM file not found: {0}", fileName));
         }
 
-        private static Stream GetImageStream(string fileName)
+        public static Stream GetImageStream(string fileName)
         {
             var folderName = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
