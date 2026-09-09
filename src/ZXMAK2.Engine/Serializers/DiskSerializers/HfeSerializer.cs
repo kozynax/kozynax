@@ -67,7 +67,7 @@ namespace ZXMAK2.Serializers.DiskSerializers
 
         private bool LoadFromStream(Stream stream)
         {
-            using (var reader = new BinaryReader(stream))
+            using (var reader = new BinaryReader(stream, Encoding.ASCII, leaveOpen: true))
             {
                 var signature = new string(reader.ReadChars(8));
                 if (signature != HXCPICFE)
@@ -111,8 +111,9 @@ namespace ZXMAK2.Serializers.DiskSerializers
                 var currentPos = 512 + 2 * sizeof(UInt16) * numberOfTracks;
 
                 // Parse tracks according to the stored offsets and lengths
-                foreach (var tp in trackOffsets)
+                for (var cylIndex = 0; cylIndex < trackOffsets.Count; cylIndex++)
                 {
+                    var tp = trackOffsets[cylIndex];
                     var requiredPos = tp.Item1 * 512;
                     if (currentPos > requiredPos)
                     {
@@ -147,8 +148,10 @@ namespace ZXMAK2.Serializers.DiskSerializers
                             trackDataSide1[pos1++] = b;
                     }
 
-                    foreach (var track in new[] { trackDataSide0, trackDataSide1 }.Take(numberOfSides))
+                    var sideTracks = new[] { trackDataSide0, trackDataSide1 };
+                    for (var side = 0; side < numberOfSides; side++)
                     {
+                        var track = sideTracks[side];
                         var mfm = new MfmCoder(track);
 
                         // Detect if clock is odd or even bit
@@ -167,9 +170,16 @@ namespace ZXMAK2.Serializers.DiskSerializers
 
                             // Now a1Pos is pointer in bytes
                             a1Pos >>= 4;
+                            if (a1Pos + 5 >= data.Length)
+                                continue;
 
                             var trackNumber = data[a1Pos + 4];
-                            var sideNumber = data[a1Pos + 5];
+                            
+                            // var sideNumber = data[a1Pos + 5];
+                            // We'd better not trust side number from header. HFE format itself tells us side we are mapping to.
+                            var sideNumber = side;
+                            if (trackNumber >= numberOfTracks)
+                                trackNumber = (byte)cylIndex;
                             
                             // Now we should convert full array of clock bits to the reduced one, where the only thing,
                             // which is stored, is a sync flag for data byte. 0 when the byte is normal and 1 if byte is
@@ -188,7 +198,7 @@ namespace ZXMAK2.Serializers.DiskSerializers
 
         private void SaveToStream(Stream stream)
         {
-            using (var writer = new BinaryWriter(stream))
+            using (var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: true))
             {
                 writer.Write(Encoding.ASCII.GetBytes(HXCPICFE));
                 writer.Write((byte)0); // format revision 0
