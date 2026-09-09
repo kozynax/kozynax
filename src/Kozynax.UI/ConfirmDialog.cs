@@ -1,0 +1,131 @@
+using System;
+using Kozui.Abstract;
+using ZXMAK2.Host.Entities;
+using ZXMAK2.Host.WinForms.Lib;
+using ZXMAK2.Host.WinForms.Lib.Layout;
+
+namespace Kozynax.UI
+{
+    /// <summary>
+    /// Small Kozui-tree dialog (Label + OK/Cancel).
+    /// </summary>
+    [KozuiDialog(CaptureBackdrop = true)]
+    public class ConfirmDialog : ViewDescription<ConfirmDialog>
+    {
+        private readonly DlgResult _acceptResult;
+        private readonly DlgResult _rejectResult;
+
+        public event EventHandler CloseRequested;
+
+        public Panel Root { get; }
+        public Label TitleLabel { get; }
+        public Label MessageLabel { get; }
+        public Button OkButton { get; }
+        public Button CancelButton { get; }
+        public DlgResult DialogResult { get; private set; } = DlgResult.Cancel;
+
+        public ConfirmDialog(string message, string caption = null, bool showCancel = true)
+            : this(message, caption, showCancel, DlgResult.OK, DlgResult.Cancel, "OK", "Cancel")
+        {
+        }
+
+        private ConfirmDialog(
+            string message,
+            string caption,
+            bool showCancel,
+            DlgResult acceptResult,
+            DlgResult rejectResult,
+            string acceptText,
+            string rejectText)
+        {
+            _acceptResult = acceptResult;
+            _rejectResult = rejectResult;
+
+            TitleLabel = new Label
+            {
+                Text = string.IsNullOrEmpty(caption) ? "Confirm" : caption,
+                HorizontalAlignment = HorizontalAlignment.Center,
+            };
+            MessageLabel = new Label
+            {
+                Text = message ?? string.Empty,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 1, 0, 1),
+            };
+            OkButton = new Button { Text = acceptText };
+            CancelButton = new Button
+            {
+                Text = rejectText,
+                Visible = showCancel,
+            };
+
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 2,
+                HorizontalAlignment = HorizontalAlignment.Center,
+            };
+            buttons.Add(OkButton);
+            if (showCancel)
+                buttons.Add(CancelButton);
+
+            var content = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                Spacing = 1,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Margin = new Thickness(2),
+                MinWidth = 24,
+            };
+            content.Add(TitleLabel);
+            content.Add(MessageLabel);
+            content.Add(buttons);
+
+            var frame = new Placeholder
+            {
+                Content = content,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(3),
+                MinWidth = 28,
+                MinHeight = 6,
+            };
+
+            Root = new Panel();
+            Root.Add(frame);
+
+            OkButton.Clicked += (_, __) => Accept();
+            CancelButton.Clicked += (_, __) => Complete(_rejectResult);
+        }
+
+        public static ConfirmDialog ForButtonSet(string message, string caption, DlgButtonSet buttonSet)
+        {
+            switch (buttonSet)
+            {
+                case DlgButtonSet.OK:
+                    return new ConfirmDialog(message, caption, showCancel: false);
+                case DlgButtonSet.YesNo:
+                    return new ConfirmDialog(
+                        message,
+                        caption,
+                        showCancel: true,
+                        DlgResult.Yes,
+                        DlgResult.No,
+                        "Yes",
+                        "No");
+                default:
+                    return new ConfirmDialog(message, caption, showCancel: true);
+            }
+        }
+
+        public void Accept() => Complete(_acceptResult);
+
+        public void Cancel() => Complete(_rejectResult);
+
+        private void Complete(DlgResult result)
+        {
+            DialogResult = result;
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+        }
+    }
+}

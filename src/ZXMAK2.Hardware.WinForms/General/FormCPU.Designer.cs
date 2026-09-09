@@ -26,7 +26,7 @@ namespace ZXMAK2.Hardware.WinForms.General
       /// Required method for Designer support - do not modify
       /// the contents of this method with the code editor.
       /// </summary>
-      private void InitializeComponent()
+      protected virtual void InitializeComponent()
       {
             this.panelStatus = new System.Windows.Forms.Panel();
             this.panelState = new System.Windows.Forms.Panel();
@@ -229,7 +229,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             // 
             // dataPanel
             // 
-            this.dataPanel.ColCount = 8;
             this.dataPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataPanel.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.dataPanel.Location = new System.Drawing.Point(0, 0);
@@ -237,9 +236,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             this.dataPanel.Size = new System.Drawing.Size(449, 118);
             this.dataPanel.TabIndex = 0;
             this.dataPanel.Text = "dataPanel1";
-            this.dataPanel.TopAddress = ((ushort)(0));
-            this.dataPanel.GetData += new ZXMAK2.Hardware.WinForms.General.DataPanel.ONGETDATACPU(this.dasmPanel_GetData);
-            this.dataPanel.DataClick += new ZXMAK2.Hardware.WinForms.General.DataPanel.ONCLICKCPU(this.dataPanel_DataClick);
             this.dataPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dataPanel_MouseClick);
             // 
             // splitter2
@@ -264,9 +260,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             // 
             // dasmPanel
             // 
-            this.dasmPanel.ActiveAddress = ((ushort)(0));
-            this.dasmPanel.BreakpointColor = System.Drawing.Color.Red;
-            this.dasmPanel.BreakpointForeColor = System.Drawing.Color.Black;
             this.dasmPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dasmPanel.Font = new System.Drawing.Font("Courier New", 9F);
             this.dasmPanel.ForeColor = System.Drawing.SystemColors.ControlText;
@@ -275,12 +268,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             this.dasmPanel.Size = new System.Drawing.Size(449, 242);
             this.dasmPanel.TabIndex = 0;
             this.dasmPanel.Text = "dasmPanel1";
-            this.dasmPanel.TopAddress = ((ushort)(0));
-            this.dasmPanel.CheckBreakpoint += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONCHECKCPU(this.dasmPanel_CheckBreakpoint);
-            this.dasmPanel.CheckExecuting += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONCHECKCPU(this.dasmPanel_CheckExecuting);
-            this.dasmPanel.GetData += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONGETDATACPU(this.dasmPanel_GetData);
-            this.dasmPanel.GetDasm += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONGETDASMCPU(this.dasmPanel_GetDasm);
-            this.dasmPanel.BreakpointClick += new ZXMAK2.Hardware.WinForms.General.DasmPanel.ONCLICKCPU(this.dasmPanel_BreakpointClick);
             this.dasmPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dasmPanel_MouseClick);
             // 
             // contextMenuDasm
@@ -292,7 +279,6 @@ namespace ZXMAK2.Hardware.WinForms.General
             this.menuItemDasmClearBreakpoints,
             this.menuItem4,
             this.menuItemDasmRefresh});
-            this.contextMenuDasm.Popup += new System.EventHandler(this.contextMenuDasm_Popup);
             // 
             // menuItemDasmGotoADDR
             // 
@@ -636,61 +622,61 @@ namespace ZXMAK2.Hardware.WinForms.General
 
       #endregion
 
-      private System.Windows.Forms.Panel panelStatus;
-      private System.Windows.Forms.Splitter splitter1;
-      private System.Windows.Forms.Panel panelMem;
-      private System.Windows.Forms.Splitter splitter2;
-      private System.Windows.Forms.Panel panelDasm;
-      private System.Windows.Forms.Panel panelRegs;
-      private System.Windows.Forms.Panel panelState;
-      private System.Windows.Forms.Splitter splitter3;
-      private System.Windows.Forms.ListBox listREGS;
-      private System.Windows.Forms.ListBox listF;
-      private System.Windows.Forms.Splitter splitter4;
-      private System.Windows.Forms.ListBox listState;
-      private ZXMAK2.Hardware.WinForms.General.DasmPanel dasmPanel;
-      private ZXMAK2.Hardware.WinForms.General.DataPanel dataPanel;
-      private System.Windows.Forms.ContextMenu contextMenuDasm;
-      private System.Windows.Forms.MenuItem menuItemDasmGotoADDR;
-      private System.Windows.Forms.MenuItem menuItem2;
-      private System.Windows.Forms.MenuItem menuItemDasmClearBreakpoints;
-      private System.Windows.Forms.MenuItem menuItem4;
-      private System.Windows.Forms.MenuItem menuItemDasmRefresh;
-      private System.Windows.Forms.MenuItem menuItemDasmGotoPC;
-      private System.Windows.Forms.ContextMenu contextMenuData;
-      private System.Windows.Forms.MenuItem menuItemDataGotoADDR;
-      private System.Windows.Forms.MenuItem menuItemDataSetColumnCount;
-      private System.Windows.Forms.MenuItem menuItem5;
-      private System.Windows.Forms.MenuItem menuItemDataRefresh;
-      private System.Windows.Forms.StatusStrip statusStrip;
-      private System.Windows.Forms.ToolStripStatusLabel toolStripStatus;
-      private System.Windows.Forms.ToolStripStatusLabel toolStripStatusTact;
-      private System.Windows.Forms.MenuStrip menuStrip;
-      private System.Windows.Forms.ToolStripMenuItem menuFile;
-      private System.Windows.Forms.ToolStripMenuItem menuFileLoad;
-      private System.Windows.Forms.ToolStripMenuItem menuFileSave;
-      private System.Windows.Forms.ToolStripSeparator menuFileSplitter;
-      private System.Windows.Forms.ToolStripMenuItem menuFileClose;
-      private System.Windows.Forms.ToolStripMenuItem menuDebug;
-      private System.Windows.Forms.ToolStripMenuItem menuDebugContinue;
-      private System.Windows.Forms.ToolStripMenuItem menuDebugBreak;
-      private System.Windows.Forms.ToolStripSeparator menuDebugSeparator1;
-      private System.Windows.Forms.ToolStripMenuItem menuDebugStepInto;
-      private System.Windows.Forms.ToolStripMenuItem menuDebugStepOver;
-      private System.Windows.Forms.ToolStripMenuItem menuDebugStepOut;
-      private System.Windows.Forms.ToolStripSeparator menuDebugSeparator2;
-      private System.Windows.Forms.ToolStripMenuItem menuDebugShowNext;
+      protected System.Windows.Forms.Panel panelStatus;
+      protected System.Windows.Forms.Splitter splitter1;
+      protected System.Windows.Forms.Panel panelMem;
+      protected System.Windows.Forms.Splitter splitter2;
+      protected System.Windows.Forms.Panel panelDasm;
+      protected System.Windows.Forms.Panel panelRegs;
+      protected System.Windows.Forms.Panel panelState;
+      protected System.Windows.Forms.Splitter splitter3;
+      protected System.Windows.Forms.ListBox listREGS;
+      protected System.Windows.Forms.ListBox listF;
+      protected System.Windows.Forms.Splitter splitter4;
+      protected System.Windows.Forms.ListBox listState;
+      protected ZXMAK2.Hardware.WinForms.General.DasmPanel dasmPanel;
+      protected ZXMAK2.Hardware.WinForms.General.DataPanel dataPanel;
+      protected System.Windows.Forms.ContextMenu contextMenuDasm;
+      protected System.Windows.Forms.MenuItem menuItemDasmGotoADDR;
+      protected System.Windows.Forms.MenuItem menuItem2;
+      protected System.Windows.Forms.MenuItem menuItemDasmClearBreakpoints;
+      protected System.Windows.Forms.MenuItem menuItem4;
+      protected System.Windows.Forms.MenuItem menuItemDasmRefresh;
+      protected System.Windows.Forms.MenuItem menuItemDasmGotoPC;
+      protected System.Windows.Forms.ContextMenu contextMenuData;
+      protected System.Windows.Forms.MenuItem menuItemDataGotoADDR;
+      protected System.Windows.Forms.MenuItem menuItemDataSetColumnCount;
+      protected System.Windows.Forms.MenuItem menuItem5;
+      protected System.Windows.Forms.MenuItem menuItemDataRefresh;
+      protected System.Windows.Forms.StatusStrip statusStrip;
+      protected System.Windows.Forms.ToolStripStatusLabel toolStripStatus;
+      protected System.Windows.Forms.ToolStripStatusLabel toolStripStatusTact;
+      protected System.Windows.Forms.MenuStrip menuStrip;
+      protected System.Windows.Forms.ToolStripMenuItem menuFile;
+      protected System.Windows.Forms.ToolStripMenuItem menuFileLoad;
+      protected System.Windows.Forms.ToolStripMenuItem menuFileSave;
+      protected System.Windows.Forms.ToolStripSeparator menuFileSplitter;
+      protected System.Windows.Forms.ToolStripMenuItem menuFileClose;
+      protected System.Windows.Forms.ToolStripMenuItem menuDebug;
+      protected System.Windows.Forms.ToolStripMenuItem menuDebugContinue;
+      protected System.Windows.Forms.ToolStripMenuItem menuDebugBreak;
+      protected System.Windows.Forms.ToolStripSeparator menuDebugSeparator1;
+      protected System.Windows.Forms.ToolStripMenuItem menuDebugStepInto;
+      protected System.Windows.Forms.ToolStripMenuItem menuDebugStepOver;
+      protected System.Windows.Forms.ToolStripMenuItem menuDebugStepOut;
+      protected System.Windows.Forms.ToolStripSeparator menuDebugSeparator2;
+      protected System.Windows.Forms.ToolStripMenuItem menuDebugShowNext;
       private Host.WinForms.Controls.ToolStripEx toolStrip;
-      private System.Windows.Forms.ToolStripButton toolStripContinue;
-      private System.Windows.Forms.ToolStripButton toolStripBreak;
-      private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-      private System.Windows.Forms.ToolStripButton toolStripStepInto;
-      private System.Windows.Forms.ToolStripButton toolStripStepOver;
-      private System.Windows.Forms.ToolStripButton toolStripStepOut;
-      private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-      private System.Windows.Forms.ToolStripButton toolStripShowNext;
-      private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
-      private System.Windows.Forms.ToolStripButton toolStripBreakpoints;
+      protected System.Windows.Forms.ToolStripButton toolStripContinue;
+      protected System.Windows.Forms.ToolStripButton toolStripBreak;
+      protected System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+      protected System.Windows.Forms.ToolStripButton toolStripStepInto;
+      protected System.Windows.Forms.ToolStripButton toolStripStepOver;
+      protected System.Windows.Forms.ToolStripButton toolStripStepOut;
+      protected System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+      protected System.Windows.Forms.ToolStripButton toolStripShowNext;
+      protected System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+      protected System.Windows.Forms.ToolStripButton toolStripBreakpoints;
  
    }
 }

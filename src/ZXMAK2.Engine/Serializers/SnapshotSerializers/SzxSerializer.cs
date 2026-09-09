@@ -7,6 +7,7 @@ using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Tools;
 
+using ZipLib = ICSharpCode.SharpZipLib;
 
 namespace ZXMAK2.Serializers.SnapshotSerializers
 {

@@ -13,9 +13,11 @@
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                DisposeBinder();
+                if (components != null)
+                    components.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -87,7 +89,6 @@
             this.chkPresentD.TabIndex = 21;
             this.chkPresentD.Text = "Drive D:";
             this.chkPresentD.UseVisualStyleBackColor = true;
-            this.chkPresentD.CheckedChanged += new System.EventHandler(this.chkPresent_CheckedChanged);
             // 
             // chkPresentC
             // 
@@ -98,7 +99,6 @@
             this.chkPresentC.TabIndex = 20;
             this.chkPresentC.Text = "Drive C:";
             this.chkPresentC.UseVisualStyleBackColor = true;
-            this.chkPresentC.CheckedChanged += new System.EventHandler(this.chkPresent_CheckedChanged);
             // 
             // chkPresentB
             // 
@@ -109,7 +109,6 @@
             this.chkPresentB.TabIndex = 19;
             this.chkPresentB.Text = "Drive B:";
             this.chkPresentB.UseVisualStyleBackColor = true;
-            this.chkPresentB.CheckedChanged += new System.EventHandler(this.chkPresent_CheckedChanged);
             // 
             // chkPresentA
             // 
@@ -120,7 +119,6 @@
             this.chkPresentA.TabIndex = 18;
             this.chkPresentA.Text = "Drive A:";
             this.chkPresentA.UseVisualStyleBackColor = true;
-            this.chkPresentA.CheckedChanged += new System.EventHandler(this.chkPresent_CheckedChanged);
             // 
             // chkLogIO
             // 
@@ -185,7 +183,6 @@
             this.btnBrowseD.TabIndex = 12;
             this.btnBrowseD.Text = "...";
             this.btnBrowseD.UseVisualStyleBackColor = true;
-            this.btnBrowseD.Click += new System.EventHandler(this.btnBrowse_Click);
             // 
             // txtPathD
             // 
@@ -195,7 +192,6 @@
             this.txtPathD.Name = "txtPathD";
             this.txtPathD.Size = new System.Drawing.Size(240, 20);
             this.txtPathD.TabIndex = 10;
-            this.txtPathD.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // btnBrowseC
             // 
@@ -206,7 +202,6 @@
             this.btnBrowseC.TabIndex = 9;
             this.btnBrowseC.Text = "...";
             this.btnBrowseC.UseVisualStyleBackColor = true;
-            this.btnBrowseC.Click += new System.EventHandler(this.btnBrowse_Click);
             // 
             // txtPathC
             // 
@@ -216,7 +211,6 @@
             this.txtPathC.Name = "txtPathC";
             this.txtPathC.Size = new System.Drawing.Size(240, 20);
             this.txtPathC.TabIndex = 7;
-            this.txtPathC.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // btnBrowseB
             // 
@@ -227,7 +221,6 @@
             this.btnBrowseB.TabIndex = 6;
             this.btnBrowseB.Text = "...";
             this.btnBrowseB.UseVisualStyleBackColor = true;
-            this.btnBrowseB.Click += new System.EventHandler(this.btnBrowse_Click);
             // 
             // txtPathB
             // 
@@ -237,7 +230,6 @@
             this.txtPathB.Name = "txtPathB";
             this.txtPathB.Size = new System.Drawing.Size(240, 20);
             this.txtPathB.TabIndex = 4;
-            this.txtPathB.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // btnBrowseA
             // 
@@ -248,7 +240,6 @@
             this.btnBrowseA.TabIndex = 3;
             this.btnBrowseA.Text = "...";
             this.btnBrowseA.UseVisualStyleBackColor = true;
-            this.btnBrowseA.Click += new System.EventHandler(this.btnBrowse_Click);
             // 
             // txtPathA
             // 
@@ -258,7 +249,6 @@
             this.txtPathA.Name = "txtPathA";
             this.txtPathA.Size = new System.Drawing.Size(240, 20);
             this.txtPathA.TabIndex = 1;
-            this.txtPathA.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // chkNoDelay
             // 

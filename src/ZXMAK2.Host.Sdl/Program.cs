@@ -1,0 +1,104 @@
+using System;
+using ZXMAK2.Dependency;
+using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Hardware.Circuits.Sound;
+using ZXMAK2.Host.Interfaces;
+using ZXMAK2.Host.Presentation;
+using ZXMAK2.Host.Presentation.Interfaces;
+using Kozui.Interfaces;
+using Kozynax.Cli;
+using Kozynax.UI;
+using ZXMAK2.Host.SdlBackend;
+using ZXMAK2.Host.SdlBackend.Services;
+using ZXMAK2.Host.SdlBackend.Views;
+using ZXMAK2.Host.Terminal;
+
+namespace ZXMAK2
+{
+    public static class Program
+    {
+        [STAThread]
+        public static void Main(string[] args)
+        {
+            try
+            {
+                AppDomain.CurrentDomain.UnhandledException +=
+                    (s, e) => Logger.Fatal(e.ExceptionObject as Exception, "AppDomain.UnhandledException");
+                RunSafe(args);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                Console.Error.WriteLine(ex);
+            }
+        }
+
+        private static void RunSafe(string[] args)
+        {
+            if (CommandLine.TryHandle(args, out var exitCode))
+            {
+                Environment.ExitCode = exitCode;
+                return;
+            }
+
+            var resolver = new ResolverSimple();
+            var sdl = Silk.NET.SDL.Sdl.GetApi();
+
+            var runtime = new SdlRuntimeContext(sdl);
+            resolver.RegisterInstance<IResolver>(resolver);
+            resolver.RegisterInstance(sdl);
+            resolver.RegisterInstance(runtime);
+            if (StdioTerminal.IsInteractive)
+                resolver.RegisterInstance<ITerminal>(new StdioTerminal());
+            else
+                resolver.RegisterType<ITerminal, SdlTerminal>(true);
+            resolver.RegisterType<ISettingService, SdlSettingService>(true);
+            resolver.RegisterType<IUserMessage, SdlUserMessage>();
+            resolver.RegisterType<IUserQuery, SdlUserQuery>();
+            resolver.RegisterType<IUserHelp, SdlUserHelp>();
+            resolver.RegisterType<IOpenFileDialog, SdlOpenFileDialog>();
+            resolver.RegisterType<ISaveFileDialog, SdlSaveFileDialog>();
+            resolver.RegisterType<IViewImplementation<ConfirmDialog>, TerminalKozuiDialogHost<ConfirmDialog>>();
+            resolver.RegisterType<IViewImplementation<InputDialog>, TerminalKozuiDialogHost<InputDialog>>();
+            resolver.RegisterType<IViewImplementation<ObjectSelectorDialog>, TerminalKozuiDialogHost<ObjectSelectorDialog>>();
+            resolver.RegisterType<IViewImplementation<FilePickerDialog>, TerminalKozuiDialogHost<FilePickerDialog>>();
+            resolver.RegisterType<IViewImplementation<AboutDialog>, TerminalKozuiDialogHost<AboutDialog>>();
+            resolver.RegisterType<IViewImplementation<KeyboardHelpDialog>, TerminalKozuiDialogHost<KeyboardHelpDialog>>();
+            resolver.RegisterType<IViewImplementation<MemoryMap>, TerminalKozuiDialogHost<MemoryMap>>();
+            resolver.RegisterType<IViewImplementation<FddDebugDialog>, TerminalKozuiDialogHost<FddDebugDialog>>();
+            resolver.RegisterType<ITapeView, TapeToolView>();
+            resolver.RegisterType<IViewImplementation<TapeSettings>, TerminalKozuiDialogHost<TapeSettings>>();
+            resolver.RegisterType<IMachineSettingsView, MachineSettingsToolView>();
+            resolver.RegisterType<IViewImplementation<MachineSettings>, TerminalKozuiDialogHost<MachineSettings>>();
+            resolver.RegisterType<IViewImplementation<AddDeviceDialog>, TerminalKozuiDialogHost<AddDeviceDialog>>();
+            resolver.RegisterType<IMemoryMapView, MemoryMapToolView>();
+            resolver.RegisterType<IAboutView, AboutToolView>();
+            resolver.RegisterType<IKeyboardView, KeyboardHelpToolView>();
+            resolver.RegisterType<IFddDebugView, FddDebugToolView>();
+            resolver.RegisterType<IDebuggerGeneralView, DebuggerToolView>();
+            resolver.RegisterType<IViewImplementation<DebuggerDialog>, TerminalKozuiDialogHost<DebuggerDialog>>();
+            resolver.RegisterType<IDebuggerSprinterView, SprinterDebuggerToolView>();
+            resolver.RegisterType<IViewImplementation<SprinterDebuggerDialog>, TerminalKozuiDialogHost<SprinterDebuggerDialog>>();
+
+            resolver.RegisterType<IMainView, SdlMainView>();
+            resolver.RegisterType<ILauncher, Launcher>(true);
+            resolver.RegisterType<IMainViewModel, MainViewModel>();
+            resolver.RegisterType<IPsgChip, PsgChip>();
+
+            // WinForms dialogs are unavailable in the SDL shell.
+            // Machine/Tape/Confirm + Add Device are hosted on Terminal via Kozui trees.
+
+            // Ensure Wayland is chosen before any SDL_Init (SdlMainView also sets this).
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SDL_VIDEODRIVER"))
+                && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+            {
+                Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "wayland");
+            }
+
+            Locator.Init(resolver);
+            var launcher = Locator.Resolve<ILauncher>();
+            launcher.Run(args);
+            Locator.Shutdown();
+        }
+    }
+}

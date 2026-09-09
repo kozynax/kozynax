@@ -11,12 +11,16 @@ namespace ZXMAK2.Hardware.WinForms
     {
         private Wd1793 _wd1793;
 
-        public dbgWD1793(Wd1793 debugTarget)
+        public dbgWD1793()
         {
-            _wd1793 = debugTarget;
             InitializeComponent();
         }
 
+        public void Init(Wd1793 debugTarget)
+        {
+            _wd1793 = debugTarget;
+        }
+        
         private void timerUpdate_Tick(object sender, EventArgs e)
         {
             if (_wd1793 != null)

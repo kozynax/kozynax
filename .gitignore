@@ -5,3 +5,4 @@ _bindebug
 bin
 *.suo
 _binrelease
+.idea

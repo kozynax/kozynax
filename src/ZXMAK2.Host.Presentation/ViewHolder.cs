@@ -11,27 +11,22 @@ namespace ZXMAK2.Host.Presentation
         where T : IView
     {
         private readonly string m_name;
-        private Argument[] m_args;
         private IMainView m_hostView;
         private ICommand m_command;
         private T m_view;
         private bool m_canClose;
 
+        public Action<T> SetupView { get; set; }
 
         public ViewHolder(
-            string name, 
-            params Argument[] args)
+            string name,
+            Action<T> setupView)
         {
             m_name = name;
-            m_args = args;
+            SetupView = setupView;
         }
 
-        public Argument[] Arguments
-        {
-            get { return m_args; }
-            set { m_args = value; }
-        }
-
+        
         public ICommand CommandOpen
         {
             get
@@ -59,15 +54,8 @@ namespace ZXMAK2.Host.Presentation
         private void CreateTargetForm()
         {
             m_canClose = false;
-            var viewResolver = Locator.Resolve<IResolver>("View");
-            if (m_args != null && m_args.Length > 0)
-            {
-                m_view = viewResolver.Resolve<T>(m_args);
-            }
-            else
-            {
-                m_view = viewResolver.Resolve<T>();
-            }
+            var viewResolver = Locator.Resolve<IResolver>();
+            m_view = viewResolver.Resolve<T>();
             m_view.ViewClosed += (s, e) =>
             {
                 m_view = default(T);
@@ -84,11 +72,12 @@ namespace ZXMAK2.Host.Presentation
                     }
                 }
             };
+            SetupView(m_view);
         }
 
         private bool Command_OnCanExecute(Object arg)
         {
-            var viewResolver = Locator.Resolve<IResolver>("View");
+            var viewResolver = Locator.Resolve<IResolver>();
             if (!viewResolver.CheckAvailable<T>())
             {
                 return false;

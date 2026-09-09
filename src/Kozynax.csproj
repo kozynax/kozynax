@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net46</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace />
+    <AssemblyName>Kozynax</AssemblyName>
+    <!-- Properties/AssemblyInfo.cs already defines assembly attributes. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="1.2.0.9" />
+    <!-- Lets CI/SDK build net46 without a full Framework install. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net46" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SDL host is built by Kozynax.Sdl.csproj only -->
+    <Compile Remove="ZXMAK2.Host.Sdl\**" />
+    <EmbeddedResource Remove="ZXMAK2.Host.Sdl\**" />
+    <None Remove="ZXMAK2.Host.Sdl\**" />
+    <!-- Linux TTY backend (net5+/libc); not used by WinForms -->
+    <Compile Remove="ZXMAK2.Host\Terminal\StdioTerminal.cs" />
+
+    <Compile Remove="ZXMAK2.Hardware\GeneralSoundDevice.cs" />
+    <Compile Remove="ZXMAK2.DirectX\DirectSound\Blob.cs" />
+    <Compile Remove="ZXMAK2.Host.WinForms\Mdx\Renderers.mdx\**" />
+    <!-- Prefer C# DirectX sources over legacy .il fragments. -->
+    <Compile Remove="ZXMAK2.DirectX\**\*.il" />
+    <None Remove="ZXMAK2.DirectX\Native\NativeHelper.il" />
+    <None Remove="ZXMAK2.DirectX\Direct3D\Direct3DDevice9.il" />
+  </ItemGroup>
+
+</Project>

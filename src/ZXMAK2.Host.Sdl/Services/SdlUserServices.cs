@@ -1,0 +1,123 @@
+using System;
+using System.ComponentModel;
+using Kozynax.UI;
+using ZXMAK2.Host.Entities;
+using ZXMAK2.Host.Interfaces;
+
+namespace ZXMAK2.Host.SdlBackend.Services
+{
+    public sealed class SdlUserMessage : IUserMessage
+    {
+        public void ErrorDetails(Exception ex)
+            => Show("Error", ex?.ToString() ?? "Unknown error");
+
+        public void Error(Exception ex)
+            => Show("Error", ex?.Message ?? "Unknown error");
+
+        public void Error(string fmt, params object[] args)
+            => Show("Error", string.Format(fmt, args));
+
+        public void Warning(Exception ex)
+            => Show("Warning", ex?.Message ?? "Unknown warning");
+
+        public void Warning(string fmt, params object[] args)
+            => Show("Warning", string.Format(fmt, args));
+
+        public void Info(string fmt, params object[] args)
+            => Show("Info", string.Format(fmt, args));
+
+        private static void Show(string title, string message)
+        {
+            Logger.Error("{0}: {1}", title, message);
+            ConfirmDialog.ForButtonSet(message, title, DlgButtonSet.OK)
+                .ShowDialog(null);
+        }
+    }
+
+    public sealed class SdlUserQuery : IUserQuery
+    {
+        public DlgResult Show(string message, string caption, DlgButtonSet buttonSet, DlgIcon icon)
+        {
+            var dialog = ConfirmDialog.ForButtonSet(message, caption, buttonSet);
+            return dialog.ShowDialog(null);
+        }
+
+        public object ObjectSelector(object[] objArray, string caption)
+            => ObjectSelectorDialog.Select(objArray, caption);
+
+        public bool QueryText(string caption, string text, ref string value)
+            => InputDialog.Query(caption, text, ref value);
+
+        public bool QueryValue(string caption, string text, string format, ref int value, int min, int max)
+            => InputDialog.QueryValue(caption, text, format, ref value, min, max);
+    }
+
+    public sealed class SdlUserHelp : IUserHelp
+    {
+        public bool CanShow(object uiControl) => false;
+        public void ShowHelp(object uiControl) { }
+        public void ShowHelp(object uiControl, string keyword) { }
+    }
+
+    public sealed class SdlOpenFileDialog : IOpenFileDialog
+    {
+        public SdlOpenFileDialog()
+        {
+            ReadOnlyChecked = true;
+        }
+
+        public event CancelEventHandler FileOk;
+        public string Title { get; set; }
+        public string Filter { get; set; }
+        public string FileName { get; set; }
+        public bool ShowReadOnly { get; set; }
+        public bool ReadOnlyChecked { get; set; }
+        public bool CheckFileExists { get; set; }
+        public bool Multiselect { get; set; }
+
+        public DlgResult ShowDialog(object owner)
+        {
+            var path = FilePickerDialog.PickOpen(Title ?? "Open...", Filter);
+            if (string.IsNullOrEmpty(path))
+                return DlgResult.Cancel;
+
+            FileName = path;
+            var args = new CancelEventArgs();
+            FileOk?.Invoke(this, args);
+            return args.Cancel ? DlgResult.Cancel : DlgResult.OK;
+        }
+
+        public void Dispose() { }
+    }
+
+    public sealed class SdlSaveFileDialog : ISaveFileDialog
+    {
+        public SdlSaveFileDialog()
+        {
+            OverwritePrompt = true;
+        }
+
+        public string Title { get; set; }
+        public string Filter { get; set; }
+        public string DefaultExt { get; set; }
+        public string FileName { get; set; }
+        public bool OverwritePrompt { get; set; }
+
+        public DlgResult ShowDialog(object owner)
+        {
+            var path = FilePickerDialog.PickSave(
+                Title ?? "Save...",
+                Filter,
+                DefaultExt,
+                FileName,
+                OverwritePrompt);
+            if (string.IsNullOrEmpty(path))
+                return DlgResult.Cancel;
+
+            FileName = path;
+            return DlgResult.OK;
+        }
+
+        public void Dispose() { }
+    }
+}

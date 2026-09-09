@@ -570,7 +570,7 @@ namespace ZXMAK2.Engine
             asmName = GetTrimmedString(asmName);
             if (asmName == null)
             {
-                asmName = "ZXMAK2.Hardware";
+                asmName = Assembly.GetCallingAssembly().FullName;
             }
             var asm = asmName != null ?
                 Assembly.Load(asmName) :

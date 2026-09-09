@@ -71,7 +71,7 @@ namespace ZXMAK2.Host.Services
 
         private IUserQuery GetService()
         {
-            var viewResolver = m_resolver.TryResolve<IResolver>("View");
+            var viewResolver = m_resolver.TryResolve<IResolver>();
             if (viewResolver == null)
             {
                 return null;

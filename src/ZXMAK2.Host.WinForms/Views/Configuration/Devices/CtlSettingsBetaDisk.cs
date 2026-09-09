@@ -1,176 +1,112 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-using System.ComponentModel;
 using System.Windows.Forms;
-
-using ZXMAK2.Model.Disk;
-using ZXMAK2.Host.Interfaces;
-using ZXMAK2.Engine;
+using Kozui.Interfaces;
+using Kozynax.UI;
+using Kozynax.UI.Base;
 using ZXMAK2.Engine.Interfaces;
-
+using ZXMAK2.Host.WinForms.BindingTools;
+using Lib = ZXMAK2.Host.WinForms.Lib;
+using WinFormsButton = System.Windows.Forms.Button;
+using WinFormsCheckBox = System.Windows.Forms.CheckBox;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsBetaDisk : ConfigScreenControl
+    public partial class CtlSettingsBetaDisk : ConfigScreenControl, IComponentImplementation<BetaDiskSettings, IBetaDiskDevice>
     {
-        private BusManager m_bmgr;
-        private IBetaDiskDevice m_device;
+        private BetaDiskSettings _beta;
+        private KozuiBinder _binder;
 
         public CtlSettingsBetaDisk()
         {
             InitializeComponent();
         }
 
-        public void Init(BusManager bmgr, IHostService host, IBetaDiskDevice device)
+        public void Init(BetaDiskSettings betaDiskSettings)
         {
-            m_bmgr = bmgr;
-            m_device = device;
-            chkNoDelay.Checked = m_device.NoDelay;
-            chkLogIO.Checked = m_device.LogIo;
-            initDrive(GetImage(0), chkPresentA, txtPathA, chkProtectA, btnBrowseA);
-            initDrive(GetImage(1), chkPresentB, txtPathB, chkProtectB, btnBrowseB);
-            initDrive(GetImage(2), chkPresentC, txtPathC, chkProtectC, btnBrowseC);
-            initDrive(GetImage(3), chkPresentD, txtPathD, chkProtectD, btnBrowseD);
+            _beta = betaDiskSettings;
+
+            _binder?.Dispose();
+            _binder = new KozuiBinder();
+
+            _binder.BindCheckBox(_beta.NoDelay, chkNoDelay);
+            _binder.BindCheckBox(_beta.LogIO, chkLogIO);
+
+            BindDisk(_beta.DiskA, chkPresentA, chkProtectA, txtPathA, btnBrowseA);
+            BindDisk(_beta.DiskB, chkPresentB, chkProtectB, txtPathB, btnBrowseB);
+            BindDisk(_beta.DiskC, chkPresentC, chkProtectC, txtPathC, btnBrowseC);
+            BindDisk(_beta.DiskD, chkPresentD, chkProtectD, txtPathD, btnBrowseD);
+
+            TrackBrowse(_beta.DiskA.Disk);
+            TrackBrowse(_beta.DiskB.Disk);
+            TrackBrowse(_beta.DiskC.Disk);
+            TrackBrowse(_beta.DiskD.Disk);
         }
 
-        private DiskImage GetImage(int index)
+        private void TrackBrowse(Lib.FileSelector disk)
         {
-            return m_device.FDD.Length > index ? m_device.FDD[index] : null;
+            disk.OnBrowseFile += Disk_OnBrowseFile;
+            _binder.Track(() => disk.OnBrowseFile -= Disk_OnBrowseFile);
         }
 
-        public override void Apply()
+        private void BindDisk(
+            DiskSelector disk,
+            WinFormsCheckBox chkPresent,
+            WinFormsCheckBox chkProtect,
+            TextBox txtPath,
+            WinFormsButton btnBrowse)
         {
-            m_device.NoDelay = chkNoDelay.Checked;
-            m_device.LogIo = chkLogIO.Checked;
-            applyDrive(GetImage(0), chkPresentA, txtPathA, chkProtectA);
-            applyDrive(GetImage(1), chkPresentB, txtPathB, chkProtectB);
-            applyDrive(GetImage(2), chkPresentC, txtPathC, chkProtectC);
-            applyDrive(GetImage(3), chkPresentD, txtPathD, chkProtectD);
-        }
-
-        private void initDrive(
-            DiskImage diskImage, 
-            CheckBox chkPresent, 
-            TextBox txtPath, 
-            CheckBox chkProtect,
-            Button btnBrowse)
-        {
-            if (diskImage != null)
+            void syncVisible()
             {
-                chkPresent.Visible = true;
-                chkProtect.Visible = true;
-                txtPath.Visible = true;
-                btnBrowse.Visible = true;
-                chkPresent.Checked = diskImage.Present;
-                txtPath.Text = diskImage.FileName;
-                txtPath.SelectionStart = txtPath.Text.Length;
-                chkProtect.Checked = diskImage.IsWP;
-                updateEnabled();
+                chkPresent.Visible = chkProtect.Visible =
+                    txtPath.Visible = btnBrowse.Visible = disk.Visible;
             }
-            else
-            {
-                chkPresent.Visible = false;
-                chkProtect.Visible = false;
-                txtPath.Visible = false;
-                btnBrowse.Visible = false;
-            }
+
+            syncVisible();
+            _binder.BindOneWay(disk, nameof(DiskSelector.Visible), syncVisible);
+
+            _binder.BindCheckBox(disk.Present, chkPresent);
+            _binder.BindCheckBox(disk.WriteProtect, chkProtect);
+            _binder.BindText(disk.Disk, txtPath);
+            _binder.BindEnabled(disk.Disk, btnBrowse);
+
+            EventHandler browse = (o, e) => disk.Disk.BrowseFile(disk.Disk.FileName);
+            btnBrowse.Click += browse;
+            _binder.Track(() => btnBrowse.Click -= browse);
         }
 
-        private void applyDrive(DiskImage diskImage, CheckBox chkPresent, TextBox txtPath, CheckBox chkProtect)
+        private void Disk_OnBrowseFile(Lib.FileSelector fileSelector, string initialFileName)
         {
-            if (diskImage == null)
-            {
-                return;
-            }
-            var fileName = txtPath.Text;
-            if (fileName != string.Empty)
-            {
-                if (!File.Exists(Path.GetFullPath(fileName)) &&
-                    chkPresent.Checked)
-                {
-                    throw new FileNotFoundException(
-                        string.Format(
-                            "File not found: \"{0}\"",
-                            fileName));
-                }
-                fileName = Path.GetFullPath(fileName);
-            }
-            diskImage.Present = chkPresent.Checked;
-            diskImage.FileName = fileName;
-            diskImage.IsWP = chkProtect.Checked;
-        }
-
-        private void btnBrowse_Click(object sender, EventArgs e)
-        {
-            var drive = sender == btnBrowseD ? 3 :
-                sender == btnBrowseC ? 2 :
-                sender == btnBrowseB ? 1 : 0;
-            var pathTxt = new[] { txtPathA, txtPathB, txtPathC, txtPathD };
-            var wpChk = new[] { chkProtectA, chkProtectB, chkProtectC, chkProtectD };
+            var disks = new List<DiskSelector> { _beta.DiskA, _beta.DiskB, _beta.DiskC, _beta.DiskD };
+            var fileSelectors = disks.Select(d => d.Disk).ToList();
+            var drive = fileSelectors.IndexOf(fileSelector);
 
             using (var loadDialog = new OpenFileDialog())
             {
                 loadDialog.InitialDirectory = ".";
                 loadDialog.SupportMultiDottedExtensions = true;
                 loadDialog.Title = "Open...";
-                loadDialog.Filter = m_device.LoadManagers[drive].GetOpenExtFilter();
-                loadDialog.DefaultExt = ""; //m_betaDisk.BetaDisk.FDD[drive].Serializer.GetDefaultExtension();
-                loadDialog.FileName = "";
+                loadDialog.Filter = _beta.Device.LoadManagers[drive].GetOpenExtFilter();
+                loadDialog.DefaultExt = "";
+                loadDialog.FileName = initialFileName;
                 loadDialog.ShowReadOnly = true;
                 loadDialog.ReadOnlyChecked = true;
                 loadDialog.CheckFileExists = true;
-                loadDialog.FileOk += new CancelEventHandler(loadDialog_FileOk);
-                if (loadDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                if (loadDialog.ShowDialog() != DialogResult.OK)
                 {
                     return;
                 }
-                pathTxt[drive].Text = loadDialog.FileName;
-                pathTxt[drive].SelectionStart = pathTxt[drive].Text.Length;
-                wpChk[drive].Checked = loadDialog.ReadOnlyChecked;
+
+                fileSelector.SelectFile(loadDialog.FileName);
+                disks[drive].WriteProtect.Checked |= loadDialog.ReadOnlyChecked;
             }
         }
 
-        private void loadDialog_FileOk(object sender, CancelEventArgs e)
-        {
-            OpenFileDialog loadDialog = sender as OpenFileDialog;
-            if (loadDialog == null) return;
-            e.Cancel = !m_device.LoadManagers.First().CheckCanOpenFileName(loadDialog.FileName);
-        }
+        public override void Apply()
+            => _beta.Apply();
 
-        private void chkPresent_CheckedChanged(object sender, EventArgs e)
-        {
-            updateEnabled();
-        }
-
-        private void txtPath_TextChanged(object sender, EventArgs e)
-        {
-            updateEnabled();
-        }
-
-        private void updateEnabled()
-        {
-            setEnabled(txtPathA, chkProtectA, btnBrowseA, chkPresentA);
-            setEnabled(txtPathB, chkProtectB, btnBrowseB, chkPresentB);
-            setEnabled(txtPathC, chkProtectC, btnBrowseC, chkPresentC);
-            setEnabled(txtPathD, chkProtectD, btnBrowseD, chkPresentD);
-        }
-
-        private void setEnabled(
-            TextBox txtPath,
-            CheckBox chkProtect,
-            Button btnBrowse,
-            CheckBox chkPresent)
-        {
-            var isZip = txtPath.Text != string.Empty &&
-                string.Compare(Path.GetExtension(txtPath.Text), ".ZIP", true) == 0;
-            txtPath.Enabled = chkPresent.Checked;
-            chkProtect.Enabled = chkPresent.Checked && !isZip;
-            if (isZip)
-            {
-                chkProtect.Checked = true;
-            }
-            btnBrowse.Enabled = chkPresent.Checked;
-        }
+        internal void DisposeBinder()
+            => _binder?.Dispose();
     }
 }

@@ -7,7 +7,6 @@ namespace ZXMAK2.Host.Presentation.Interfaces
     public interface IViewHolder
     {
         ICommand CommandOpen { get; }
-        Argument[] Arguments { get; set; }
 
         void Show();
         void Close();

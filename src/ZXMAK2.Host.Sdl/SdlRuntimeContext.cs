@@ -1,0 +1,41 @@
+using System;
+using Silk.NET.SDL;
+
+namespace ZXMAK2.Host.SdlBackend
+{
+    /// <summary>
+    /// Shared SDL window/renderer filled by <see cref="SdlMainView"/> after create.
+    /// </summary>
+    public sealed unsafe class SdlRuntimeContext
+    {
+        public Sdl Sdl { get; }
+        public Window* Window { get; set; }
+        public Renderer* Renderer { get; set; }
+
+        /// <summary>Release emulator mouse capture for Terminal UI overlays.</summary>
+        public Action PrepareUiInput { get; set; }
+
+        /// <summary>Restore emulator mouse capture after Terminal UI overlays.</summary>
+        public Action EndUiInput { get; set; }
+
+        /// <summary>
+        /// Optional pump for stdio Kozui hosts so the SDL window keeps presenting
+        /// while a console UI loop is blocking the main thread.
+        /// </summary>
+        public Action IdlePump { get; set; }
+
+        public SdlRuntimeContext(Sdl sdl)
+        {
+            Sdl = sdl;
+        }
+
+        public bool IsReady => Window != null && Renderer != null;
+
+        public SdlMenuImagePainter CreateMenuImagePainter()
+        {
+            if (!IsReady)
+                return null;
+            return new SdlMenuImagePainter(Sdl, Renderer);
+        }
+    }
+}

@@ -23,8 +23,7 @@ namespace ZXMAK2.Host.Presentation
             var service = m_resolver.TryResolve<IUserMessage>();
             try
             {
-                args = ProcessHostOption(args);
-                var viewResolver = m_resolver.Resolve<IResolver>("View");
+                var viewResolver = m_resolver.Resolve<IResolver>();
                 var view = viewResolver.Resolve<IMainView>();
                 if (view==null)
                 {
@@ -36,11 +35,10 @@ namespace ZXMAK2.Host.Presentation
                 }
                 using (view)
                 {
-                    var list = new List<Argument>();
-                    list.Add(new Argument("view", view));
-                    list.Add(new Argument("args", args));
-                    using (var viewModel = m_resolver.Resolve<IMainViewModel>(list.ToArray()))
+                    using (var viewModel = m_resolver.Resolve<IMainViewModel>())
                     {
+                        viewModel.Init(view, args);
+
                         var synchronizeInvoke = view as ISynchronizeInvoke;
                         if (synchronizeInvoke != null)
                         {
@@ -59,20 +57,6 @@ namespace ZXMAK2.Host.Presentation
                     service.ErrorDetails(ex);
                 }
             }
-        }
-
-        private string[] ProcessHostOption(string[] args)
-        {
-            var argsList = new List<string>(args);
-            var hostSwitch = argsList.FirstOrDefault(arg => arg.StartsWith("/host:", StringComparison.InvariantCultureIgnoreCase));
-            if (hostSwitch != null)
-            {
-                argsList.Remove(hostSwitch);
-                hostSwitch = hostSwitch.Substring(6);
-                m_resolver.RegisterInstance<string>("viewType", hostSwitch);
-                return argsList.ToArray();
-            }
-            return args;
         }
     }
 }

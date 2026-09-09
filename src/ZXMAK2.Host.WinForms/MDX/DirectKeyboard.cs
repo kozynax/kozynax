@@ -40,13 +40,13 @@ namespace ZXMAK2.Host.WinForms.Mdx
         private readonly Form _form;
         private readonly IntPtr _hWnd;
         private DirectInputDevice8W _device;
-        private KeyboardStateMapper<MdxKey> _mapper = new KeyboardStateMapper<MdxKey>();
+        private KeyboardStateMapper<MdxKey> _mapper;
         private readonly Dictionary<ZxmakKey, bool> _state = new Dictionary<ZxmakKey, bool>();
         private bool _isAcquired;
 
 
 
-        public unsafe DirectKeyboard(Form form)
+        public DirectKeyboard(Form form)
         {
             if (form == null)
             {
@@ -62,8 +62,7 @@ namespace ZXMAK2.Host.WinForms.Mdx
             _device.SetCooperativeLevel(_hWnd, DISCL.NONEXCLUSIVE | DISCL.FOREGROUND).CheckError();
             form.Deactivate += WndDeactivate;
             TryAcquire();
-            _mapper.LoadMapFromString(
-                global::ZXMAK2.Host.WinForms.Properties.Resources.Keyboard_Mdx);
+            _mapper = new KeyboardStateMapper<Key>(GetMapping());
         }
 
         public void Dispose()
@@ -183,5 +182,118 @@ namespace ZXMAK2.Host.WinForms.Mdx
         }
 
         #endregion Private
+        
+        #region Mapping
+        
+        private Dictionary<ZxmakKey, Key> GetMapping()
+        {
+            return new Dictionary<ZxmakKey, Key>() {
+                { ZxmakKey.D1, Key.D1 },
+                { ZxmakKey.D2, Key.D2 },
+                { ZxmakKey.D3, Key.D3 },
+                { ZxmakKey.D4, Key.D4 },
+                { ZxmakKey.D5, Key.D5 },
+                { ZxmakKey.D6, Key.D6 },
+                { ZxmakKey.D7, Key.D7 },
+                { ZxmakKey.D8, Key.D8 },
+                { ZxmakKey.D9, Key.D9 },
+                { ZxmakKey.D0, Key.D0 },
+                { ZxmakKey.Q, Key.Q },
+                { ZxmakKey.W, Key.W },
+                { ZxmakKey.E, Key.E },
+                { ZxmakKey.R, Key.R },
+                { ZxmakKey.T, Key.T },
+                { ZxmakKey.Y, Key.Y },
+                { ZxmakKey.U, Key.U },
+                { ZxmakKey.I, Key.I },
+                { ZxmakKey.O, Key.O },
+                { ZxmakKey.P, Key.P },
+                { ZxmakKey.A, Key.A },
+                { ZxmakKey.S, Key.S },
+                { ZxmakKey.D, Key.D },
+                { ZxmakKey.F, Key.F },
+                { ZxmakKey.G, Key.G },
+                { ZxmakKey.H, Key.H },
+                { ZxmakKey.J, Key.J },
+                { ZxmakKey.K, Key.K },
+                { ZxmakKey.L, Key.L },
+                { ZxmakKey.Z, Key.Z },
+                { ZxmakKey.X, Key.X },
+                { ZxmakKey.C, Key.C },
+                { ZxmakKey.V, Key.V },
+                { ZxmakKey.B, Key.B },
+                { ZxmakKey.N, Key.N },
+                { ZxmakKey.M, Key.M },
+                { ZxmakKey.Space, Key.Space },
+                { ZxmakKey.Return, Key.Return },
+                { ZxmakKey.F1, Key.F1 },
+                { ZxmakKey.F2, Key.F2 },
+                { ZxmakKey.F3, Key.F3 },
+                { ZxmakKey.F4, Key.F4 },
+                { ZxmakKey.F5, Key.F5 },
+                { ZxmakKey.F6, Key.F6 },
+                { ZxmakKey.F7, Key.F7 },
+                { ZxmakKey.F8, Key.F8 },
+                { ZxmakKey.F9, Key.F9 },
+                { ZxmakKey.F10, Key.F10 },
+                { ZxmakKey.F11, Key.F11 },
+                { ZxmakKey.F12, Key.F12 },
+                { ZxmakKey.F13, Key.F13 },
+                { ZxmakKey.F14, Key.F14 },
+                { ZxmakKey.F15, Key.F15 },
+                { ZxmakKey.LeftShift, Key.LeftShift },
+                { ZxmakKey.RightShift, Key.RightShift },
+                { ZxmakKey.LeftAlt, Key.LeftAlt },
+                { ZxmakKey.RightAlt, Key.RightAlt },
+                { ZxmakKey.LeftControl, Key.LeftControl },
+                { ZxmakKey.RightControl, Key.RightControl },
+                { ZxmakKey.LeftWindows, Key.LeftWindows },
+                { ZxmakKey.RightWindows, Key.RightWindows },
+                { ZxmakKey.UpArrow, Key.UpArrow },
+                { ZxmakKey.LeftArrow, Key.LeftArrow },
+                { ZxmakKey.RightArrow, Key.RightArrow },
+                { ZxmakKey.DownArrow, Key.DownArrow },
+                { ZxmakKey.Insert, Key.Insert },
+                { ZxmakKey.Delete, Key.Delete },
+                { ZxmakKey.Home, Key.Home },
+                { ZxmakKey.End, Key.End },
+                { ZxmakKey.PageUp, Key.PageUp },
+                { ZxmakKey.PageDown, Key.PageDown },
+                { ZxmakKey.Escape, Key.Escape },
+                { ZxmakKey.Tab, Key.Tab },
+                { ZxmakKey.Minus, Key.Minus },
+                { ZxmakKey.Equals, Key.Equals },
+                { ZxmakKey.BackSpace, Key.BackSpace },
+                { ZxmakKey.CapsLock, Key.CapsLock },
+                { ZxmakKey.NumPadPlus, Key.NumPadPlus },
+                { ZxmakKey.NumPadMinus, Key.NumPadMinus },
+                { ZxmakKey.NumPadStar, Key.NumPadStar },
+                { ZxmakKey.NumPadSlash, Key.NumPadSlash },
+                { ZxmakKey.Period, Key.Period },
+                { ZxmakKey.Comma, Key.Comma },
+                { ZxmakKey.SemiColon, Key.SemiColon },
+                { ZxmakKey.Apostrophe, Key.Apostrophe },
+                { ZxmakKey.Slash, Key.Slash },
+                { ZxmakKey.LeftBracket, Key.LeftBracket },
+                { ZxmakKey.RightBracket, Key.RightBracket },
+                { ZxmakKey.NumPadEnter, Key.NumPadEnter },
+                { ZxmakKey.BackSlash, Key.BackSlash },
+                { ZxmakKey.Grave, Key.Grave },
+                { ZxmakKey.NumPad0, Key.NumPad0 },
+                { ZxmakKey.NumPad1, Key.NumPad1 },
+                { ZxmakKey.NumPad2, Key.NumPad2 },
+                { ZxmakKey.NumPad3, Key.NumPad3 },
+                { ZxmakKey.NumPad4, Key.NumPad4 },
+                { ZxmakKey.NumPad5, Key.NumPad5 },
+                { ZxmakKey.NumPad6, Key.NumPad6 },
+                { ZxmakKey.NumPad7, Key.NumPad7 },
+                { ZxmakKey.NumPad8, Key.NumPad8 },
+                { ZxmakKey.NumPad9, Key.NumPad9 },
+                { ZxmakKey.NumPadComma, Key.NumPadComma },
+                { ZxmakKey.NumPadPeriod, Key.NumPadPeriod },
+            };
+        }
+        
+        #endregion
     }
 }

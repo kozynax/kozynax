@@ -1,4 +1,6 @@
-﻿namespace ZXMAK2.Host.WinForms.Views
+﻿using ZXMAK2.Resources;
+
+namespace ZXMAK2.Host.WinForms.Views
 {
     partial class FormAddDeviceWizard
     {
@@ -13,9 +15,11 @@
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                DisposeBinder();
+                if (components != null)
+                    components.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -38,7 +42,6 @@
             System.Windows.Forms.ListViewItem listViewItem7 = new System.Windows.Forms.ListViewItem("Keyboard", 7);
             System.Windows.Forms.ListViewItem listViewItem8 = new System.Windows.Forms.ListViewItem("Mouse", 8);
             System.Windows.Forms.ListViewItem listViewItem9 = new System.Windows.Forms.ListViewItem("Other", 1);
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormAddDeviceWizard));
             this.pnlTop = new System.Windows.Forms.Panel();
             this.lblActionAim = new System.Windows.Forms.Label();
             this.lblActionHint = new System.Windows.Forms.Label();
@@ -112,7 +115,6 @@
             this.btnBack.TabIndex = 2;
             this.btnBack.Text = "< Back";
             this.btnBack.UseVisualStyleBackColor = true;
-            this.btnBack.Click += new System.EventHandler(this.btnBack_Click);
             // 
             // btnNext
             // 
@@ -241,19 +243,18 @@
             // 
             // imageList
             // 
-            this.imageList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList.ImageStream")));
             this.imageList.TransparentColor = System.Drawing.Color.Transparent;
-            this.imageList.Images.SetKeyName(0, "RAMx16.png");
-            this.imageList.Images.SetKeyName(1, "PCBx16.png");
-            this.imageList.Images.SetKeyName(2, "ULAx16.png");
-            this.imageList.Images.SetKeyName(3, "FDDx16.png");
-            this.imageList.Images.SetKeyName(4, "BEEPERx16.png");
-            this.imageList.Images.SetKeyName(5, "AY8910x16.png");
-            this.imageList.Images.SetKeyName(6, "TAPEx16.png");
-            this.imageList.Images.SetKeyName(7, "KBDx16.png");
-            this.imageList.Images.SetKeyName(8, "MOUSx16.png");
-            this.imageList.Images.SetKeyName(9, "DISPLAYx16.png");
-            this.imageList.Images.SetKeyName(10, "DEBUGx16.png");
+            this.imageList.Images.Add(ResourceImages.RAM);
+            this.imageList.Images.Add(ResourceImages.PCB);
+            this.imageList.Images.Add(ResourceImages.ULA);
+            this.imageList.Images.Add(ResourceImages.FDD);
+            this.imageList.Images.Add(ResourceImages.BEEPER);
+            this.imageList.Images.Add(ResourceImages.AY8910);
+            this.imageList.Images.Add(ResourceImages.TAPE);
+            this.imageList.Images.Add(ResourceImages.KBD);
+            this.imageList.Images.Add(ResourceImages.MOUS);
+            this.imageList.Images.Add(ResourceImages.DISPLAY);
+            this.imageList.Images.Add(ResourceImages.DEBUG);
             // 
             // tabPage2
             // 

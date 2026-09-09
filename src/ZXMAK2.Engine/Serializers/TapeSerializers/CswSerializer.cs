@@ -9,6 +9,7 @@ using ZXMAK2.Model.Tape.Interfaces;
 using ZXMAK2.Model.Tape.Entities;
 using ZXMAK2.Engine.Interfaces;
 
+using ZipLib = ICSharpCode.SharpZipLib;
 
 namespace ZXMAK2.Serializers.TapeSerializers
 {

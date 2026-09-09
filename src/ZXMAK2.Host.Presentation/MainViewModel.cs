@@ -11,6 +11,7 @@ using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Presentation.Tools;
 using ZXMAK2.Mvvm;
 using System.Drawing;
+using Kozynax.UI;
 using ZXMAK2.Mvvm.Attributes;
 
 
@@ -22,8 +23,8 @@ namespace ZXMAK2.Host.Presentation
         private readonly IResolver m_resolver;
         private readonly ISettingService m_settingService;
         private readonly IUserMessage m_userMessage;
-        private readonly IMainView m_view;
-        private readonly string m_startupImage;
+        private IMainView m_view;
+        private string m_startupImage;
         private ISynchronizeInvoke m_synchronizeInvoke;
         private VirtualMachine m_vm;
         
@@ -31,18 +32,21 @@ namespace ZXMAK2.Host.Presentation
         public MainViewModel(
             IResolver resolver,
             ISettingService settingService,
-            IUserMessage userMessage,
-            IMainView view, 
-            params string[] args)
+            IUserMessage userMessage)
         {
             m_resolver = resolver;
             m_settingService = settingService;
             m_userMessage = userMessage;
+        }
+
+        public void Init(IMainView view, string[] args)
+        {
             m_view = view;
             if (args.Length > 0 && File.Exists(args[0]))
             {
                 m_startupImage = Path.GetFullPath(args[0]);
             }
+            
             m_view.ViewOpened += MainView_OnViewOpened;
             m_view.ViewClosed += MainView_OnViewClosed;
             m_view.RequestFrame += MainView_OnRequestFrame;
@@ -277,13 +281,26 @@ namespace ZXMAK2.Host.Presentation
             }
             set
             {
-                if (!value.HasValue || RenderScaleRatio == value)
+                if (!value.HasValue ||
+                    FrameSize.Width <= 0 ||
+                    FrameSize.Height <= 0)
                 {
                     return;
                 }
-                RenderSize = new Size(
+
+                var size = new Size(
                     FrameSize.Width * value.Value,
                     (int)(FrameSize.Height * value.Value * FrameRatio));
+                // Always push size to the view — even when the recorded ratio already
+                // matches (e.g. user resized the window but RenderSize was stale).
+                if (RenderSize != size)
+                {
+                    RenderSize = size;
+                }
+                else
+                {
+                    OnPropertyChanged("RenderSize");
+                }
             }
         }
 
@@ -437,7 +454,7 @@ namespace ZXMAK2.Host.Presentation
         private ICommand CreateViewHolderCommand<T>()
             where T : IView
         {
-            var viewHolder = new ViewHolder<T>(null);
+            var viewHolder = new ViewHolder<T>(null, _ => { });
             return viewHolder.CommandOpen;
         }
 
@@ -514,13 +531,13 @@ namespace ZXMAK2.Host.Presentation
 
         private bool CheckViewAvailable<T>()
         {
-            var viewResolver = m_resolver.Resolve<IResolver>("View");
+            var viewResolver = m_resolver.Resolve<IResolver>();
             return viewResolver.CheckAvailable<T>();
         }
         
         private T GetView<T>()
         {
-            var viewResolver = m_resolver.Resolve<IResolver>("View");
+            var viewResolver = m_resolver.Resolve<IResolver>();
             return viewResolver.TryResolve<T>();
         }
 
@@ -685,6 +702,7 @@ namespace ZXMAK2.Host.Presentation
                 return;
             }
             RenderScaleRatio = (int)objState;
+            RenderScaleMode = ScaleMode.FixedPixelSize;
             IsFullScreen = false;
         }
 
@@ -780,19 +798,14 @@ namespace ZXMAK2.Host.Presentation
                 {
                     return;
                 }
-                var viewSettings = GetView<IMachineSettingsView>();
-                if (viewSettings == null)
-                {
-                    return;
-                }
-                using (viewSettings)
-                {
-                    viewSettings.Init(m_view.Host, m_vm);
-                    viewSettings.ShowDialog(m_view);
-                    m_vm.RequestFrame();
-                    
-                    CommandTapePause.Update();
-                }
+
+                var machineSettings = new MachineSettings();
+                machineSettings.ShowDialog<IMachineSettingsView>(
+                    m_view,
+                    v => v.Init(m_view.Host, m_vm));
+                
+                m_vm.RequestFrame();
+                CommandTapePause.Update();
             }
             catch (Exception ex)
             {

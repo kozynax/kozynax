@@ -1,5 +1,12 @@
 ﻿
 
+using Kozui.Interfaces;
+using Kozynax.UI;
+using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Hardware;
+using ZXMAK2.Hardware.Circuits.Fdd;
+using ZXMAK2.Hardware.General;
+
 namespace ZXMAK2.Host.Presentation.Interfaces
 {
     public interface IAboutView : IView
@@ -12,29 +19,28 @@ namespace ZXMAK2.Host.Presentation.Interfaces
 
     public interface IMemoryMapView : IView
     {
+        void Init(MemoryBase mem);
     }
 
-    public interface ITapeView : IView
+    public interface ITapeView : IView, IViewImplementation<TapeSettings>
     {
     }
 
     public interface IFddDebugView : IView
     {
+        void Init(Wd1793 debugTarget);
     }
 
-    public interface IDebuggerGeneralView : IView
+    public interface IDebuggerBaseView : IView
+    {
+        void Init(IDebuggable dbg);
+    }
+    
+    public interface IDebuggerGeneralView : IDebuggerBaseView, IViewImplementation<DebuggerDialog>
     {
     }
 
-    public interface IDebuggerExView : IView
-    {
-    }
-
-    public interface IDebuggerSprinterView : IView
-    {
-    }
-
-    public interface IDebuggerAdlersView : IView
+    public interface IDebuggerSprinterView : IDebuggerBaseView, IViewImplementation<SprinterDebuggerDialog>
     {
     }
 }

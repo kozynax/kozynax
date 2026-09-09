@@ -76,7 +76,10 @@ namespace ZXMAK2.Hardware.Evo
 
         public override void BusDisconnect()
         {
+            if (card == null)
+                return;
             card.Close();
+            card = null;
         }
 
         #endregion
@@ -87,7 +90,7 @@ namespace ZXMAK2.Hardware.Evo
         protected virtual void Reset()
         {
             card_cs = false;
-            card.Reset();
+            card?.Reset();
             buf = 0xFF;
         }
 
@@ -193,7 +196,7 @@ namespace ZXMAK2.Hardware.Evo
 
         private bool CommandUi_OnCanExecute(Object arg)
         {
-            var viewResolver = Locator.Resolve<IResolver>("View");
+            var viewResolver = Locator.Resolve<IResolver>();
             return viewResolver.CheckAvailable<IOpenFileDialog>();
         }
 
@@ -205,7 +208,7 @@ namespace ZXMAK2.Hardware.Evo
             }
             try
             {
-                var viewResolver = Locator.Resolve<IResolver>("View");
+                var viewResolver = Locator.Resolve<IResolver>();
                 var dlg = viewResolver.TryResolve<IOpenFileDialog>();
                 if (dlg == null)
                 {

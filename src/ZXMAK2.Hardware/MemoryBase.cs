@@ -407,8 +407,8 @@ namespace ZXMAK2.Hardware
             try
             {
                 m_viewHolder = new ViewHolder<IMemoryMapView>(
-                    "Memory Map", 
-                    new Argument("memory", this));
+                    "Memory Map",
+                    m => m.Init(this));
             }
             catch (Exception ex)
             {

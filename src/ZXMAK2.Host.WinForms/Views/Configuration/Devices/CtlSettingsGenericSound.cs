@@ -1,43 +1,32 @@
-﻿using System;
-
-using ZXMAK2.Host.Interfaces;
-using ZXMAK2.Engine;
+﻿using Kozui.Interfaces;
+using Kozynax.UI;
 using ZXMAK2.Engine.Interfaces;
-using ZXMAK2.Engine.Entities;
-
+using ZXMAK2.Host.WinForms.BindingTools;
 
 namespace ZXMAK2.Host.WinForms.Views.Configuration.Devices
 {
-    public partial class CtlSettingsGenericSound : ConfigScreenControl
+    public partial class CtlSettingsGenericSound : ConfigScreenControl, IComponentImplementation<GenericSoundSettings, ISoundRenderer>
     {
-        private BusManager m_bmgr;
-        private ISoundRenderer m_device;
-
+        private GenericSoundSettings _settings;
+        private KozuiBinder _binder;
 
         public CtlSettingsGenericSound()
         {
             InitializeComponent();
         }
 
-        public void Init(BusManager bmgr, IHostService host, ISoundRenderer device)
+        public void Init(GenericSoundSettings settings)
         {
-            m_bmgr = bmgr;
-            m_device = device;
-            var busDevice = (BusDeviceBase)device;
-            txtDevice.Text = busDevice.Name;
-            txtDescription.Text = busDevice.Description.Replace("\n", Environment.NewLine);
-
-            int value = m_device.Volume;
-            if (value < 0)
-                value = 0;
-            if (value > 100)
-                value = 100;
-            trkVolume.Value = value;
+            _settings = settings;
+            _binder?.Dispose();
+            _binder = new KozuiBinder();
+            _binder.BindTrackBar(_settings.Volume, trkVolume);
         }
 
         public override void Apply()
-        {
-            m_device.Volume = trkVolume.Value;
-        }
+            => _settings.Apply();
+
+        internal void DisposeBinder()
+            => _binder?.Dispose();
     }
 }

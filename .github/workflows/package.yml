@@ -1,0 +1,225 @@
+name: Build and package
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  SDL_PROJECT: src/Kozynax.Sdl.csproj
+  WINFORMS_PROJECT: src/Kozynax.csproj
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: ver
+        run: |
+          V="$(bash packaging/version.sh)"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $V"
+
+  linux-sdl:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish linux-x64
+        run: |
+          dotnet publish "$SDL_PROJECT" -c Release -r linux-x64 \
+            --self-contained true \
+            -p:Version=${{ needs.version.outputs.version }} \
+            -p:PublishReadyToRun=true \
+            -o artifacts/publish/linux-x64
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip ruby ruby-dev build-essential rpm
+          sudo gem install --no-document fpm
+
+      - name: Package .deb + portable zip
+        run: |
+          mkdir -p artifacts/dist
+          bash packaging/linux/make-deb.sh \
+            artifacts/publish/linux-x64 \
+            "${{ needs.version.outputs.version }}" \
+            artifacts/dist
+          bash packaging/make-zip.sh \
+            artifacts/publish/linux-x64 \
+            "Kozynax-${{ needs.version.outputs.version }}-linux-x64" \
+            artifacts/dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-sdl
+          path: artifacts/dist/*
+          if-no-files-found: error
+
+  macos-sdl:
+    needs: version
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: osx-arm64
+            label: arm64
+          - rid: osx-x64
+            label: x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish ${{ matrix.rid }}
+        run: |
+          dotnet publish "$SDL_PROJECT" -c Release -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:Version=${{ needs.version.outputs.version }} \
+            -p:PublishReadyToRun=true \
+            -o artifacts/publish/${{ matrix.rid }}
+
+      - name: Package .app / .dmg
+        run: |
+          mkdir -p artifacts/dist
+          bash packaging/macos/make-dmg.sh \
+            artifacts/publish/${{ matrix.rid }} \
+            "${{ needs.version.outputs.version }}" \
+            artifacts/dist \
+            ${{ matrix.label }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-sdl-${{ matrix.label }}
+          path: artifacts/dist/*
+          if-no-files-found: error
+
+  windows-sdl:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish win-x64
+        shell: bash
+        run: |
+          dotnet publish "$SDL_PROJECT" -c Release -r win-x64 \
+            --self-contained true \
+            -p:Version=${{ needs.version.outputs.version }} \
+            -p:PublishReadyToRun=true \
+            -o artifacts/publish/win-x64
+
+      - name: Zip portable SDL build
+        shell: bash
+        run: |
+          mkdir -p artifacts/dist
+          bash packaging/make-zip.sh \
+            artifacts/publish/win-x64 \
+            "Kozynax-${{ needs.version.outputs.version }}-win-x64-sdl" \
+            artifacts/dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-sdl
+          path: artifacts/dist/*
+          if-no-files-found: error
+
+  windows-winforms:
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build WinForms (net46)
+        shell: bash
+        run: |
+          dotnet build "$WINFORMS_PROJECT" -c Release \
+            -p:Version=${{ needs.version.outputs.version }} \
+            -o artifacts/publish/winforms
+
+      - name: Stage portable zip contents
+        shell: bash
+        run: |
+          STAGE=artifacts/stage/winforms
+          mkdir -p "$STAGE" artifacts/dist
+          cp -a artifacts/publish/winforms/. "$STAGE/"
+          # Data files copied by the project when present.
+          bash packaging/pack-roms.sh "$STAGE"
+          [[ -f src/ZXMAK2/ROMS.PAK ]] && cp -n src/ZXMAK2/ROMS.PAK "$STAGE/" || true
+          [[ -f src/ZXMAK2/bootgs.rom ]] && cp -n src/ZXMAK2/bootgs.rom "$STAGE/" || true
+          [[ -f src/history.txt ]] && cp src/history.txt "$STAGE/" || true
+          [[ -f README.md ]] && cp README.md "$STAGE/" || true
+          [[ -f LICENSE ]] && cp LICENSE "$STAGE/" || true
+
+      - name: Zip portable WinForms build
+        shell: bash
+        run: |
+          bash packaging/make-zip.sh \
+            artifacts/stage/winforms \
+            "Kozynax-${{ needs.version.outputs.version }}-win-x86-winforms" \
+            artifacts/dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-winforms
+          path: artifacts/dist/*
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - version
+      - linux-sdl
+      - macos-sdl
+      - windows-sdl
+      - windows-winforms
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/download
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p artifacts/release
+          find artifacts/download -type f -print0 | while IFS= read -r -d '' f; do
+            cp -n "$f" artifacts/release/
+          done
+          ls -la artifacts/release
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/release/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

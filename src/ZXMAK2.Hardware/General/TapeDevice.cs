@@ -5,7 +5,8 @@ using System;
 using System.Xml;
 using System.Text;
 using System.Collections.Generic;
-
+using Kozui.Interfaces;
+using Kozynax.UI;
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
@@ -623,9 +624,7 @@ namespace ZXMAK2.Hardware.General
         {
             try
             {
-                m_viewHolder = new ViewHolder<ITapeView>(
-                    "Tape",
-                    new Argument("tapeDevice", this));
+                m_viewHolder = new ViewHolder<ITapeView>("Tape", t => t.Init(new TapeSettings(this)));
             }
             catch (Exception ex)
             {

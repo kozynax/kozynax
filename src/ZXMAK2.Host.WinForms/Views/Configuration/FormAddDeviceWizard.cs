@@ -1,19 +1,145 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
-using ZXMAK2.Engine;
+using Kozui.Interfaces;
+using Kozynax.UI;
 using ZXMAK2.Engine.Entities;
-
+using ZXMAK2.Host.Entities;
+using ZXMAK2.Host.WinForms.BindingTools;
 
 namespace ZXMAK2.Host.WinForms.Views
 {
-    public partial class FormAddDeviceWizard : Form
+    public partial class FormAddDeviceWizard : Form, IViewImplementation<AddDeviceDialog>
     {
+        private AddDeviceDialog _addDeviceDialog;
+        private KozuiBinder _binder;
+
         public FormAddDeviceWizard()
         {
             InitializeComponent();
             tabControl.ItemSize = new Size(0, 1);
+        }
+
+        public void Init(AddDeviceDialog addDeviceDialog)
+        {
+            _addDeviceDialog = addDeviceDialog;
+
+            _binder?.Dispose();
+            _binder = new KozuiBinder();
+            _binder.BindEnabled(_addDeviceDialog.Finish, btnNext);
+            _binder.BindText(_addDeviceDialog.DeviceDescription, txtDescription);
+
+            _addDeviceDialog.Categories.List.ListChanged += Categories_ListChanged;
+            _addDeviceDialog.Categories.PropertyChanged += Categories_PropertyChanged;
+            _addDeviceDialog.Devices.List.ListChanged += Devices_ListChanged;
+            _addDeviceDialog.Devices.PropertyChanged += Devices_PropertyChanged;
+            _addDeviceDialog.CloseRequested += AddDeviceDialog_CloseRequested;
+
+            _binder.Track(() =>
+            {
+                _addDeviceDialog.Categories.List.ListChanged -= Categories_ListChanged;
+                _addDeviceDialog.Categories.PropertyChanged -= Categories_PropertyChanged;
+                _addDeviceDialog.Devices.List.ListChanged -= Devices_ListChanged;
+                _addDeviceDialog.Devices.PropertyChanged -= Devices_PropertyChanged;
+                _addDeviceDialog.CloseRequested -= AddDeviceDialog_CloseRequested;
+            });
+        }
+
+        DlgResult IViewImplementation<AddDeviceDialog>.ShowDialog(object owner)
+        {
+            if (ShowDialog((IWin32Window)owner) == DialogResult.OK)
+                return DlgResult.OK;
+            return DlgResult.Cancel;
+        }
+
+        private void AddDeviceDialog_CloseRequested(object sender, EventArgs e)
+        {
+            DialogResult = _addDeviceDialog.Result != null ? DialogResult.OK : DialogResult.Cancel;
+            Close();
+        }
+
+        private void Categories_ListChanged(object sender, ListChangedEventArgs e)
+            => SyncCategories();
+
+        private void Categories_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == null || e.PropertyName == "SelectedIndex")
+                SyncCategorySelection();
+        }
+
+        private void Devices_ListChanged(object sender, ListChangedEventArgs e)
+            => SyncDevices();
+
+        private void Devices_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == null || e.PropertyName == "SelectedIndex")
+                SyncDeviceSelection();
+        }
+
+        private void SyncCategories()
+        {
+            lstCategory.BeginUpdate();
+            lstCategory.ItemSelectionChanged -= lstCategory_ItemSelectionChanged;
+            try
+            {
+                lstCategory.Items.Clear();
+                lstCategory.SelectedIndices.Clear();
+
+                foreach (var category in _addDeviceDialog.Categories.List)
+                {
+                    var lvi = new ListViewItem
+                    {
+                        Tag = category,
+                        Text = string.Format("{0}", category),
+                        ImageIndex = FormMachineSettings.FindImageIndex(category),
+                    };
+                    lstCategory.Items.Add(lvi);
+                }
+
+                SyncCategorySelection();
+            }
+            finally
+            {
+                lstCategory.ItemSelectionChanged += lstCategory_ItemSelectionChanged;
+                lstCategory.EndUpdate();
+            }
+        }
+
+        private void SyncCategorySelection()
+        {
+            var selectedCategoryIndex = _addDeviceDialog.Categories.SelectedIndex;
+            lstCategory.ItemSelectionChanged -= lstCategory_ItemSelectionChanged;
+            lstCategory.SelectedIndices.Clear();
+            if (selectedCategoryIndex >= 0 && selectedCategoryIndex < lstCategory.Items.Count)
+                lstCategory.SelectedIndices.Add(selectedCategoryIndex);
+            lstCategory.ItemSelectionChanged += lstCategory_ItemSelectionChanged;
+        }
+
+        private void SyncDevices()
+        {
+            lstDevices.BeginUpdate();
+            lstDevices.SelectedIndexChanged -= lstDevices_SelectedIndexChanged;
+            try
+            {
+                lstDevices.Items.Clear();
+                foreach (var device in _addDeviceDialog.Devices.List)
+                    lstDevices.Items.Add(device);
+                SyncDeviceSelection();
+            }
+            finally
+            {
+                lstDevices.SelectedIndexChanged += lstDevices_SelectedIndexChanged;
+                lstDevices.EndUpdate();
+            }
+        }
+
+        private void SyncDeviceSelection()
+        {
+            lstDevices.SelectedIndexChanged -= lstDevices_SelectedIndexChanged;
+            lstDevices.SelectedIndex = _addDeviceDialog.Devices.SelectedIndex;
+            lstDevices.SelectedIndexChanged += lstDevices_SelectedIndexChanged;
         }
 
         protected override void OnShown(EventArgs e)
@@ -23,17 +149,12 @@ namespace ZXMAK2.Host.WinForms.Views
             tabControl_SelectedIndexChanged(this, EventArgs.Empty);
         }
 
-        public BusDeviceBase Device { get; private set; }
         public List<BusDeviceBase> IgnoreList { get; set; }
 
         private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (tabControl.SelectedIndex == 0)
             {
-                //lblActionHint.Text = "Device Category";
-                //lblActionAim.Text = "What category of device do you want to add?";
-                //lblActionHint.Text = "Device Type";
-                //lblActionAim.Text = "What type of device do you want to add?";
                 btnBack.Enabled = false;
                 btnNext.Text = "Finish";
             }
@@ -42,121 +163,16 @@ namespace ZXMAK2.Host.WinForms.Views
         private void btnNext_Click(object sender, EventArgs e)
         {
             if (tabControl.SelectedIndex == 0)
-            {
-                var bdd = lstDevices.SelectedItem as BusDeviceDescriptor;
-                if (bdd == null)
-                {
-                    return;
-                }
-                try
-                {
-                    Device = (BusDeviceBase)Activator.CreateInstance(bdd.Type);
-                    DialogResult = System.Windows.Forms.DialogResult.OK;
-                    Close();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex);
-                }
-            }
-        }
-
-        private void btnBack_Click(object sender, EventArgs e)
-        {
-            //if (tabControl.SelectedIndex == 1)
-            //{
-            //    tabControl.SelectedIndex--;
-            //    btnNext.Text = "Next >";
-            //    btnNext.Enabled = true;     // bcz already selected
-            //    btnBack.Enabled = false;
-            //}
+                _addDeviceDialog.Finish.Click(sender, e);
         }
 
         private void lstCategory_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
-        {
-            //btnNext.Text = "Finish";
-            //btnNext.Enabled = e.IsSelected;
-            //lblActionHint.Text = "Device Type";
-            //lblActionAim.Text = "What type of device do you want to add?";
-            BindDeviceList();
-        }
+            => _addDeviceDialog.Categories.SelectedIndex = e.ItemIndex;
 
         private void lstDevices_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            var bdd = lstDevices.SelectedItem as BusDeviceDescriptor;
-            if (bdd == null)
-            {
-                txtDescription.Text = string.Empty;
-                btnNext.Enabled = false;
-                return;
-            }
-            var lines = (bdd.Description ?? string.Empty).Split(
-                new string[] { Environment.NewLine, "\r", "\n" },
-                StringSplitOptions.None);
-            txtDescription.Lines = lines;
-            btnNext.Enabled = true;
-        }
+            => _addDeviceDialog.Devices.SelectedIndex = lstDevices.SelectedIndex;
 
-        private int GetSelectedCategoryIndex()
-        {
-            foreach (int index in lstCategory.SelectedIndices)
-                return index;
-            return -1;
-        }
-
-        private IEnumerable<Type> GetIgnoreTypes()
-        {
-            var ignoreTypes = new List<Type>();
-            foreach (var bdd in IgnoreList)
-            {
-                ignoreTypes.Add(bdd.GetType());
-            }
-            return ignoreTypes;
-        }
-
-        private void BindCategoryList()
-        {
-            lstCategory.Items.Clear();
-            lstCategory.SelectedIndices.Clear();
-            var list = new List<BusDeviceCategory>();
-            foreach (var bdd in DeviceEnumerator.SelectWithout(GetIgnoreTypes()))
-            {
-                if (!list.Contains(bdd.Category))
-                {
-                    list.Add(bdd.Category);
-                }
-            }
-            list.Sort();
-            foreach (var category in list)
-            {
-                ListViewItem lvi = new ListViewItem();
-                lvi.Tag = category;
-                lvi.Text = string.Format("{0}", category);
-                lvi.ImageIndex = FormMachineSettings.FindImageIndex(category);
-                lstCategory.Items.Add(lvi);
-            }
-            lstCategory.SelectedIndices.Add(0);
-        }
-
-        private void BindDeviceList()
-        {
-            lstDevices.Items.Clear();
-            lstDevices_SelectedIndexChanged(lstDevices, EventArgs.Empty);
-            var catIndex = GetSelectedCategoryIndex();
-            if (catIndex < 0)
-            {
-                return;
-            }
-            var category = (BusDeviceCategory)lstCategory.Items[catIndex].Tag;
-            var list = new List<BusDeviceDescriptor>();
-            list.AddRange(DeviceEnumerator.SelectByCategoryWithout(category, GetIgnoreTypes()));
-            list.Sort(DeviceNameComparison);
-            foreach (var bdd in list)
-            {
-                lstDevices.Items.Add(bdd);
-            }
-            //lstDevices.SelectedIndices.Add(0);
-        }
+        private void BindCategoryList() => _addDeviceDialog.BindCategories();
 
         private void lstDevices_DoubleClick(object sender, EventArgs e)
         {
@@ -164,19 +180,7 @@ namespace ZXMAK2.Host.WinForms.Views
                 btnNext_Click(lstDevices, EventArgs.Empty);
         }
 
-        private static int DeviceNameComparison(
-            BusDeviceDescriptor left,
-            BusDeviceDescriptor right)
-        {
-            if (left == null && right == null)
-            {
-                return 0;
-            }
-            if (left != null && right != null)
-            {
-                return left.Name.CompareTo(right.Name);
-            }
-            return left == null ? -1 : 1;
-        }
+        internal void DisposeBinder()
+            => _binder?.Dispose();
     }
 }

@@ -195,15 +195,17 @@ namespace ZXMAK2.Model.Disk
                 }
             }
 
-            // TRDOS level format: 2544 secs (80 cyls, 2 sides)
+            // TRDOS level format: track 0 is catalog; remaining sectors are free
+            // (2544 secs for standard 80 cyls × 2 sides)
             var trsec = new byte[256];
             for (int i = 0; i < trsec.Length; i++)
             {
                 trsec[i] = 0x00;
             }
 
+            var freeSec = _cylynderList.Count * _sideCount * 16 - 16;
             trsec[0xE2] = 0x01; trsec[0xE3] = 0x16;
-            trsec[0xE5] = 0xF0; trsec[0xE6] = 0x09;
+            trsec[0xE5] = (byte)freeSec; trsec[0xE6] = (byte)(freeSec >> 8);
             trsec[0xE7] = 0x10;
             for (int i = 0xEA; i <= 0xF2; i++)
             {
