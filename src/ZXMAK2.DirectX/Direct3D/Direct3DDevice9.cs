@@ -290,13 +290,22 @@ namespace ZXMAK2.DirectX.Direct3D
         }
 
         public HRESULT DrawUserPrimitives<T>(D3DPRIMITIVETYPE primitiveType, int primitiveCount, T[] data) 
-            where T : struct
+            where T : unmanaged
         {
             return DrawUserPrimitives<T>(primitiveType, 0, primitiveCount, data);
         }
 
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public extern unsafe HRESULT DrawUserPrimitives<T>(D3DPRIMITIVETYPE primitiveType, int startIndex, int primitiveCount, T[] data) 
-            where T : struct;
+        public unsafe HRESULT DrawUserPrimitives<T>(D3DPRIMITIVETYPE primitiveType, int startIndex, int primitiveCount, T[] data)
+            where T : unmanaged
+        {
+            fixed (T* pData = data)
+            {
+                return DrawPrimitiveUP(
+                    primitiveType,
+                    primitiveCount,
+                    pData + startIndex,
+                    Unsafe.SizeOf<T>());
+            }
+        }
     }
 }

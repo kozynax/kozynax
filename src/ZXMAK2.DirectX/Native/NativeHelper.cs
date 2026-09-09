@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with ZXMAK2.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Description: DirectX native wrapper
+ *  Description: DirectX native wrapper (C# replacement for NativeHelper.il)
  *  Date: 10.07.2018
  */
 using System;
@@ -27,271 +27,231 @@ namespace ZXMAK2.DirectX.Native
 {
     public static class NativeHelper
     {
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern void INITBLK(void* dst, byte value, int length);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void INITBLK(void* dst, byte value, int length)
+        {
+            Unsafe.InitBlockUnaligned(dst, value, (uint)length);
+        }
 
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern void CPBLK(void* dst, void* src, int length);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void CPBLK(void* dst, void* src, int length)
+        {
+            Unsafe.CopyBlockUnaligned(dst, src, (uint)length);
+        }
 
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public static extern int SizeOf<T>() where T : struct;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int SizeOf<T>() where T : struct
+        {
+            return Unsafe.SizeOf<T>();
+        }
 
-        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void* VtableSlot(int slot, void* nativePointer)
+        {
+            return ((void**)(*(void**)nativePointer))[slot];
+        }
+
         //I00
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer);
+        public static unsafe int CalliInt32(int slot, void* nativePointer)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer);
+        }
+
         //I01
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            void* arg0,
-            void* arg1);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, void* arg0, void* arg1)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1);
+        }
+
         //I02
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            void* arg0,
-            void* arg1,
-            void* arg2);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, void* arg0, void* arg1, void* arg2)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2);
+        }
+
         //I03
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            void* arg0,
-            int arg1);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, void* arg0, int arg1)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1);
+        }
 
         //I04
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            void* arg0,
-            int arg1,
-            void* arg2);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, void* arg0, int arg1, void* arg2)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, int, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2);
+        }
 
         //I05
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            void* arg0);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, void* arg0)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0);
+        }
 
         //I06
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot, 
-            void* nativePointer, 
-            int arg0, 
-            int arg1, 
-            void* arg2, 
-            void* arg3, 
-            void* arg4, 
-            void* arg5, 
-            int arg6);
+        public static unsafe int CalliInt32(
+            int slot, void* nativePointer,
+            int arg0, int arg1, void* arg2, void* arg3, void* arg4, void* arg5, int arg6)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, void*, void*, void*, void*, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
 
         //I06-2
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            int arg0,
-            int arg1,
-            int arg2,
-            int arg3,
-            int arg4,
-            int arg5,
-            void* arg6,
-            void* arg7);
+        public static unsafe int CalliInt32(
+            int slot, void* nativePointer,
+            int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, void* arg6, void* arg7)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, int, int, int, int, void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+        }
 
         //I07
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot, 
-            void* nativePointer, 
-            int arg0, 
-            int arg1, 
-            int arg2);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, int arg1, int arg2)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2);
+        }
 
         //I08
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot, 
-            void* nativePointer, 
-            int arg0);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0);
+        }
 
         //I09
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot, 
-            void* nativePointer, 
-            void* arg0, 
-            int arg1, 
-            void* arg2, 
-            int arg3);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, void* arg0, int arg1, void* arg2, int arg3)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, int, void*, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3);
+        }
+
         //I10
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot, 
-            void* nativePointer, 
-            int arg0, 
-            void* arg1);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, void* arg1)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1);
+        }
 
         //I11
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot, 
-            void* nativePointer, 
-            int arg0, 
-            void* arg1, 
-            void* arg2);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, void* arg1, void* arg2)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2);
+        }
 
         //I11-2
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            int arg0,
-            void* arg1,
-            void* arg2,
-            int arg3);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, void* arg1, void* arg2, int arg3)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, void*, void*, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3);
+        }
 
         //I12
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot, 
-            void* nativePointer, 
-            int arg0, 
-            int arg1, 
-            void* arg2);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, int arg1, void* arg2)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2);
+        }
 
         //I12-2
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            int arg0,
-            int arg1);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, int arg1)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1);
+        }
 
         //I13
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot, 
-            void* nativePointer, 
-            void* arg0, 
-            int arg1, 
-            void* arg2, 
-            void* arg3);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, void* arg0, int arg1, void* arg2, void* arg3)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, int, void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3);
+        }
 
         //I14
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            int arg0,
-            int arg1,
-            void* arg2,
-            int arg3,
-            void* arg4,
-            void* arg5);
+        public static unsafe int CalliInt32(
+            int slot, void* nativePointer,
+            int arg0, int arg1, void* arg2, int arg3, void* arg4, void* arg5)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, void*, int, void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3, arg4, arg5);
+        }
 
         //I15
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            int arg0,
-            void* arg1,
-            int arg2,
-            int arg3,
-            float arg4,
-            int arg5);
+        public static unsafe int CalliInt32(
+            int slot, void* nativePointer,
+            int arg0, void* arg1, int arg2, int arg3, float arg4, int arg5)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, void*, int, int, float, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3, arg4, arg5);
+        }
 
         //I16
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            void* arg0,
-            void* arg1,
-            void* arg2,
-            void* arg3);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, void* arg0, void* arg1, void* arg2, void* arg3)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, void*, void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3);
+        }
 
         //I17
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            void* arg0,
-            void* arg1,
-            void* arg2,
-            void* arg3,
-            int arg4);
+        public static unsafe int CalliInt32(
+            int slot, void* nativePointer,
+            void* arg0, void* arg1, void* arg2, void* arg3, int arg4)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, void*, void*, void*, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3, arg4);
+        }
 
         //I18
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            void* arg0,
-            void* arg1,
-            int arg2,
-            void* arg3,
-            int arg4,
-            int arg5);
+        public static unsafe int CalliInt32(
+            int slot, void* nativePointer,
+            void* arg0, void* arg1, int arg2, void* arg3, int arg4, int arg5)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, void*, void*, int, void*, int, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3, arg4, arg5);
+        }
 
         //I19
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            int arg0,
-            int arg1,
-            void* arg2,
-            int arg3);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, int arg1, void* arg2, int arg3)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, void*, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3);
+        }
 
         //I20
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            int arg0,
-            int arg1,
-            int arg2,
-            void* arg3);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, int arg1, int arg2, void* arg3)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, int, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3);
+        }
 
         //I21
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            int arg0,
-            void* arg1,
-            int arg2,
-            int arg3);
+        public static unsafe int CalliInt32(int slot, void* nativePointer, int arg0, void* arg1, int arg2, int arg3)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, void*, int, int, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3);
+        }
 
         //I22
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern int CalliInt32(
-            int slot,
-            void* nativePointer,
-            //int32,int32,int32,int32,void*,void*
-            int arg0,
-            int arg1,
-            int arg2,
-            int arg3,
-            void* arg4,
-            void* arg5);
-
+        public static unsafe int CalliInt32(
+            int slot, void* nativePointer,
+            int arg0, int arg1, int arg2, int arg3, void* arg4, void* arg5)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, int, int, int, int, void*, void*, int>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer, arg0, arg1, arg2, arg3, arg4, arg5);
+        }
 
         //IP00
-        [MethodImpl(MethodImplOptions.ForwardRef)]
-        public unsafe static extern IntPtr CalliIntPtr(
-            int slot, void* nativePointer);
-
+        public static unsafe IntPtr CalliIntPtr(int slot, void* nativePointer)
+        {
+            var fn = (delegate* unmanaged[Stdcall]<void*, IntPtr>)VtableSlot(slot, nativePointer);
+            return fn(nativePointer);
+        }
     }
 }
