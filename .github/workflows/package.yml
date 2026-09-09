@@ -11,11 +11,6 @@ on:
         description: "Upload artifacts to a GitHub Release"
         type: boolean
         default: false
-      release_tag:
-        description: "Release tag (e.g. v0.90). Optional: defaults to exact tag on HEAD, else nearest ancestor tag."
-        type: string
-        required: false
-        default: ""
 
 env:
   DOTNET_NOLOGO: true
@@ -33,40 +28,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - id: tag
-        run: |
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            echo "release_tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.create_release }}" == "true" ]]; then
-            TAG="${{ inputs.release_tag }}"
-            TAG="${TAG#"${TAG%%[![:space:]]*}"}"
-            TAG="${TAG%"${TAG##*[![:space:]]}"}"
-            if [[ -z "$TAG" ]]; then
-              TAG="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
-            fi
-            if [[ -z "$TAG" ]]; then
-              TAG="$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)"
-            fi
-            if [[ -z "$TAG" ]]; then
-              echo "::error::Could not resolve a release tag. Set the release_tag input (e.g. v0.90)."
-              exit 1
-            fi
-            if [[ "$TAG" != v* ]]; then
-              echo "::error::release_tag must start with 'v' (got '$TAG')"
-              exit 1
-            fi
-            echo "Resolved release_tag: $TAG"
-            echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"
-            # Prefer this tag for -p:Version= even though github.ref is a branch.
-            echo "VERSION=$TAG" >> "$GITHUB_ENV"
-          else
-            echo "release_tag=" >> "$GITHUB_OUTPUT"
-          fi
+          fetch-tags: true
       - id: ver
         run: |
           V="$(bash packaging/version.sh)"
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $V"
+      - id: tag
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            # Tag push: release/tag should be exactly the pushed git tag.
+            echo "release_tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            # Branch or manual run: derive synthetic release tag from the computed version.
+            # Example: package version 0.90.3 -> release tag v0.90.3
+            echo "release_tag=v${V}" >> "$GITHUB_OUTPUT"
+          fi
 
   linux-sdl:
     needs: version
@@ -264,6 +242,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.version.outputs.release_tag }}
+          name: ${{ needs.version.outputs.version }}
           target_commitish: ${{ github.sha }}
           files: artifacts/release/*
           generate_release_notes: true
