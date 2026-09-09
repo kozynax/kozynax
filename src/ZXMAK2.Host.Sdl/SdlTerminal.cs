@@ -179,10 +179,11 @@ namespace ZXMAK2.Host.SdlBackend
                         break;
                     case EventType.Textinput:
                     {
-                        // Layout-aware characters (Shift+3 → '#', etc.).
-                        // Space (32) is TerminalKey.Space on KeyDown — skip the TextInput duplicate.
+                        // Layout-aware punctuation (Shift+3 → '#', etc.).
+                        // Letters/digits are taken from KeyDown so typing still works when
+                        // SDL TextInput never fires (common on Wayland).
                         var ch = (char)e.Text.Text[0];
-                        if (ch > 32 && ch < 127)
+                        if (ch > 32 && ch < 127 && !IsAsciiLetterOrDigit(ch))
                         {
                             terminalEvent = TerminalEvent.KeyDown(TerminalKey.Unknown, ch);
                             return true;
@@ -193,23 +194,10 @@ namespace ZXMAK2.Host.SdlBackend
                     {
                         var key = MapKey(e.Key.Keysym);
                         var mods = MapModifiers();
-                        // Printable chars come from TextInput while UI text mode is active
-                        // (avoids wrong unshifted glyphs and double-inserts).
                         var ch = '\0';
-                        if (_uiTextDepth <= 0)
-                        {
-                            var sym = (int)e.Key.Keysym.Sym;
-                            if (sym >= 32 && sym < 127)
-                                ch = (char)sym;
-                        }
-                        // Skip bare KeyDown for keys that TextInput will deliver (digits are
-                        // Unknown; letters are mapped A–Z — both must wait for TextInput).
-                        // Keep Ctrl/Alt+letter KeyDown (e.g. Ctrl+G) — TextInput does not follow.
-                        if (_uiTextDepth > 0
-                            && ch == '\0'
-                            && (mods & (TerminalKeyModifiers.Ctrl | TerminalKeyModifiers.Alt)) == 0
-                            && (key == TerminalKey.Unknown || IsLetterKey(key)))
-                            break;
+                        // Ctrl/Alt chords stay as bare key events (e.g. Ctrl+G).
+                        if ((mods & (TerminalKeyModifiers.Ctrl | TerminalKeyModifiers.Alt)) == 0)
+                            ch = CharFromKeysym(e.Key.Keysym.Sym, mods);
                         terminalEvent = TerminalEvent.KeyDown(key, ch, mods);
                         return true;
                     }
@@ -282,8 +270,27 @@ namespace ZXMAK2.Host.SdlBackend
             return result;
         }
 
-        private static bool IsLetterKey(TerminalKey key)
-            => key >= TerminalKey.A && key <= TerminalKey.Z;
+        private static bool IsAsciiLetterOrDigit(char ch)
+            => (ch >= '0' && ch <= '9')
+               || (ch >= 'A' && ch <= 'Z')
+               || (ch >= 'a' && ch <= 'z');
+
+        /// <summary>
+        /// SDL keysyms for letters are always lowercase; apply Shift for A–Z.
+        /// Shifted punctuation still needs TextInput (layout-dependent).
+        /// </summary>
+        private static char CharFromKeysym(int sym, TerminalKeyModifiers mods)
+        {
+            if (sym >= 'a' && sym <= 'z')
+            {
+                if ((mods & TerminalKeyModifiers.Shift) != 0)
+                    return (char)(sym - 32);
+                return (char)sym;
+            }
+            if (sym >= 32 && sym < 127)
+                return (char)sym;
+            return '\0';
+        }
 
         private static TerminalMouseButton MapMouseButton(byte button)
         {
