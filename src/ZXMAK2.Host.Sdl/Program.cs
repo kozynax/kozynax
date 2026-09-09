@@ -6,6 +6,7 @@ using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Presentation;
 using ZXMAK2.Host.Presentation.Interfaces;
 using Kozui.Interfaces;
+using Kozynax.Cli;
 using Kozynax.UI;
 using ZXMAK2.Host.SdlBackend;
 using ZXMAK2.Host.SdlBackend.Services;
@@ -34,6 +35,12 @@ namespace ZXMAK2
 
         private static void RunSafe(string[] args)
         {
+            if (CommandLine.TryHandle(args, out var exitCode))
+            {
+                Environment.ExitCode = exitCode;
+                return;
+            }
+
             var resolver = new ResolverSimple();
             var sdl = Silk.NET.SDL.Sdl.GetApi();
 

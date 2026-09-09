@@ -1,5 +1,6 @@
 ﻿using System;
 using Kozui.Interfaces;
+using Kozynax.Cli;
 using Kozynax.UI;
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine.Interfaces;
@@ -46,6 +47,12 @@ namespace ZXMAK2
 
         private static void RunSafe(string[] args)
         {
+            if (CommandLine.TryHandle(args, out var exitCode))
+            {
+                Environment.ExitCode = exitCode;
+                return;
+            }
+
             var resolver = new ResolverSimple();
 
             resolver.RegisterType<ISettingService, SettingService>(true);
