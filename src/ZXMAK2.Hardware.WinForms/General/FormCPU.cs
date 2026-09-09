@@ -133,9 +133,16 @@ namespace ZXMAK2.Hardware.WinForms.General
             Select();
         }
 
+        protected void FormCpu_VisibleChanged(object sender, EventArgs e)
+        {
+            if (!Visible)
+                return;
+            _dialog.UpdateCPU(!m_spectrum.IsRunning);
+        }
+
         protected void spectrum_OnUpdateState(object sender, EventArgs args)
         {
-            if (!Created)
+            if (!Created || !Visible)
                 return;
             BeginInvoke(new Action(() => _dialog.UpdateCPU(true)), null);
         }
