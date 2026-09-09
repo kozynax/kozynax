@@ -5,8 +5,18 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace />
     <AssemblyName>Kozynax</AssemblyName>
-    <!-- Properties/AssemblyInfo.cs already defines assembly attributes. -->
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Default; CI/packaging overrides with -p:Version= from packaging/version.sh -->
+    <Version>0.0.0</Version>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!-- AssemblyInfo.cs owns Title/Product/etc.; SDK owns Version attributes from $(Version). -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
