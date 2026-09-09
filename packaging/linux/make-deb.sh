@@ -23,6 +23,7 @@ mkdir -p \
 
 cp -a "${PUBLISH_DIR}/." "${STAGE}${INSTALL_ROOT}/"
 chmod +x "${STAGE}${INSTALL_ROOT}/Kozynax.Sdl" || true
+bash "${ROOT}/packaging/pack-roms.sh" "${STAGE}${INSTALL_ROOT}"
 
 cat > "${STAGE}/usr/bin/${PKG_NAME}" <<EOF
 #!/bin/sh

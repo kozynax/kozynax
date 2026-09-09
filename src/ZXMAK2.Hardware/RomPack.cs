@@ -11,6 +11,18 @@ namespace ZXMAK2.Hardware
 {
     public class RomPack
     {
+        // Loose roms/ is case-sensitive on Linux; mapping XML / PAK names are not.
+        private static string ResolveRomsFile(string romsFolderName, string fileName)
+        {
+            var path = Path.Combine(romsFolderName, fileName);
+            if (File.Exists(path))
+                return path;
+            foreach (var f in Directory.GetFiles(romsFolderName, "*", SearchOption.AllDirectories))
+                if (string.Compare(f.Substring(romsFolderName.Length).TrimStart('\\', '/').Replace('\\', '/'), fileName.Replace('\\', '/'), true) == 0)
+                    return f;
+            return null;
+        }
+
         private static long GetImageLength(string fileName)
         {
             var folderName = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -19,27 +31,27 @@ namespace ZXMAK2.Hardware
             var romsFolderName = Path.Combine(folderName, "roms");
             if (Directory.Exists(romsFolderName))
             {
-                var romsFileName = Path.Combine(romsFolderName, fileName);
-                if (File.Exists(romsFileName))
+                var romsFileName = ResolveRomsFile(romsFolderName, fileName);
+                if (romsFileName != null)
                 {
                     return new FileInfo(romsFileName).Length;
                 }
             }
 
             var pakFileName = Path.Combine(folderName, "ROMS.PAK");
-
-            using (ZipLib.Zip.ZipFile zip = new ZipLib.Zip.ZipFile(pakFileName))
-            {
-                foreach (ZipLib.Zip.ZipEntry entry in zip)
+            if (File.Exists(pakFileName))
+                using (ZipLib.Zip.ZipFile zip = new ZipLib.Zip.ZipFile(pakFileName))
                 {
-                    if (entry.IsFile &&
-                       entry.CanDecompress &&
-                       string.Compare(entry.Name, fileName, true) == 0)
+                    foreach (ZipLib.Zip.ZipEntry entry in zip)
                     {
-                        return entry.Size;
+                        if (entry.IsFile &&
+                           entry.CanDecompress &&
+                           string.Compare(entry.Name, fileName, true) == 0)
+                        {
+                            return entry.Size;
+                        }
                     }
                 }
-            }
             throw new FileNotFoundException(string.Format("ROM file not found: {0}", fileName));
         }
 
@@ -51,8 +63,8 @@ namespace ZXMAK2.Hardware
             var romsFolderName = Path.Combine(folderName, "roms");
             if (Directory.Exists(romsFolderName))
             {
-                var romsFileName = Path.Combine(romsFolderName, fileName);
-                if (File.Exists(romsFileName))
+                var romsFileName = ResolveRomsFile(romsFolderName, fileName);
+                if (romsFileName != null)
                 {
                     using (var fs = new FileStream(romsFileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
@@ -62,26 +74,23 @@ namespace ZXMAK2.Hardware
             }
 
             var pakFileName = Path.Combine(folderName, "ROMS.PAK");
-
-            using (ZipLib.Zip.ZipFile zip = new ZipLib.Zip.ZipFile(pakFileName))
-            {
-                foreach (ZipLib.Zip.ZipEntry entry in zip)
+            if (File.Exists(pakFileName))
+                using (ZipLib.Zip.ZipFile zip = new ZipLib.Zip.ZipFile(pakFileName))
                 {
-                    if (entry.IsFile &&
-                       entry.CanDecompress &&
-                       string.Compare(entry.Name, fileName, true) == 0)
+                    foreach (ZipLib.Zip.ZipEntry entry in zip)
                     {
-                        using (var s = zip.GetInputStream(entry))
+                        if (entry.IsFile &&
+                           entry.CanDecompress &&
+                           string.Compare(entry.Name, fileName, true) == 0)
                         {
-                            return CreateStream(s, entry.Size);
+                            using (var s = zip.GetInputStream(entry))
+                            {
+                                return CreateStream(s, entry.Size);
+                            }
                         }
                     }
                 }
-            }
-            throw new FileNotFoundException(
-                string.Format(
-                    "ROM file not found: {0}", 
-                    fileName));
+            throw new FileNotFoundException(string.Format("ROM file not found: {0}", fileName));
         }
 
         private static Stream CreateStream(Stream stream, long length)

@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="ZXMAK2\roms\**\*" Condition="Exists('ZXMAK2\roms')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>roms\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <TargetPath>roms\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
     <Content Include="ZXMAK2\ROMS.PAK" Condition="Exists('ZXMAK2\ROMS.PAK')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>ROMS.PAK</TargetPath>

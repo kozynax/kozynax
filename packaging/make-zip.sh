@@ -12,6 +12,9 @@ OUT_DIR="$(cd "${OUT_DIR}" && pwd)"
 ABS_OUT="${OUT_DIR}/${BASENAME}.zip"
 rm -f "${ABS_OUT}"
 
+# Release archives ship ROMS.PAK, not a loose roms/ tree.
+bash "$(cd "$(dirname "$0")" && pwd)/pack-roms.sh" "${SRC}"
+
 if command -v zip >/dev/null 2>&1; then
   (
     cd "${SRC}"

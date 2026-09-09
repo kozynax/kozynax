@@ -24,6 +24,7 @@ RESOURCES="${CONTENTS}/Resources"
 mkdir -p "${MACOS}" "${RESOURCES}"
 cp -a "${PUBLISH_DIR}/." "${MACOS}/"
 chmod +x "${MACOS}/Kozynax.Sdl" || true
+bash "$(cd "$(dirname "$0")/.." && pwd)/pack-roms.sh" "${MACOS}"
 
 # Thin launcher so Finder runs the published binary with a stable name.
 cat > "${MACOS}/${APP_NAME}" <<'EOF'

@@ -24,8 +24,7 @@ jobs:
           fetch-depth: 0
       - id: ver
         run: |
-          chmod +x packaging/version.sh
-          V="$(packaging/version.sh)"
+          V="$(bash packaging/version.sh)"
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Resolved version: $V"
 
@@ -55,13 +54,12 @@ jobs:
 
       - name: Package .deb + portable zip
         run: |
-          chmod +x packaging/linux/make-deb.sh packaging/make-zip.sh
           mkdir -p artifacts/dist
-          packaging/linux/make-deb.sh \
+          bash packaging/linux/make-deb.sh \
             artifacts/publish/linux-x64 \
             "${{ needs.version.outputs.version }}" \
             artifacts/dist
-          packaging/make-zip.sh \
+          bash packaging/make-zip.sh \
             artifacts/publish/linux-x64 \
             "Kozynax-${{ needs.version.outputs.version }}-linux-x64" \
             artifacts/dist
@@ -100,9 +98,8 @@ jobs:
 
       - name: Package .app / .dmg
         run: |
-          chmod +x packaging/macos/make-dmg.sh
           mkdir -p artifacts/dist
-          packaging/macos/make-dmg.sh \
+          bash packaging/macos/make-dmg.sh \
             artifacts/publish/${{ matrix.rid }} \
             "${{ needs.version.outputs.version }}" \
             artifacts/dist \
@@ -136,9 +133,8 @@ jobs:
       - name: Zip portable SDL build
         shell: bash
         run: |
-          chmod +x packaging/make-zip.sh
           mkdir -p artifacts/dist
-          packaging/make-zip.sh \
+          bash packaging/make-zip.sh \
             artifacts/publish/win-x64 \
             "Kozynax-${{ needs.version.outputs.version }}-win-x64-sdl" \
             artifacts/dist
@@ -173,6 +169,7 @@ jobs:
           mkdir -p "$STAGE" artifacts/dist
           cp -a artifacts/publish/winforms/. "$STAGE/"
           # Data files copied by the project when present.
+          bash packaging/pack-roms.sh "$STAGE"
           [[ -f src/ZXMAK2/ROMS.PAK ]] && cp -n src/ZXMAK2/ROMS.PAK "$STAGE/" || true
           [[ -f src/ZXMAK2/bootgs.rom ]] && cp -n src/ZXMAK2/bootgs.rom "$STAGE/" || true
           [[ -f src/history.txt ]] && cp src/history.txt "$STAGE/" || true
@@ -182,8 +179,7 @@ jobs:
       - name: Zip portable WinForms build
         shell: bash
         run: |
-          chmod +x packaging/make-zip.sh
-          packaging/make-zip.sh \
+          bash packaging/make-zip.sh \
             artifacts/stage/winforms \
             "Kozynax-${{ needs.version.outputs.version }}-win-x86-winforms" \
             artifacts/dist
