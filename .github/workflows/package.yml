@@ -186,13 +186,15 @@ jobs:
           STAGE=artifacts/stage/winforms
           mkdir -p "$STAGE" artifacts/dist
           cp -a artifacts/publish/winforms/. "$STAGE/"
+          rm -f "$STAGE"/*.pdb "$STAGE"/*.exe.config
           # Data files copied by the project when present.
           bash packaging/pack-roms.sh "$STAGE"
           [[ -f src/ZXMAK2/ROMS.PAK ]] && cp -n src/ZXMAK2/ROMS.PAK "$STAGE/" || true
           [[ -f src/ZXMAK2/bootgs.rom ]] && cp -n src/ZXMAK2/bootgs.rom "$STAGE/" || true
-          [[ -f src/history.txt ]] && cp src/history.txt "$STAGE/" || true
-          [[ -f README.md ]] && cp README.md "$STAGE/" || true
-          [[ -f LICENSE ]] && cp LICENSE "$STAGE/" || true
+
+      - name: Merge managed DLLs into Kozynax.exe
+        shell: bash
+        run: bash packaging/windows/ilrepack-winforms.sh artifacts/stage/winforms
 
       - name: Zip portable WinForms build
         shell: bash
