@@ -1,6 +1,5 @@
 using System;
 using ZXMAK2.Dependency;
-using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Hardware.Circuits.Sound;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Presentation;
@@ -41,6 +40,8 @@ namespace ZXMAK2
                 return;
             }
 
+            var options = CommandLine.ParseHostOptions(args);
+
             var resolver = new ResolverSimple();
             var sdl = Silk.NET.SDL.Sdl.GetApi();
 
@@ -48,7 +49,7 @@ namespace ZXMAK2
             resolver.RegisterInstance<IResolver>(resolver);
             resolver.RegisterInstance(sdl);
             resolver.RegisterInstance(runtime);
-            if (StdioTerminal.IsInteractive)
+            if (options.UseTui)
                 resolver.RegisterInstance<ITerminal>(new StdioTerminal());
             else
                 resolver.RegisterType<ITerminal, SdlTerminal>(true);
@@ -97,7 +98,7 @@ namespace ZXMAK2
 
             Locator.Init(resolver);
             var launcher = Locator.Resolve<ILauncher>();
-            launcher.Run(args);
+            launcher.Run(options.Args);
             Locator.Shutdown();
         }
     }
