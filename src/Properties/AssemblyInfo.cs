@@ -4,12 +4,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ZXMAK2")]
-[assembly: AssemblyDescription("ZX Spectrum Virtual Machine")]
+[assembly: AssemblyTitle("Kozynax")]
+[assembly: AssemblyDescription("ZX Spectrum Emulator / Virtual Machine")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ZXMAK2")]
-[assembly: AssemblyCopyright("Copyright © Alexander Makeev 2011, 2015")]
+[assembly: AssemblyProduct("Kozynax")]
+[assembly: AssemblyCopyright("Copyright © Alexander Tsidaev 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -14,35 +14,36 @@ namespace Kozynax.UI
     [KozuiDialog(CaptureBackdrop = true)]
     public sealed class AboutDialog : ViewDescription<AboutDialog>
     {
-        public const string ProjectUrl = "https://github.com/zxmak/ZXMAK2";
+        public const string ProjectUrl = "https://github.com/kozynax/kozynax";
 
-        private const string LicenseText = @"Copyright 2001 - 2018 Alex Makeev
+        private const string LicenseText = @"Copyright 2026 Alexander Tsidaev (Eltaron/INK9)
 
-ZXMAK2 is free software: you can redistribute it and/or modify
+Original (C) for the emulation engine and Windows
+Forms UI belongs to ZXMAK2 contributors:
+  - Alexander Makeev (ZXMAK, project founder)
+  - SMT (author of UnrealSpeccy emulator)
+  - Hard/WCG (Дмитрий Михальченков)
+  - ZEK (Демьяненко Дмитрий)
+  - Eltaron (Alexander Tsidaev).
+
+Kozynax is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-ZXMAK2 is distributed in the hope that it will be useful,
+Kozynax is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with ZXMAK2.  If not, see <http://www.gnu.org/licenses/>.
+along with Kozynax.  If not, see <http://www.gnu.org/licenses/>.
 
 ***
 
 Portions of this software are copyright (c) Amstrad Consumer Electronics plc.
 Amstrad have kindly given their permission for the redistribution of their
-copyrighted material but retain that copyright.
-
-***
-
-Portions of this software are copyright (c) SMT (author of UnrealSpeccy emulator)
-Portions of this software are copyright (c) Hard/WCG
-Portions of this software are copyright (c) ZEK
-Portions of this software are copyright (c) Eltaron (Alexander Tsidaev)";
+copyrighted material but retain that copyright.";
 
         public event EventHandler CloseRequested;
 
@@ -60,12 +61,12 @@ Portions of this software are copyright (c) Eltaron (Alexander Tsidaev)";
         {
             TitleLabel = new Label
             {
-                Text = "About ZXMAK2",
+                Text = "About Kozynax",
                 HorizontalAlignment = HorizontalAlignment.Center,
             };
             ProductLabel = new Label
             {
-                Text = "ZXMAK2",
+                Text = "Kozynax",
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 1, 0, 0),
             };
@@ -172,7 +173,10 @@ Portions of this software are copyright (c) Eltaron (Alexander Tsidaev)";
             }
 
             var version = asm.GetName().Version;
-            return version != null ? version.ToString() : "0.0.0.0";
+            if (version != null)
+                return $"{version.Major}.{version.Minor}" + (version.Build > 0 ? $".{version.Build}" : "");
+            
+            return "0.0";
         }
 
         public static void OpenProjectUrl()

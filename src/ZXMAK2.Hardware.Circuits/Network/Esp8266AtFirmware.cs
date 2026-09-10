@@ -61,7 +61,7 @@ namespace ZXMAK2.Hardware.Circuits.Network
                     return GetResponse(OK);
                 case "CWLAP":
                     // One hardcoded access point
-                    return GetResponse("+CWLAP:(0,\"ZXMAK2\",-10,\"00:11:22:33:44:55\")\r\n\r\nOK");
+                    return GetResponse("+CWLAP:(0,\"KOZYNAX\",-10,\"00:11:22:33:44:55\")\r\n\r\nOK");
                 case "RST":
                     return GetResponse(READY);
                 case "CIPSTART": // Initiate connection

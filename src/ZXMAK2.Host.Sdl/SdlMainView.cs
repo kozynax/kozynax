@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using Kozynax.UI.Helpers;
 using Silk.NET.SDL;
 using Thread = System.Threading.Thread;
 using ManualResetEvent = System.Threading.ManualResetEvent;
@@ -17,7 +18,6 @@ using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Services;
 using ZXMAK2.Host.Terminal;
 using ZXMAK2.Mvvm;
-using Silk.NET.Maths;
 using Event = Silk.NET.SDL.Event;
 
 namespace ZXMAK2.Host.SdlBackend
@@ -52,7 +52,7 @@ namespace ZXMAK2.Host.SdlBackend
         private bool _quit;
         private bool _running;
         private int _uiThreadId;
-        private string _title = "ZXMAK2 (SDL)";
+        private string _fileTitle = string.Empty;
         private readonly List<ICommand> _commands = new List<ICommand>();
         /// <summary>
         /// When true, Spectrum keyboard/mouse SDL events are ignored while a Terminal UI
@@ -95,7 +95,7 @@ namespace ZXMAK2.Host.SdlBackend
 
             var settings = _resolver.Resolve<ISettingService>();
             _window = _sdl.CreateWindow(
-                _title,
+                MainWindowTitle.ProductName,
                 Sdl.WindowposCentered,
                 Sdl.WindowposCentered,
                 settings.WindowWidth,
@@ -260,7 +260,7 @@ namespace ZXMAK2.Host.SdlBackend
 
         private void DataContext_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == null || e.PropertyName == "Title")
+            if (e.PropertyName == null || e.PropertyName == "Title" || e.PropertyName == "IsRunning")
                 ApplyTitle();
             if (e.PropertyName == null || e.PropertyName == "IsFullScreen")
                 ApplyFullScreen();
@@ -271,11 +271,15 @@ namespace ZXMAK2.Host.SdlBackend
         private void ApplyTitle()
         {
             var titleProp = DataContext?.GetType().GetProperty("Title");
-            var title = titleProp?.GetValue(DataContext) as string;
-            if (!string.IsNullOrEmpty(title))
-                _title = title;
+            _fileTitle = titleProp?.GetValue(DataContext) as string ?? string.Empty;
+
+            var isRunning = true;
+            var runningProp = DataContext?.GetType().GetProperty("IsRunning");
+            if (runningProp?.GetValue(DataContext) is bool running)
+                isRunning = running;
+
             if (_window != null)
-                _sdl.SetWindowTitle(_window, _title);
+                _sdl.SetWindowTitle(_window, MainWindowTitle.Format(_fileTitle, isRunning));
         }
 
         private void ApplyFullScreen()

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
+using Kozynax.UI.Helpers;
 using ZXMAK2.Dependency;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Engine.Interfaces;
@@ -754,10 +755,7 @@ namespace ZXMAK2.Host.WinForms.Views
 
         private void UpdateTitle()
         {
-            var tail = IsRunning ? "ZXMAK2" : "ZXMAK2 [paused]";
-            Text = string.IsNullOrEmpty(_title) ?
-                tail :
-                string.Format("[{0}] - {1}", Title, tail);
+            Text = MainWindowTitle.Format(_title, IsRunning);
         }
 
         #endregion Layout

@@ -15,7 +15,7 @@ namespace ZXMAK2.Hardware.Circuits.Ata
         private const int DefaultSectorsPerTrack = 63;
 
         private const string DefaultSerial = "00000000001234567890";
-        private const string DefaultModel = "ZXMAK2 HDD IMAGE";
+        private const string DefaultModel = "KOZYNAX HDD IMAGE";
         
         public string FileName { get; private set; }
         public uint Cylinders { get; private set; }
