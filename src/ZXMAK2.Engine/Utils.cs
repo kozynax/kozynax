@@ -274,14 +274,15 @@ namespace ZXMAK2.Engine
 
         public static String GetAppDataFolder()
         {
-            var appName = Path.GetFullPath(Assembly.GetExecutingAssembly().Location);
-            var appFolder = Path.GetDirectoryName(appName);
-            return appFolder;
+            return GetAppFolder();
         }
 
         public static string GetAppFolder()
         {
-            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var baseDir = AppContext.BaseDirectory;
+            if (string.IsNullOrEmpty(baseDir))
+                return ".";
+            return Path.GetFullPath(baseDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
     }
 }

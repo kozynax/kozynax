@@ -11,6 +11,10 @@
     <Version>0.0.0</Version>
     <InformationalVersion>$(Version)</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +32,8 @@
     <Compile Remove="ZXMAK2.Hardware.WinForms\**" />
     <Compile Remove="ZXMAK2\Program.cs" />
     <Compile Remove="Properties\AssemblyInfo.cs" />
+    <!-- Framework-era app.config is for WinForms; do not ship as *.dll.config -->
+    <None Remove="ZXMAK2\app.config" />
 
     <EmbeddedResource Remove="ZXMAK2.DirectX\**" />
     <EmbeddedResource Remove="ZXMAK2.Host.WinForms\**" />

@@ -62,6 +62,8 @@ jobs:
             --self-contained true \
             -p:Version=${{ needs.version.outputs.version }} \
             -p:PublishReadyToRun=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
             -o artifacts/publish/linux-x64
 
       - name: Install packaging tools
@@ -112,6 +114,8 @@ jobs:
             --self-contained true \
             -p:Version=${{ needs.version.outputs.version }} \
             -p:PublishReadyToRun=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
             -o artifacts/publish/${{ matrix.rid }}
 
       - name: Package .app / .dmg
@@ -146,6 +150,8 @@ jobs:
             --self-contained true \
             -p:Version=${{ needs.version.outputs.version }} \
             -p:PublishReadyToRun=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
             -o artifacts/publish/win-x64
 
       - name: Zip portable SDL build

@@ -15,6 +15,11 @@ rm -f "${ABS_OUT}"
 # Release archives ship ROMS.PAK, not a loose roms/ tree.
 bash "$(cd "$(dirname "$0")" && pwd)/pack-roms.sh" "${SRC}"
 
+# Drop symbols / leftover configs so portable zips stay minimal (exe + ROMS.PAK).
+find "${SRC}" -type f \( -name '*.pdb' -o -name '*.dll.config' -o -name createdump -o -name '*.dbg' \) -delete
+# Single-file publish may leave empty sidecar dirs; ignore failures.
+find "${SRC}" -mindepth 1 -type d -empty -delete 2>/dev/null || true
+
 if command -v zip >/dev/null 2>&1; then
   (
     cd "${SRC}"

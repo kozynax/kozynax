@@ -551,8 +551,11 @@ namespace ZXMAK2.Engine
 
         private static bool CheckIsLocalAssembly(Assembly asm)
         {
+            // Single-file publish leaves Location empty for bundled assemblies.
+            if (string.IsNullOrEmpty(asm.Location))
+                return true;
             var asmPath = Path.GetDirectoryName(Path.GetFullPath(asm.Location));
-            var localPath = Path.GetDirectoryName(Path.GetFullPath(Assembly.GetExecutingAssembly().Location));
+            var localPath = Utils.GetAppFolder();
             return string.Compare(asmPath, localPath, true) == 0;
         }
 

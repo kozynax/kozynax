@@ -2,7 +2,6 @@
 using System.IO;
 using System.Xml;
 using System.Collections.Generic;
-using System.Reflection;
 using ZXMAK2.Engine;
 
 using ZipLib = ICSharpCode.SharpZipLib;
@@ -25,7 +24,7 @@ namespace ZXMAK2.Hardware
 
         private static long GetImageLength(string fileName)
         {
-            var folderName = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var folderName = Utils.GetAppFolder();
 
             // override
             var romsFolderName = Path.Combine(folderName, "roms");
@@ -57,7 +56,7 @@ namespace ZXMAK2.Hardware
 
         public static Stream GetImageStream(string fileName)
         {
-            var folderName = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var folderName = Utils.GetAppFolder();
 
             // override
             var romsFolderName = Path.Combine(folderName, "roms");

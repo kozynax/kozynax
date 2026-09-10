@@ -24,6 +24,7 @@ mkdir -p \
 cp -a "${PUBLISH_DIR}/." "${STAGE}${INSTALL_ROOT}/"
 chmod +x "${STAGE}${INSTALL_ROOT}/Kozynax.Sdl" || true
 bash "${ROOT}/packaging/pack-roms.sh" "${STAGE}${INSTALL_ROOT}"
+find "${STAGE}${INSTALL_ROOT}" -type f \( -name '*.pdb' -o -name '*.dll.config' -o -name createdump \) -delete
 
 cat > "${STAGE}/usr/bin/${PKG_NAME}" <<EOF
 #!/bin/sh

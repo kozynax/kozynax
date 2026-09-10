@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 
+using ZXMAK2.Engine;
 using ZXMAK2.Model.Disk;
 using ZXMAK2.Serializers.DiskSerializers;
 using ZXMAK2.Dependency;
@@ -59,7 +60,7 @@ namespace ZXMAK2.Serializers
             }
             if (string.IsNullOrEmpty(fileName))
             {
-                string folderName = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                string folderName = Utils.GetAppFolder();
                 folderName = Path.Combine(folderName, "Images");
                 for (int i = 0; i < 10001; i++)
                 {

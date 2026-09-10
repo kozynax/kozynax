@@ -14,7 +14,7 @@ namespace ZXMAK2.Engine
 
         public void Load()
         {
-            var folderName = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var folderName = Utils.GetAppFolder();
             var fileName = Path.Combine(folderName, "machines.config");
             Stream stream;
             if (File.Exists(fileName))

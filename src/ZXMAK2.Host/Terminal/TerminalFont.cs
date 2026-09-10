@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using System.Reflection;
+using ZXMAK2.Engine;
 using ZipLib = ICSharpCode.SharpZipLib;
 
 namespace ZXMAK2.Host.Terminal
@@ -99,7 +99,7 @@ namespace ZXMAK2.Host.Terminal
 
         private static Stream OpenRomStream(string imageName)
         {
-            var folderName = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? ".";
+            var folderName = Utils.GetAppFolder();
 
             var romsFolderName = Path.Combine(folderName, "roms");
             if (Directory.Exists(romsFolderName))
