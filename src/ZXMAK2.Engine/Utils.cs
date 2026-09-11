@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Xml;
 using System.Globalization;
 
@@ -272,17 +273,55 @@ namespace ZXMAK2.Engine
             return value;
         }
 
-        public static String GetAppDataFolder()
+        /// <summary>
+        /// Writable per-user data (machine config .vmz, etc.).
+        /// Linux: $XDG_CONFIG_HOME/kozynax or ~/.config/kozynax
+        /// macOS: ~/Library/Application Support/Kozynax
+        /// Windows / net46: beside the exe (portable layout)
+        /// </summary>
+        public static string GetAppDataFolder()
         {
+#if NETFRAMEWORK
+            // WinForms net46 is Windows-only; keep portable beside-exe layout.
             return GetAppFolder();
+#else
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var xdg = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+                var root = !string.IsNullOrWhiteSpace(xdg)
+                    ? xdg
+                    : Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                        ".config");
+                return EnsureDirectory(Path.Combine(root, "kozynax"));
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                var root = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Library",
+                    "Application Support");
+                return EnsureDirectory(Path.Combine(root, "Kozynax"));
+            }
+
+            return GetAppFolder();
+#endif
         }
 
+        /// <summary>Install / binary directory (ROMs, shipped configs).</summary>
         public static string GetAppFolder()
         {
             var baseDir = AppContext.BaseDirectory;
             if (string.IsNullOrEmpty(baseDir))
                 return ".";
             return Path.GetFullPath(baseDir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+
+        private static string EnsureDirectory(string path)
+        {
+            Directory.CreateDirectory(path);
+            return path;
         }
     }
 }
