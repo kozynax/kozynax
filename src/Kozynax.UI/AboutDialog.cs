@@ -16,7 +16,7 @@ namespace Kozynax.UI
     {
         public const string ProjectUrl = "https://github.com/kozynax/kozynax";
 
-        private const string LicenseText = @"Copyright 2026 Alexander Tsidaev (Eltaron/INK9)
+        public const string LicenseText = @"Copyright 2026 Alexander Tsidaev (Eltaron/INK9)
 
 Original (C) for the emulation engine and Windows
 Forms UI belongs to ZXMAK2 contributors:
