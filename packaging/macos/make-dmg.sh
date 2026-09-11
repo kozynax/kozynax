@@ -35,6 +35,35 @@ exec "$DIR/Kozynax.Sdl" "$@"
 EOF
 chmod +x "${MACOS}/${APP_NAME}"
 
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+ICONSET="${STAGE}/${APP_NAME}.iconset"
+mkdir -p "${ICONSET}"
+copy_icon() {
+  local src="$1" dest="$2"
+  if [[ -f "${src}" ]]; then
+    cp "${src}" "${dest}"
+  fi
+}
+copy_icon "${ROOT}/icons/16x16.png"     "${ICONSET}/icon_16x16.png"
+copy_icon "${ROOT}/icons/32x32.png"     "${ICONSET}/icon_16x16@2x.png"
+copy_icon "${ROOT}/icons/32x32.png"     "${ICONSET}/icon_32x32.png"
+copy_icon "${ROOT}/icons/64x64.png"     "${ICONSET}/icon_32x32@2x.png"
+copy_icon "${ROOT}/icons/128x128.png"   "${ICONSET}/icon_128x128.png"
+copy_icon "${ROOT}/icons/256x256.png"   "${ICONSET}/icon_128x128@2x.png"
+copy_icon "${ROOT}/icons/256x256.png"   "${ICONSET}/icon_256x256.png"
+copy_icon "${ROOT}/icons/512x512.png"   "${ICONSET}/icon_256x256@2x.png"
+copy_icon "${ROOT}/icons/512x512.png"   "${ICONSET}/icon_512x512.png"
+copy_icon "${ROOT}/icons/1024x1024.png" "${ICONSET}/icon_512x512@2x.png"
+ICON_PLIST=""
+if command -v iconutil >/dev/null 2>&1; then
+  iconutil -c icns -o "${RESOURCES}/${APP_NAME}.icns" "${ICONSET}"
+  ICON_PLIST="  <key>CFBundleIconFile</key>
+  <string>${APP_NAME}</string>"
+else
+  echo "iconutil not found; macOS app will have no bundle icon" >&2
+fi
+rm -rf "${ICONSET}"
+
 cat > "${CONTENTS}/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -48,6 +77,7 @@ cat > "${CONTENTS}/Info.plist" <<EOF
   <string>${APP_NAME}</string>
   <key>CFBundleDisplayName</key>
   <string>${APP_NAME}</string>
+${ICON_PLIST}
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
