@@ -25,7 +25,7 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
       release_tag: ${{ steps.tag.outputs.release_tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -50,9 +50,9 @@ jobs:
     needs: version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
 
@@ -84,7 +84,7 @@ jobs:
             "Kozynax-${{ needs.version.outputs.version }}-linux-x64" \
             artifacts/dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: linux-sdl
           path: artifacts/dist/*
@@ -102,9 +102,9 @@ jobs:
           - rid: osx-x64
             label: x64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
 
@@ -127,7 +127,7 @@ jobs:
             artifacts/dist \
             ${{ matrix.label }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: macos-sdl-${{ matrix.label }}
           path: artifacts/dist/*
@@ -137,9 +137,9 @@ jobs:
     needs: version
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
 
@@ -163,7 +163,7 @@ jobs:
             "Kozynax-${{ needs.version.outputs.version }}-win-x64-sdl" \
             artifacts/dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: windows-sdl
           path: artifacts/dist/*
@@ -173,9 +173,9 @@ jobs:
     needs: version
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
 
@@ -209,7 +209,7 @@ jobs:
             "Kozynax-${{ needs.version.outputs.version }}-win-x86-winforms" \
             artifacts/dist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: windows-winforms
           path: artifacts/dist/*
@@ -231,9 +231,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: artifacts/download
 
@@ -246,7 +246,7 @@ jobs:
           ls -la artifacts/release
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.version.outputs.release_tag }}
           name: ${{ needs.version.outputs.version }}
