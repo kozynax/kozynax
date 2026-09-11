@@ -18,6 +18,7 @@ mkdir -p \
   "${STAGE}${INSTALL_ROOT}" \
   "${STAGE}/usr/bin" \
   "${STAGE}/usr/share/applications" \
+  "${STAGE}/usr/share/icons/hicolor" \
   "${STAGE}/usr/share/doc/${PKG_NAME}" \
   "${OUT_DIR}"
 
@@ -32,12 +33,22 @@ exec "${INSTALL_ROOT}/Kozynax.Sdl" "\$@"
 EOF
 chmod +x "${STAGE}/usr/bin/${PKG_NAME}"
 
+for size in 16 32 48 64 128 256 512; do
+  src="${ROOT}/icons/${size}x${size}.png"
+  dest="${STAGE}/usr/share/icons/hicolor/${size}x${size}/apps"
+  if [[ -f "${src}" ]]; then
+    mkdir -p "${dest}"
+    cp "${src}" "${dest}/${PKG_NAME}.png"
+  fi
+done
+
 cat > "${STAGE}/usr/share/applications/${PKG_NAME}.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Kozynax
 Comment=ZX Spectrum emulator (SDL)
 Exec=${PKG_NAME}
+Icon=${PKG_NAME}
 Terminal=false
 Categories=Game;Emulator;
 StartupNotify=true

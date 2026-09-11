@@ -105,6 +105,7 @@ namespace ZXMAK2.Host.SdlBackend
             if (_window == null)
                 throw new InvalidOperationException($"SDL_CreateWindow failed: {_sdl.GetErrorS()}");
 
+            SdlWindowIcon.Apply(_sdl, _window);
             _sdl.ShowWindow(_window);
             _sdl.RaiseWindow(_window);
 

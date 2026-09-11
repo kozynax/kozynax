@@ -1,7 +1,18 @@
 <Project>
 
   <!-- Shared by Kozynax.csproj and Kozynax.Sdl.csproj -->
+  <PropertyGroup>
+    <!-- Explorer / taskbar exe icon on Windows (WinForms + SDL). -->
+    <ApplicationIcon>..\icons\kozynax.ico</ApplicationIcon>
+  </PropertyGroup>
+
   <ItemGroup>
+    <EmbeddedResource Include="..\icons\kozynax.ico">
+      <LogicalName>ZXMAK2.Resources.Icons.IconApp.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\icons\64x64.png">
+      <LogicalName>ZXMAK2.Resources.Icons.IconApp.png</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="ZXMAK2.Resources\Icons\**\*">
       <LogicalName>ZXMAK2.Resources.Icons.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>

@@ -54,10 +54,10 @@ namespace ZXMAK2.Resources
         public static Stream EmuSettingsPng => OpenStream("ZXMAK2.Resources.Icons.EmuSettings_32x32.png");
         public static Image KeyboardHelp => LoadImage("ZXMAK2.Resources.Icons.KeyboardHelp.png");
         public static Icon IconDebugger => LoadIcon("ZXMAK2.Resources.Icons.IconDebugger.ico");
-        public static Icon IconApp => LoadIcon("ZXMAK2.Resources.Icons.IconApp.ico");
+        public static Icon IconApp => new Icon(OpenStream("ZXMAK2.Resources.Icons.IconApp.ico"), 64, 64);
+        public static Stream IconAppPng => OpenStream("ZXMAK2.Resources.Icons.IconApp.png");
         public static Icon ImageZxLogo => LoadIcon("ZXMAK2.Resources.Pictures.ZxLogo.png");
         public static Image ImageKeyboardHelp => LoadImage("ZXMAK2.Resources.Pictures.KeyboardHelp.png");
-        /// <summary>PNG stream for hosts that cannot use System.Drawing (e.g. SDL on Linux).</summary>
         public static Stream ImageKeyboardHelpPng => OpenStream("ZXMAK2.Resources.Pictures.KeyboardHelp.png");
         public static Image Wizard => LoadImage("ZXMAK2.Resources.Icons.Wizard.png");
         public static Image RAM => LoadImage("ZXMAK2.Resources.DeviceIcons.RAM.png");
