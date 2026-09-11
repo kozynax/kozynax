@@ -162,7 +162,8 @@ namespace ZXMAK2.Host.Terminal
                     if (c >= _cols)
                         break;
                     var ch = text[i];
-                    if (ch < 32 || ch > 126)
+                    // Allow printable ASCII and Cyrillic; host TTY has real fonts.
+                    if (ch < 32 || (ch > 126 && !IsCyrillic(ch)))
                         ch = '?';
                     var idx = row * _cols + c;
                     var bg = _cells[idx];
@@ -170,6 +171,9 @@ namespace ZXMAK2.Host.Terminal
                 }
             }
         }
+
+        private static bool IsCyrillic(char ch)
+            => (ch >= '\u0400' && ch <= '\u04FF') || ch == 'Ё' || ch == 'ё';
 
         public override int MeasureTextWidth(string text, int scale)
             => (text?.Length ?? 0) * CellPx * Math.Max(scale, 1);
