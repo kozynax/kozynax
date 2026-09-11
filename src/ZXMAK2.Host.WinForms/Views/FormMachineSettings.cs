@@ -127,7 +127,8 @@ namespace ZXMAK2.Host.WinForms.Views
             // 
             // pnlSettings
             // 
-            this.pnlSettings.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            this.pnlSettings.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.pnlSettings.Location = new System.Drawing.Point(278, 12);
             this.pnlSettings.Name = "pnlSettings";
@@ -421,6 +422,7 @@ namespace ZXMAK2.Host.WinForms.Views
                 if (!_deviceConfigurationControls.ContainsKey(device))
                 {
                     var control = ResolveScreenControl(_machineSettings.WorkBus, _machineSettings.Host, device);
+                    control.Dock = DockStyle.Fill;
                     _deviceConfigurationControls[device] = control;
                     pnlSettings.Controls.Add(control);
                 }
