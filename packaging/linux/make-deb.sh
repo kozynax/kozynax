@@ -68,7 +68,7 @@ fpm -s dir -t deb \
   -a "${ARCH}" \
   --license "GPL-compatible (see LICENSE)" \
   --description "ZX Spectrum emulator virtual machine (SDL host)" \
-  --url "https://github.com/atsidaev/kozynax" \
+  --url "https://github.com/kozynax/kozynax" \
   --maintainer "Kozynax maintainers" \
   --deb-compression xz \
   -C "${STAGE}" \
