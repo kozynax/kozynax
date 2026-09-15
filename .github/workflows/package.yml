@@ -17,6 +17,7 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   SDL_PROJECT: src/Kozynax.Sdl.csproj
   WINFORMS_PROJECT: src/Kozynax.csproj
+  TEST_PROJECT: tests/Kozynax.Tests.csproj
 
 jobs:
   version:
@@ -46,8 +47,22 @@ jobs:
             echo "release_tag=v${V}" >> "$GITHUB_OUTPUT"
           fi
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Run unit tests
+        run: >
+          dotnet test "$TEST_PROJECT" -c Release
+          --logger "console;verbosity=detailed"
+
   linux-sdl:
-    needs: version
+    needs: [version, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -91,7 +106,7 @@ jobs:
           if-no-files-found: error
 
   macos-sdl:
-    needs: version
+    needs: [version, test]
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -134,7 +149,7 @@ jobs:
           if-no-files-found: error
 
   windows-sdl:
-    needs: version
+    needs: [version, test]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -170,7 +185,7 @@ jobs:
           if-no-files-found: error
 
   windows-winforms:
-    needs: version
+    needs: [version, test]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -223,6 +238,7 @@ jobs:
       (github.event_name == 'workflow_dispatch' && inputs.create_release)
     needs:
       - version
+      - test
       - linux-sdl
       - macos-sdl
       - windows-sdl
