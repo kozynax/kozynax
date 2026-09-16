@@ -23,10 +23,24 @@ internal static class TestMachineFactory
         return machine;
     }
 
+    public static Spectrum CreateSpectrum128()
+    {
+        var machines = new MachinesConfig();
+        machines.Load();
+        var node = machines.GetConfig("ZX Spectrum 128");
+        if (node == null)
+            throw new InvalidOperationException("ZX Spectrum 128 machine config not found.");
+        var machine = CreateInitialized();
+        machine.BusManager.LoadConfigXml(node);
+        return machine;
+    }
+
+    public static string GetFixturePath(string fileName)
+        => Path.Combine(AppContext.BaseDirectory, "Fixtures", fileName);
+
     public static string LoadFixtureText(string fileName)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "Fixtures", fileName);
-        return File.ReadAllText(path);
+        return File.ReadAllText(GetFixturePath(fileName));
     }
 
     public static Stream OpenEmbeddedSnapshot(string fileName)
