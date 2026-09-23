@@ -269,7 +269,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 return false;
             }
 
-            var menu = new ContextMenuScreen(_terminal)
+            var menu = new ContextMenuScreen(_terminal, scale: _terminal.UiScale)
             {
                 Underlay = () =>
                 {

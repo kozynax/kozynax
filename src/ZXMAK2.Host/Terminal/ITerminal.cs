@@ -11,6 +11,12 @@ namespace ZXMAK2.Host.Terminal
         int Width { get; }
         int Height { get; }
 
+        /// <summary>
+        /// Integer multiplier for bitmap UI chrome (menus, dialogs, toolbar).
+        /// Emulator video scale is independent. Default is 1.
+        /// </summary>
+        int UiScale { get; }
+
         void Clear(TerminalColor color);
         void FillRect(int x, int y, int width, int height, TerminalColor color);
         void DrawText(int x, int y, string text, int scale, TerminalColor color);

@@ -59,10 +59,14 @@ namespace ZXMAK2.Host.SdlBackend
         public void OnPresent()
             => _graphRender.PushPeriod();
 
-        public void Draw(Sdl sdl, Renderer* renderer, int winW, int winH, int deviceFps)
+        public void Draw(Sdl sdl, Renderer* renderer, int winW, int winH, int deviceFps, int uiScale = TerminalBase.DefaultUiScale)
         {
             if (sdl == null || renderer == null || winW <= 0 || winH <= 0)
                 return;
+
+            uiScale = Math.Max(TerminalBase.DefaultUiScale, uiScale);
+            var fontScale = FontScale * uiScale;
+            var pad = Pad * uiScale;
 
             var frequency = GraphMonitor.Frequency;
             var graphRender = _graphRender.Get();
@@ -84,11 +88,11 @@ namespace ZXMAK2.Host.SdlBackend
             };
 
             var maxChars = lines.Max(l => l.Length);
-            var lineH = TerminalFont.GlyphHeight * FontScale;
-            var textW = maxChars * TerminalFont.GlyphWidth * FontScale;
+            var lineH = TerminalFont.GlyphHeight * fontScale;
+            var textW = maxChars * TerminalFont.GlyphWidth * fontScale;
             var textH = lines.Length * lineH;
-            var boxW = textW + Pad * 2;
-            var boxH = textH + Pad * 2;
+            var boxW = textW + pad * 2;
+            var boxH = textH + pad * 2;
             if (boxW > winW)
                 boxW = winW;
             if (boxH > winH)
@@ -101,10 +105,10 @@ namespace ZXMAK2.Host.SdlBackend
 
             _drawSdl = sdl;
             _drawRenderer = renderer;
-            var y = Pad;
+            var y = pad;
             foreach (var line in lines)
             {
-                TerminalFont.Draw(FillGlyph, Pad, y, line, FontScale, Fg);
+                TerminalFont.Draw(FillGlyph, pad, y, line, fontScale, Fg);
                 y += lineH;
             }
             _drawRenderer = null;

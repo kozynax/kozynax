@@ -675,7 +675,7 @@ namespace ZXMAK2.Host.SdlBackend
         {
             if (_icons == null || _video == null || !IsDisplayIconEnabled())
                 return;
-            _icons.Draw(_renderer, winW, winH, _video.Icons);
+            _icons.Draw(_renderer, winW, winH, _video.Icons, ResolveUiScale());
         }
 
         private void DrawDebugOsd(int winW, int winH)
@@ -684,7 +684,13 @@ namespace ZXMAK2.Host.SdlBackend
                 return;
 
             SyncDebugRunningState();
-            _debugOsd.Draw(_sdl, _renderer, winW, winH, GetDisplayRefreshRate());
+            _debugOsd.Draw(_sdl, _renderer, winW, winH, GetDisplayRefreshRate(), ResolveUiScale());
+        }
+
+        private int ResolveUiScale()
+        {
+            var runtime = _resolver.TryResolve<SdlRuntimeContext>();
+            return runtime?.ResolveUiScale() ?? TerminalBase.DefaultUiScale;
         }
 
         private bool IsDisplayIconEnabled()

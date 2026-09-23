@@ -4,6 +4,7 @@ using System.IO;
 using Silk.NET.SDL;
 using StbImageSharp;
 using ZXMAK2.Host.Interfaces;
+using ZXMAK2.Host.Terminal;
 
 namespace ZXMAK2.Host.SdlBackend
 {
@@ -24,11 +25,12 @@ namespace ZXMAK2.Host.SdlBackend
             _sdl = sdl ?? throw new ArgumentNullException(nameof(sdl));
         }
 
-        public void Draw(Renderer* renderer, int winW, int winH, IIconDescriptor[] icons)
+        public void Draw(Renderer* renderer, int winW, int winH, IIconDescriptor[] icons, int uiScale = TerminalBase.DefaultUiScale)
         {
             if (_disposed || renderer == null || icons == null || icons.Length == 0 || winW <= 0 || winH <= 0)
                 return;
 
+            var displaySize = DisplaySize * Math.Max(TerminalBase.DefaultUiScale, uiScale);
             var iconNumber = 1;
             foreach (var icon in icons)
             {
@@ -40,10 +42,10 @@ namespace ZXMAK2.Host.SdlBackend
                     continue;
 
                 var dst = new Silk.NET.Maths.Rectangle<int>(
-                    winW - DisplaySize * iconNumber,
+                    winW - displaySize * iconNumber,
                     0,
-                    DisplaySize,
-                    DisplaySize);
+                    displaySize,
+                    displaySize);
                 _sdl.SetTextureBlendMode(texture, BlendMode.Blend);
                 _sdl.RenderCopy(renderer, texture, null, &dst);
                 iconNumber++;

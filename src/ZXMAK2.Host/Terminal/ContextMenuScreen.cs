@@ -14,11 +14,11 @@ namespace ZXMAK2.Host.Terminal
         private readonly object _commandParameter;
         private readonly int _scale;
 
-        public ContextMenuScreen(ITerminal terminal, object commandParameter = null, int scale = 1)
+        public ContextMenuScreen(ITerminal terminal, object commandParameter = null, int scale = TerminalBase.DefaultUiScale)
         {
             _terminal = terminal ?? throw new ArgumentNullException(nameof(terminal));
             _commandParameter = commandParameter;
-            _scale = Math.Max(1, scale);
+            _scale = Math.Max(TerminalBase.DefaultUiScale, scale);
         }
 
         /// <summary>Drawn each frame before the popup (e.g. the host dialog).</summary>

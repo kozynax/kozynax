@@ -32,7 +32,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             terminal.PrepareForUiInput();
             try
             {
-                var screen = new MenuChromeScreen(terminal, commandParameter)
+                var screen = new MenuChromeScreen(terminal, commandParameter, terminal.UiScale)
                 {
                     Underlay = underlay,
                     Toolbar = toolbar,
