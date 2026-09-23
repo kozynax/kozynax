@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using ZXMAK2.Engine.Cpu;
 using ZXMAK2.Serializers;
 using ZXMAK2.Dependency;
+using ZXMAK2.Engine.Cpu.Processor;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Resources;
@@ -481,6 +482,7 @@ namespace ZXMAK2.Engine
                     ModelId = modelId;
                 }
             }
+            m_cpu.Type = Utils.GetXmlAttributeAsEnum(busNode, "cpuType", Z80Cpu.DefaultCpuType);
 
             // store old devices to allow reuse & save state
             var oldDevices = new Dictionary<string, BusDeviceBase>();
@@ -630,6 +632,7 @@ namespace ZXMAK2.Engine
                 var el = (XmlElement)busNode;
                 el.SetAttribute("modelId", ModelId.ToString());
             }
+            ((XmlElement)busNode).SetAttribute("cpuType", m_cpu.Type.ToString());
             foreach (var device in m_deviceList)
             {
                 try

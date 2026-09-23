@@ -27,6 +27,8 @@ namespace ZXMAK2.Engine.Cpu.Processor
 {
     public partial class Z80Cpu
     {
+        public const CpuType DefaultCpuType = CpuType.NEC_NMOS;
+        
         public readonly CpuRegs regs = new CpuRegs();
         public int RzxCounter;
         public long Tact;
@@ -56,7 +58,7 @@ namespace ZXMAK2.Engine.Cpu.Processor
         public Action<ushort> WRNOMREQ;
         public Action SCANSIG;
 
-        private CpuType _type = CpuType.NEC_NMOS;
+        private CpuType _type = DefaultCpuType;
         public CpuType Type
         {
             get { return _type; }
