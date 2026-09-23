@@ -1,6 +1,8 @@
 using System.Reflection;
 using System.Xml;
 using ZXMAK2.Engine;
+using ZXMAK2.Engine.Cpu;
+using ZXMAK2.Engine.Cpu.Processor;
 
 namespace Kozynax.Tests.Infrastructure;
 
@@ -32,6 +34,19 @@ internal static class TestMachineFactory
             throw new InvalidOperationException("ZX Spectrum 128 machine config not found.");
         var machine = CreateInitialized();
         machine.BusManager.LoadConfigXml(node);
+        return machine;
+    }
+
+    public static Spectrum CreateSpectrum48(CpuType cpuType = Z80Cpu.DefaultCpuType)
+    {
+        var machines = new MachinesConfig();
+        machines.Load();
+        var node = machines.GetConfig("ZX Spectrum 48");
+        if (node == null)
+            throw new InvalidOperationException("ZX Spectrum 48 machine config not found.");
+        var machine = CreateInitialized();
+        machine.BusManager.LoadConfigXml(node);
+        machine.CPU.Type = cpuType;
         return machine;
     }
 
