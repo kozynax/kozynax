@@ -25,16 +25,18 @@ namespace ZXMAK2.Engine.Cpu.Processor
 {
     public partial class Z80Cpu
     {
-        private readonly Action<byte>[] _opcodes;
-        private readonly Action<byte>[] _opcodesFx;
-        private readonly Action<byte>[] _opcodesEd;
-        private readonly Action<byte>[] _opcodesCb;
-        private readonly Action<byte, ushort>[] _opcodesFxCb;
-        private readonly Action<byte>[] _alualg;
+        private readonly Action<byte>[] _opcodes = new Action<byte>[256];
+        private readonly Action<byte>[] _opcodesFx = new Action<byte>[256];
+        private readonly Action<byte>[] _opcodesEd = new Action<byte>[256];
+        private readonly Action<byte>[] _opcodesCb = new Action<byte>[256];
+        private readonly Action<byte, ushort>[] _opcodesFxCb = new Action<byte, ushort>[256];
+        private readonly Action<byte>[] _alualg = new Action<byte>[8];
         private readonly Func<ushort>[] _pairGetters;
         private readonly Action<ushort>[] _pairSetters;
         private readonly Func<byte>[] _regGetters;
         private readonly Action<byte>[] _regSetters;
+        private readonly byte[] _opcodesQ = new byte[256];
+        private readonly byte[] _opcodesEdQ = new byte[256];
 
 
 
@@ -233,6 +235,49 @@ namespace ZXMAK2.Engine.Cpu.Processor
                 ALU_ADDR, ALU_ADCR, ALU_SUBR, ALU_SBCR, 
                 ALU_ANDR, ALU_XORR, ALU_ORR, ALU_CPR, 
             };
+        }
+
+        // Opcodes that latch F into undocumented Q (1) vs clear Q (0).
+        private byte[] CreateOpcodesQ()
+        {
+            var opcodesQ = new byte[256];
+            for (var i = 0; i < 8; i++)
+            {
+                opcodesQ[0x04 + (i << 3)] = 1; // INC r / INC (HL)
+                opcodesQ[0x05 + (i << 3)] = 1; // DEC r / DEC (HL)
+                opcodesQ[0x07 + (i << 3)] = 1; // RLCA..CCF
+                opcodesQ[0xC6 + (i << 3)] = 1; // ALU A,n
+            }
+            for (var i = 0; i < 4; i++)
+                opcodesQ[0x09 + (i << 4)] = 1; // ADD HL,rr
+            for (var i = 0; i < 64; i++)
+                opcodesQ[0x80 + i] = 1;        // ALU A,r / ALU A,(HL)
+            opcodesQ[0xDB] = 1;                // IN A,(n)
+            return opcodesQ;
+        }
+
+        private byte[] CreateOpcodesEdQ()
+        {
+            var opcodesEdQ = new byte[256];
+            for (var i = 0; i < 8; i++)
+            {
+                opcodesEdQ[0x40 + (i << 3)] = 1; // IN r,(C)
+                opcodesEdQ[0x42 + (i << 3)] = 1; // SBC/ADC HL,rr
+                opcodesEdQ[0x44 + (i << 3)] = 1; // NEG
+            }
+            for (var i = 0; i < 2; i++)
+            {
+                opcodesEdQ[0x57 + (i << 3)] = 1; // LD A,I / LD A,R
+                opcodesEdQ[0x67 + (i << 3)] = 1; // RRD / RLD
+            }
+            for (var i = 0; i < 4; i++)
+            {
+                opcodesEdQ[0xA0 + i] = 1; // LDI/CPI/INI/OUTI
+                opcodesEdQ[0xA8 + i] = 1; // LDD/CPD/IND/OUTD
+                opcodesEdQ[0xB0 + i] = 1; // LDIR/CPIR/INIR/OTIR
+                opcodesEdQ[0xB8 + i] = 1; // LDDR/CPDR/INDR/OTDR
+            }
+            return opcodesEdQ;
         }
 
 

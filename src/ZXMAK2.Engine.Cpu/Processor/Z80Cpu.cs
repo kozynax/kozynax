@@ -79,13 +79,6 @@ namespace ZXMAK2.Engine.Cpu.Processor
             _regSetters = Enumerable
                 .Range(0, 8).Select(regs.CreateRegSetter)
                 .ToArray();
-            _alualg = CreateAluAlg();
-
-            _opcodes = new Action<byte>[256];
-            _opcodesFx = new Action<byte>[256];
-            _opcodesEd = new Action<byte>[256];
-            _opcodesCb = new Action<byte>[256];
-            _opcodesFxCb = new Action<byte, ushort>[256];
             initOpcodeTables();
 
             regs.AF = 0xFF;
@@ -102,15 +95,19 @@ namespace ZXMAK2.Engine.Cpu.Processor
             regs.PC = 0xFF;
             regs.SP = 0xFF;
             regs.MW = 0xFF;
+            regs.Q = 0;
         }
 
         private void initOpcodeTables()
         {
+            initOpcodeTable(_alualg, CreateAluAlg());
             initOpcodeTable(_opcodes, CreateOpcodes());
             initOpcodeTable(_opcodesFx, CreateOpcodesFx());
             initOpcodeTable(_opcodesEd, CreateOpcodesEd());
             initOpcodeTable(_opcodesCb, CreateOpcodesCb());
             initOpcodeTable(_opcodesFxCb, CreateOpcodesFxCb());
+            initOpcodeTable(_opcodesQ, CreateOpcodesQ());
+            initOpcodeTable(_opcodesEdQ, CreateOpcodesEdQ());
         }
 
         private static void initOpcodeTable<T>(T[] opcodes, T[] actions)
@@ -170,6 +167,7 @@ namespace ZXMAK2.Engine.Cpu.Processor
                 }
                 XFX = CpuModeEx.None;
                 FX = CpuModeIndex.None;
+                regs.Q = cmd < 0x80 ? regs.F : (byte)0;
             }
             else if (XFX == CpuModeEx.Ed)
             {
@@ -186,6 +184,7 @@ namespace ZXMAK2.Engine.Cpu.Processor
                 }
                 XFX = CpuModeEx.None;
                 FX = CpuModeIndex.None;
+                regs.Q = _opcodesEdQ[cmd] != 0 ? regs.F : (byte)0;
             }
             else if (cmd == 0xDD)
             {
@@ -241,6 +240,7 @@ namespace ZXMAK2.Engine.Cpu.Processor
                     opdo(cmd);
                 }
                 FX = CpuModeIndex.None;
+                regs.Q = _opcodesQ[cmd] != 0 ? regs.F : (byte)0;
             }
         }
 
@@ -265,13 +265,14 @@ namespace ZXMAK2.Engine.Cpu.Processor
                 regs.PC = 0;
                 regs.IR = 0;
                 IM = 0;
+                regs.Q = 0;
                 //regs.SP = 0xFFFF;
                 //regs.AF = 0xFFFF;
 
                 Tact += 2;      // total should be 3T?
                 return true;
             }
-            else if (NMI)
+            else if (NMI && XFX == CpuModeEx.None && FX == CpuModeIndex.None)
             {
                 // 11T (5, 3, 3)
 
@@ -301,6 +302,7 @@ namespace ZXMAK2.Engine.Cpu.Processor
                 WRMEM(regs.SP, (byte)regs.PC);
                 regs.PC = 0x0066;
                 Tact += 3;
+                regs.Q = 0;
 
                 return true;
             }
@@ -360,6 +362,7 @@ namespace ZXMAK2.Engine.Cpu.Processor
                     Tact += 3;
                 }
                 regs.PC = regs.MW;
+                regs.Q = 0;
 
                 return true;
             }
