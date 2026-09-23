@@ -16,6 +16,18 @@ namespace Kozynax.Cli
         private const string AppName = "kozynax";
 
         /// <summary>
+        /// For WinExe hosts: attach/allocate a console when args need stdout
+        /// (<c>convert</c>, <c>--tui</c>, or <c>--console</c>).
+        /// No-op for normal GUI launches and on non-Windows.
+        /// </summary>
+        public static void EnsureConsoleIfNeeded(string[] args)
+        {
+            if (!NeedsConsole(args))
+                return;
+            WindowsConsole.EnsureAttached(exclusiveInput: NeedsExclusiveConsole(args));
+        }
+
+        /// <summary>
         /// Handles known commands such as <c>convert</c>.
         /// Returns true when <paramref name="args"/> was a CLI command (caller should exit).
         /// </summary>
@@ -32,8 +44,38 @@ namespace Kozynax.Cli
             return true;
         }
 
+        private static bool NeedsConsole(string[] args)
+        {
+            if (args == null || args.Length == 0)
+                return false;
+
+            if (string.Equals(args[0], "convert", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            foreach (var arg in args)
+            {
+                if (string.Equals(arg, "--tui", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(arg, "--console", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool NeedsExclusiveConsole(string[] args)
+        {
+            if (args == null)
+                return false;
+            foreach (var arg in args)
+            {
+                if (string.Equals(arg, "--tui", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(arg, "--console", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
         /// <summary>
-        /// Parses host-only flags (e.g. <c>--tui</c>) and returns the remaining launcher args.
+        /// Parses host-only flags (e.g. <c>--tui</c>, <c>--console</c>) and returns the remaining launcher args.
         /// </summary>
         public static HostLaunchOptions ParseHostOptions(string[] args)
         {
@@ -49,6 +91,8 @@ namespace Kozynax.Cli
                     useTui = true;
                     continue;
                 }
+                if (string.Equals(arg, "--console", StringComparison.OrdinalIgnoreCase))
+                    continue;
                 filtered.Add(arg);
             }
             return new HostLaunchOptions(useTui, filtered.ToArray());

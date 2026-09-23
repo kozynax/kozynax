@@ -47,6 +47,9 @@ namespace ZXMAK2
 
         private static void RunSafe(string[] args)
         {
+            // WinExe: attach console for CLI commands (e.g. convert).
+            CommandLine.EnsureConsoleIfNeeded(args);
+
             if (CommandLine.TryHandle(args, out var exitCode))
             {
                 Environment.ExitCode = exitCode;

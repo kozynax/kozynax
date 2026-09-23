@@ -18,6 +18,7 @@ using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Services;
 using ZXMAK2.Host.Terminal;
 using ZXMAK2.Mvvm;
+using Kozynax.Cli;
 using Event = Silk.NET.SDL.Event;
 
 namespace ZXMAK2.Host.SdlBackend
@@ -107,7 +108,8 @@ namespace ZXMAK2.Host.SdlBackend
 
             SdlWindowIcon.Apply(_sdl, _window);
             _sdl.ShowWindow(_window);
-            _sdl.RaiseWindow(_window);
+            if (!(_resolver.Resolve<ITerminal>() is StdioTerminal))
+                _sdl.RaiseWindow(_window);
 
             _renderer = _sdl.CreateRenderer(_window, -1, (uint)RendererFlags.Accelerated);
             if (_renderer == null)
@@ -172,7 +174,10 @@ namespace ZXMAK2.Host.SdlBackend
 
             // Interactive TTY: show the main menu in the console immediately.
             if (terminal is StdioTerminal)
+            {
+                WindowsConsole.TryFocus();
                 ShowMainMenu();
+            }
 
             while (!_quit)
             {

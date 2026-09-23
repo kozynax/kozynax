@@ -7,7 +7,7 @@ using System.Threading;
 namespace ZXMAK2.Host.Terminal
 {
     /// <summary>
-    /// Linux/macOS console implementation of <see cref="ITerminal"/> (ANSI + stdin).
+    /// Console implementation of <see cref="ITerminal"/> (ANSI + stdin).
     /// Exposes a pixel-sized surface (cols×8, rows×8) so <see cref="TerminalKozuiPresenter"/> cell math is unchanged.
     /// </summary>
     public sealed class StdioTerminal : TerminalBase, IDisposable
@@ -34,13 +34,20 @@ namespace ZXMAK2.Host.Terminal
         {
             get
             {
-                if (Console.IsInputRedirected || Console.IsOutputRedirected)
-                    return false;
-                if (!(OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
-                    return false;
                 try
                 {
+#if NETFRAMEWORK
+                    return Console.WindowWidth > 0 && Console.WindowHeight > 0;
+#else
+                    if (OperatingSystem.IsWindows())
+                        return Console.WindowWidth > 0 && Console.WindowHeight > 0;
+
+                    if (Console.IsInputRedirected || Console.IsOutputRedirected)
+                        return false;
+                    if (!(OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
+                        return false;
                     return Isatty(STDIN_FILENO) != 0 && Isatty(STDOUT_FILENO) != 0;
+#endif
                 }
                 catch
                 {
@@ -428,12 +435,26 @@ namespace ZXMAK2.Host.Terminal
         {
             cols = 0;
             rows = 0;
-            var ws = new Winsize();
-            if (Ioctl(STDOUT_FILENO, TIOCGWINSZ, ref ws) != 0)
+#if NETFRAMEWORK
+            return false;
+#else
+            if (OperatingSystem.IsWindows())
                 return false;
-            cols = ws.ws_col;
-            rows = ws.ws_row;
-            return cols > 0 && rows > 0;
+
+            try
+            {
+                var ws = new Winsize();
+                if (Ioctl(STDOUT_FILENO, TIOCGWINSZ, ref ws) != 0)
+                    return false;
+                cols = ws.ws_col;
+                rows = ws.ws_row;
+                return cols > 0 && rows > 0;
+            }
+            catch (DllNotFoundException)
+            {
+                return false;
+            }
+#endif
         }
 
         private struct Cell
