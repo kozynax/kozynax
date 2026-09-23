@@ -18,6 +18,7 @@ using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Services;
 using ZXMAK2.Host.Terminal;
 using ZXMAK2.Mvvm;
+using Kozynax.Cli;
 using Event = Silk.NET.SDL.Event;
 
 namespace ZXMAK2.Host.SdlBackend
@@ -39,6 +40,10 @@ namespace ZXMAK2.Host.SdlBackend
         private float _frameRatio = 1f;
         private bool _hasTexture;
         private bool _applyingRenderSize;
+        private bool _syncingFromWindow;
+        private bool _windowSizeDirty;
+        private int _lastResizeTick;
+        private const int ResizeSettleMs = 100;
 
         private SdlVideo _video;
         private SdlIconOverlay _icons;
@@ -94,20 +99,22 @@ namespace ZXMAK2.Host.SdlBackend
                 _sdl.GetNumVideoDisplays());
 
             var settings = _resolver.Resolve<ISettingService>();
+            var runtime = _resolver.Resolve<SdlRuntimeContext>();
+            // DPI is available after SDL_Init (no renderer needed). Creating at
+            // the 1x default and growing later flashes a small window on HiDPI.
+            var createScale = runtime.ResolveWindowScale();
             _window = _sdl.CreateWindow(
                 MainWindowTitle.ProductName,
                 Sdl.WindowposCentered,
                 Sdl.WindowposCentered,
-                settings.WindowWidth,
-                settings.WindowHeight,
-                (uint)(WindowFlags.Shown | WindowFlags.Resizable | WindowFlags.AllowHighdpi));
+                ScaleDimension(settings.WindowWidth, createScale),
+                ScaleDimension(settings.WindowHeight, createScale),
+                (uint)(WindowFlags.Hidden | WindowFlags.Resizable | WindowFlags.AllowHighdpi));
 
             if (_window == null)
                 throw new InvalidOperationException($"SDL_CreateWindow failed: {_sdl.GetErrorS()}");
 
             SdlWindowIcon.Apply(_sdl, _window);
-            _sdl.ShowWindow(_window);
-            _sdl.RaiseWindow(_window);
 
             _renderer = _sdl.CreateRenderer(_window, -1, (uint)RendererFlags.Accelerated);
             if (_renderer == null)
@@ -117,14 +124,18 @@ namespace ZXMAK2.Host.SdlBackend
 
             _sdl.SetHint(Sdl.HintRenderScaleQuality, settings.RenderSmooth ? "1" : "0");
 
+            runtime.Window = _window;
+            runtime.Renderer = _renderer;
+            ApplyRenderSize();
+
             // Wayland compositors typically do not map a window until the first present.
             _sdl.SetRenderDrawColor(_renderer, 0, 0, 0, 255);
             _sdl.RenderClear(_renderer);
             _sdl.RenderPresent(_renderer);
 
-            var runtime = _resolver.Resolve<SdlRuntimeContext>();
-            runtime.Window = _window;
-            runtime.Renderer = _renderer;
+            _sdl.ShowWindow(_window);
+            if (!(_resolver.Resolve<ITerminal>() is StdioTerminal))
+                _sdl.RaiseWindow(_window);
 
             _uiThreadId = Thread.CurrentThread.ManagedThreadId;
             _video = new SdlVideo();
@@ -172,7 +183,10 @@ namespace ZXMAK2.Host.SdlBackend
 
             // Interactive TTY: show the main menu in the console immediately.
             if (terminal is StdioTerminal)
+            {
+                WindowsConsole.TryFocus();
                 ShowMainMenu();
+            }
 
             while (!_quit)
             {
@@ -181,6 +195,8 @@ namespace ZXMAK2.Host.SdlBackend
                 PresentFrame();
             }
 
+            _windowSizeDirty = false;
+            SyncWindowSizeToViewModel();
             ViewClosed?.Invoke(this, EventArgs.Empty);
             CleanupHost();
             CleanupSdl();
@@ -257,6 +273,7 @@ namespace ZXMAK2.Host.SdlBackend
             if (DataContext is INotifyPropertyChanged npc)
                 npc.PropertyChanged += DataContext_PropertyChanged;
             ApplyTitle();
+            ApplyRenderSize();
         }
 
         private void DataContext_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -265,7 +282,7 @@ namespace ZXMAK2.Host.SdlBackend
                 ApplyTitle();
             if (e.PropertyName == null || e.PropertyName == "IsFullScreen")
                 ApplyFullScreen();
-            if (e.PropertyName == null || e.PropertyName == "RenderSize")
+            if (!_syncingFromWindow && (e.PropertyName == null || e.PropertyName == "RenderSize"))
                 ApplyRenderSize();
         }
 
@@ -314,10 +331,19 @@ namespace ZXMAK2.Host.SdlBackend
             if (!(size is Size renderSize) || renderSize.Width <= 0 || renderSize.Height <= 0)
                 return;
 
+            var scale = ResolveWindowScale();
+            var targetW = ScaleDimension(renderSize.Width, scale);
+            var targetH = ScaleDimension(renderSize.Height, scale);
+
+            int curW, curH;
+            _sdl.GetWindowSize(_window, &curW, &curH);
+            if (curW == targetW && curH == targetH)
+                return;
+
             _applyingRenderSize = true;
             try
             {
-                _sdl.SetWindowSize(_window, renderSize.Width, renderSize.Height);
+                _sdl.SetWindowSize(_window, targetW, targetH);
             }
             finally
             {
@@ -325,9 +351,29 @@ namespace ZXMAK2.Host.SdlBackend
             }
         }
 
+        private void NoteUserResize()
+        {
+            // Linux/Wayland/X11 emit a flood of size events while the border is
+            // dragged. Windows blocks in a modal resize loop until mouse-up.
+            // Defer ViewModel sync so we do not SetWindowSize (and fight the
+            // compositor) on every configure.
+            _windowSizeDirty = true;
+            _lastResizeTick = Environment.TickCount;
+        }
+
+        private void TryCommitUserResize()
+        {
+            if (!_windowSizeDirty)
+                return;
+            if (unchecked(Environment.TickCount - _lastResizeTick) < ResizeSettleMs)
+                return;
+            _windowSizeDirty = false;
+            SyncWindowSizeToViewModel();
+        }
+
         private void SyncWindowSizeToViewModel()
         {
-            if (_applyingRenderSize || _window == null || DataContext == null)
+            if (_applyingRenderSize || _syncingFromWindow || _window == null || DataContext == null)
                 return;
 
             var fsProp = DataContext.GetType().GetProperty("IsFullScreen");
@@ -343,11 +389,24 @@ namespace ZXMAK2.Host.SdlBackend
             if (w <= 0 || h <= 0)
                 return;
 
+            var scale = ResolveWindowScale();
+            var logical = new Size(
+                UnscaleDimension(w, scale),
+                UnscaleDimension(h, scale));
+
             var current = prop.GetValue(DataContext);
-            if (current is Size existing && existing.Width == w && existing.Height == h)
+            if (current is Size existing && existing.Width == logical.Width && existing.Height == logical.Height)
                 return;
 
-            prop.SetValue(DataContext, new Size(w, h));
+            _syncingFromWindow = true;
+            try
+            {
+                prop.SetValue(DataContext, logical);
+            }
+            finally
+            {
+                _syncingFromWindow = false;
+            }
         }
 
         private void PumpInvokes()
@@ -443,7 +502,7 @@ namespace ZXMAK2.Host.SdlBackend
                                 break;
                             case WindowEventID.SizeChanged:
                             case WindowEventID.Resized:
-                                SyncWindowSizeToViewModel();
+                                NoteUserResize();
                                 break;
                         }
                         break;
@@ -454,6 +513,7 @@ namespace ZXMAK2.Host.SdlBackend
             _mouse.Scan();
             _joystick.KeyboardState = _keyboard.State;
             _joystick.Scan();
+            TryCommitUserResize();
         }
 
         private bool HandleHotKey(KeyCode key, bool pressed)
@@ -675,7 +735,7 @@ namespace ZXMAK2.Host.SdlBackend
         {
             if (_icons == null || _video == null || !IsDisplayIconEnabled())
                 return;
-            _icons.Draw(_renderer, winW, winH, _video.Icons);
+            _icons.Draw(_renderer, winW, winH, _video.Icons, ResolveUiScale());
         }
 
         private void DrawDebugOsd(int winW, int winH)
@@ -684,7 +744,28 @@ namespace ZXMAK2.Host.SdlBackend
                 return;
 
             SyncDebugRunningState();
-            _debugOsd.Draw(_sdl, _renderer, winW, winH, GetDisplayRefreshRate());
+            _debugOsd.Draw(_sdl, _renderer, winW, winH, GetDisplayRefreshRate(), ResolveUiScale());
+        }
+
+        private int ResolveUiScale()
+        {
+            var runtime = _resolver.TryResolve<SdlRuntimeContext>();
+            return runtime?.ResolveUiScale() ?? TerminalBase.DefaultUiScale;
+        }
+
+        private int ResolveWindowScale()
+        {
+            var runtime = _resolver.TryResolve<SdlRuntimeContext>();
+            return runtime?.ResolveWindowScale() ?? TerminalBase.DefaultUiScale;
+        }
+
+        private static int ScaleDimension(int value, int scale)
+            => Math.Max(1, value * Math.Max(TerminalBase.DefaultUiScale, scale));
+
+        private static int UnscaleDimension(int value, int scale)
+        {
+            scale = Math.Max(TerminalBase.DefaultUiScale, scale);
+            return Math.Max(1, (value + scale / 2) / scale);
         }
 
         private bool IsDisplayIconEnabled()

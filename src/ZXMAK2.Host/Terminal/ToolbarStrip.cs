@@ -26,11 +26,11 @@ namespace ZXMAK2.Host.Terminal
         private int _pad;
         private int _lastWidth = -1;
 
-        public ToolbarStrip(ITerminal terminal, object commandParameter = null, int scale = 1)
+        public ToolbarStrip(ITerminal terminal, object commandParameter = null, int scale = TerminalBase.DefaultUiScale)
         {
             _terminal = terminal ?? throw new ArgumentNullException(nameof(terminal));
             _commandParameter = commandParameter;
-            _scale = Math.Max(1, scale);
+            _scale = Math.Max(TerminalBase.DefaultUiScale, scale);
         }
 
         public IList<MenuToolbarItem> Items { get; set; }
@@ -231,7 +231,7 @@ namespace ZXMAK2.Host.Terminal
         private void RebuildMetrics()
         {
             _pad = 4 * _scale;
-            _iconSize = 32;
+            _iconSize = 32 * _scale;
             Height = Items != null && Items.Count > 0
                 ? _iconSize + _pad * 2
                 : 0;

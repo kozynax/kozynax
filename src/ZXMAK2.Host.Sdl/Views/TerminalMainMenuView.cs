@@ -30,7 +30,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
                 var menu = MainMenuFactory.Create(viewModel, toolCommands, commandParameter);
                 terminal.PrepareForUiInput();
-                var presenter = new TerminalKozuiPresenter(terminal);
+                var presenter = new TerminalKozuiPresenter(terminal, terminal.UiScale);
                 presenter.Attach(menu.Root);
 
                 var closed = false;

@@ -6,9 +6,12 @@ namespace ZXMAK2.Host.Terminal
     /// </summary>
     public abstract class TerminalBase : ITerminal
     {
+        public const int DefaultUiScale = 1;
+ 
         public abstract bool IsAvailable { get; }
         public abstract int Width { get; }
         public abstract int Height { get; }
+        public virtual int UiScale => DefaultUiScale;
 
         public abstract void Clear(TerminalColor color);
         public abstract void FillRect(int x, int y, int width, int height, TerminalColor color);

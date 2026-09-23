@@ -24,6 +24,8 @@ namespace ZXMAK2.Host.SdlBackend
 
         public override bool HasBackdrop => _backdrop != null;
 
+        public override int UiScale => _runtime.ResolveUiScale();
+
         public override int Width
         {
             get

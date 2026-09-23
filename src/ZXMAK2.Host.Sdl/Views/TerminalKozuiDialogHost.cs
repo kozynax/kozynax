@@ -51,7 +51,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             if (options.RequireImagePainter && _runtime != null)
                 imagePainter = _runtime.CreateMenuImagePainter();
 
-            var presenter = new TerminalKozuiPresenter(_terminal)
+            var presenter = new TerminalKozuiPresenter(_terminal, _terminal.UiScale)
             {
                 ImagePainter = imagePainter,
             };

@@ -34,6 +34,9 @@ namespace ZXMAK2
 
         private static void RunSafe(string[] args)
         {
+            // WinExe: no console for GUI; attach one if there are args that force the CLI mode
+            CommandLine.EnsureConsoleIfNeeded(args);
+
             if (CommandLine.TryHandle(args, out var exitCode))
             {
                 Environment.ExitCode = exitCode;
