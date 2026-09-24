@@ -14,6 +14,7 @@ using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Presentation;
 using ZXMAK2.Host.Presentation.Interfaces;
 using RenderScaleMode = ZXMAK2.Host.Presentation.Interfaces.ScaleMode;
+using ZXMAK2.Host.SdlBackend.Platform.MacOS;
 using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Services;
 using ZXMAK2.Host.Terminal;
@@ -65,6 +66,7 @@ namespace ZXMAK2.Host.SdlBackend
         /// Stdio Kozui reads stdin instead, so the SDL window can keep driving the Spectrum.
         /// </summary>
         private bool _muteEmulatorInputDuringUi;
+        private MacNativeMenuBar _macMenuBar;
 
         public SdlMainView(IResolver resolver)
         {
@@ -180,6 +182,7 @@ namespace ZXMAK2.Host.SdlBackend
             _running = true;
             ViewOpened?.Invoke(this, EventArgs.Empty);
             HookDataContext();
+            TryInstallMacNativeMenuBar();
 
             // Interactive TTY: show the main menu in the console immediately.
             if (terminal is StdioTerminal)
@@ -276,6 +279,24 @@ namespace ZXMAK2.Host.SdlBackend
             ApplyRenderSize();
         }
 
+        private bool UseNativeMacMenuBar()
+        {
+            if (!OperatingSystem.IsMacOS())
+                return false;
+            var terminal = _resolver.TryResolve<ITerminal>();
+            return terminal is not StdioTerminal;
+        }
+
+        private void TryInstallMacNativeMenuBar()
+        {
+            if (!UseNativeMacMenuBar())
+                return;
+            if (DataContext is not MainViewModel vm)
+                return;
+            _macMenuBar?.Dispose();
+            _macMenuBar = MacNativeMenuBar.Install(vm, _commands, this, this);
+        }
+
         private void DataContext_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == null || e.PropertyName == "Title" || e.PropertyName == "IsRunning")
@@ -284,6 +305,14 @@ namespace ZXMAK2.Host.SdlBackend
                 ApplyFullScreen();
             if (!_syncingFromWindow && (e.PropertyName == null || e.PropertyName == "RenderSize"))
                 ApplyRenderSize();
+            if (e.PropertyName == null
+                || e.PropertyName == "IsRunning"
+                || e.PropertyName == "RenderScaleMode"
+                || e.PropertyName == "RenderVideoFilter"
+                || e.PropertyName == "SyncSource")
+            {
+                _macMenuBar?.Refresh();
+            }
         }
 
         private void ApplyTitle()
@@ -478,7 +507,7 @@ namespace ZXMAK2.Host.SdlBackend
                             if (TerminalUiSession.IsUiActive)
                                 break;
                             _keyboard.Reset();
-                            ShowMainMenu();
+                            ShowMainMenu(forceOverlay: true);
                             _keyboard.Reset();
                             break;
                         }
@@ -624,8 +653,10 @@ namespace ZXMAK2.Host.SdlBackend
                    || key == KeyCode.KEscape;
         }
 
-        private void ShowMainMenu()
+        private void ShowMainMenu(bool forceOverlay = false)
         {
+            if (UseNativeMacMenuBar() && !forceOverlay)
+                return;
             if (_quit)
                 return;
             var vm = DataContext as MainViewModel;
@@ -918,6 +949,8 @@ namespace ZXMAK2.Host.SdlBackend
 
         private void CleanupHost()
         {
+            _macMenuBar?.Dispose();
+            _macMenuBar = null;
             _host?.Dispose();
             _host = null;
             // HostService does not dispose video.
