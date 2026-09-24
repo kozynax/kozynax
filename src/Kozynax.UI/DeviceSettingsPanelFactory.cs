@@ -315,13 +315,13 @@ namespace Kozynax.UI
             disk.WriteProtect.Text = "WP";
             var file = new Label
             {
-                Text = TruncateFile(disk.Disk?.FileName),
+                Text = FileSelector.FormatDisplayFileName(disk.Disk?.FileName),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
             };
             disk.Disk.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == null || e.PropertyName == nameof(FileSelector.FileName))
-                    file.Text = TruncateFile(disk.Disk.FileName);
+                    file.Text = FileSelector.FormatDisplayFileName(disk.Disk.FileName);
             };
 
             var browse = new Button { Text = "..." };
@@ -339,15 +339,6 @@ namespace Kozynax.UI
             row.Add(file);
             row.Add(browse);
             return row;
-        }
-
-        private static string TruncateFile(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return "(empty)";
-            if (path.Length <= 24)
-                return path;
-            return "..." + path.Substring(path.Length - 21);
         }
 
         private static DevicePanel CreateGenericInfo(BusDeviceBase device)

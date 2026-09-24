@@ -148,7 +148,7 @@ namespace ZXMAK2.Host.WinForms.BindingTools
             BindVisible(source, target);
             BindOneWay(source, nameof(Lib.FileSelector.FileName), () =>
             {
-                var text = source.FileName ?? string.Empty;
+                var text = Lib.FileSelector.FormatDisplayFileName(source.FileName);
                 if (target.Text != text)
                     target.Text = text;
             });
