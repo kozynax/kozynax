@@ -9,12 +9,18 @@ namespace ZXMAK2.Host.SdlBackend
     /// </summary>
     public sealed unsafe class SdlRuntimeContext
     {
-        private const float BaselineDpi = 96f;
         private const int MaxUiScale = 4;
 
         public Sdl Sdl { get; }
         public Window* Window { get; set; }
         public Renderer* Renderer { get; set; }
+
+        /// <summary>Emulator 100% pixel size (View → Size 100%).</summary>
+        public int FrameWidth { get; private set; }
+
+        public int FrameHeight { get; private set; }
+
+        public float FrameRatio { get; private set; } = 1f;
 
         /// <summary>Release emulator mouse capture for Terminal UI overlays.</summary>
         public Action PrepareUiInput { get; set; }
@@ -35,68 +41,31 @@ namespace ZXMAK2.Host.SdlBackend
 
         public bool IsReady => Window != null && Renderer != null;
 
+        public void SetFrameSize(int width, int height, float ratio)
+        {
+            FrameWidth = Math.Max(0, width);
+            FrameHeight = Math.Max(0, height);
+            FrameRatio = ratio > 0 ? ratio : 1f;
+        }
+
         /// <summary>
-        /// UI chrome scale from HiDPI buffer density and/or display DPI.
+        /// Integer UI chrome scale from window size vs 100% frame size.
+        /// Below 300% stays 1× (including 200%); 300%→2×, 400%→3×, 500%+→4×.
         /// </summary>
         public int ResolveUiScale()
         {
-            return ClampScale(Math.Max(ResolveBufferScale(), ResolveDpiScale()));
-        }
-
-        /// <summary>
-        /// Multiplier for the SDL window size (startup default and View → Size presets).
-        /// Matches <see cref="ResolveUiScale"/> when the framebuffer is 1:1 with the window,
-        /// and stays 1 when SDL already maps a logical window onto a denser buffer.
-        /// </summary>
-        public int ResolveWindowScale()
-        {
-            var buffer = ResolveBufferScale();
-            var ui = ResolveUiScale();
-            if (buffer <= TerminalBase.DefaultUiScale)
-                return ui;
-            return ClampScale(ui / buffer);
-        }
-
-        private int ResolveBufferScale()
-        {
-            if (!IsReady)
+            if (!IsReady || FrameWidth <= 0 || FrameHeight <= 0)
                 return TerminalBase.DefaultUiScale;
 
-            int winW, winH, outW, outH;
+            int winW, winH;
             Sdl.GetWindowSize(Window, &winW, &winH);
-            Sdl.GetRendererOutputSize(Renderer, &outW, &outH);
-
-            var scale = TerminalBase.DefaultUiScale;
-            if (winW > 0 && outW > winW)
-                scale = Math.Max(scale, (int)Math.Round(outW / (double)winW));
-            if (winH > 0 && outH > winH)
-                scale = Math.Max(scale, (int)Math.Round(outH / (double)winH));
-            return ClampScale(scale);
-        }
-
-        private int ResolveDpiScale()
-        {
-            var displayIndex = 0;
-            if (Window != null)
-            {
-                var index = Sdl.GetWindowDisplayIndex(Window);
-                if (index >= 0)
-                    displayIndex = index;
-            }
-
-            float ddpi = 0, hdpi = 0, vdpi = 0;
-            if (Sdl.GetDisplayDPI(displayIndex, ref ddpi, ref hdpi, ref vdpi) != 0)
+            if (winW <= 0 || winH <= 0)
                 return TerminalBase.DefaultUiScale;
 
-            var dpi = Math.Max(ddpi, Math.Max(hdpi, vdpi));
-            if (dpi <= BaselineDpi * 1.25f)
-                return TerminalBase.DefaultUiScale;
-
-            return ClampScale((int)Math.Round(dpi / BaselineDpi));
-        }
-
-        private static int ClampScale(int scale)
-        {
+            var baseW = FrameWidth;
+            var baseH = Math.Max(1, (int)Math.Round(FrameHeight * FrameRatio));
+            var n = Math.Min(winW / (double)baseW, winH / (double)baseH);
+            var scale = (int)Math.Floor(n + 1e-6) - 1;
             return Math.Min(MaxUiScale, Math.Max(TerminalBase.DefaultUiScale, scale));
         }
 

@@ -102,16 +102,13 @@ namespace ZXMAK2.Host.SdlBackend
 
             var settings = _resolver.Resolve<ISettingService>();
             var runtime = _resolver.Resolve<SdlRuntimeContext>();
-            // DPI is available after SDL_Init (no renderer needed). Creating at
-            // the 1x default and growing later flashes a small window on HiDPI.
-            var createScale = runtime.ResolveWindowScale();
             _window = _sdl.CreateWindow(
                 MainWindowTitle.ProductName,
                 Sdl.WindowposCentered,
                 Sdl.WindowposCentered,
-                ScaleDimension(settings.WindowWidth, createScale),
-                ScaleDimension(settings.WindowHeight, createScale),
-                (uint)(WindowFlags.Hidden | WindowFlags.Resizable | WindowFlags.AllowHighdpi));
+                Math.Max(1, settings.WindowWidth),
+                Math.Max(1, settings.WindowHeight),
+                (uint)(WindowFlags.Hidden | WindowFlags.Resizable));
 
             if (_window == null)
                 throw new InvalidOperationException($"SDL_CreateWindow failed: {_sdl.GetErrorS()}");
@@ -277,6 +274,22 @@ namespace ZXMAK2.Host.SdlBackend
                 npc.PropertyChanged += DataContext_PropertyChanged;
             ApplyTitle();
             ApplyRenderSize();
+            SyncFrameSizeToRuntime();
+        }
+
+        private void SyncFrameSizeToRuntime()
+        {
+            var runtime = _resolver.TryResolve<SdlRuntimeContext>();
+            if (runtime == null)
+                return;
+            if (DataContext is MainViewModel vm && vm.FrameSize.Width > 0 && vm.FrameSize.Height > 0)
+            {
+                runtime.SetFrameSize(vm.FrameSize.Width, vm.FrameSize.Height, vm.FrameRatio);
+                return;
+            }
+
+            if (_frameWidth > 0 && _frameHeight > 0)
+                runtime.SetFrameSize(_frameWidth, _frameHeight, _frameRatio);
         }
 
         private bool UseNativeMacMenuBar()
@@ -305,6 +318,8 @@ namespace ZXMAK2.Host.SdlBackend
                 ApplyFullScreen();
             if (!_syncingFromWindow && (e.PropertyName == null || e.PropertyName == "RenderSize"))
                 ApplyRenderSize();
+            if (e.PropertyName == null || e.PropertyName == "FrameSize" || e.PropertyName == "FrameRatio")
+                SyncFrameSizeToRuntime();
             if (e.PropertyName == null
                 || e.PropertyName == "IsRunning"
                 || e.PropertyName == "RenderScaleMode"
@@ -360,19 +375,15 @@ namespace ZXMAK2.Host.SdlBackend
             if (!(size is Size renderSize) || renderSize.Width <= 0 || renderSize.Height <= 0)
                 return;
 
-            var scale = ResolveWindowScale();
-            var targetW = ScaleDimension(renderSize.Width, scale);
-            var targetH = ScaleDimension(renderSize.Height, scale);
-
             int curW, curH;
             _sdl.GetWindowSize(_window, &curW, &curH);
-            if (curW == targetW && curH == targetH)
+            if (curW == renderSize.Width && curH == renderSize.Height)
                 return;
 
             _applyingRenderSize = true;
             try
             {
-                _sdl.SetWindowSize(_window, targetW, targetH);
+                _sdl.SetWindowSize(_window, renderSize.Width, renderSize.Height);
             }
             finally
             {
@@ -418,10 +429,7 @@ namespace ZXMAK2.Host.SdlBackend
             if (w <= 0 || h <= 0)
                 return;
 
-            var scale = ResolveWindowScale();
-            var logical = new Size(
-                UnscaleDimension(w, scale),
-                UnscaleDimension(h, scale));
+            var logical = new Size(w, h);
 
             var current = prop.GetValue(DataContext);
             if (current is Size existing && existing.Width == logical.Width && existing.Height == logical.Height)
@@ -784,21 +792,6 @@ namespace ZXMAK2.Host.SdlBackend
             return runtime?.ResolveUiScale() ?? TerminalBase.DefaultUiScale;
         }
 
-        private int ResolveWindowScale()
-        {
-            var runtime = _resolver.TryResolve<SdlRuntimeContext>();
-            return runtime?.ResolveWindowScale() ?? TerminalBase.DefaultUiScale;
-        }
-
-        private static int ScaleDimension(int value, int scale)
-            => Math.Max(1, value * Math.Max(TerminalBase.DefaultUiScale, scale));
-
-        private static int UnscaleDimension(int value, int scale)
-        {
-            scale = Math.Max(TerminalBase.DefaultUiScale, scale);
-            return Math.Max(1, (value + scale / 2) / scale);
-        }
-
         private bool IsDisplayIconEnabled()
         {
             var settings = _resolver.TryResolve<ISettingService>();
@@ -848,6 +841,7 @@ namespace ZXMAK2.Host.SdlBackend
             _frameWidth = size.Width;
             _frameHeight = size.Height;
             _frameRatio = ratio;
+            _resolver.TryResolve<SdlRuntimeContext>()?.SetFrameSize(size.Width, size.Height, ratio);
             _debugOsd?.OnFrame(debug, size, ratio);
 
             // Copy under the video lock lifetime: TryConsumeFrame returns the

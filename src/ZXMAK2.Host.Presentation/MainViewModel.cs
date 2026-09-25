@@ -99,6 +99,7 @@ namespace ZXMAK2.Host.Presentation
         public ICommand CommandViewToolBar { get; private set; }
         public ICommand CommandViewStatusBar { get; private set; }
         public ICommand CommandViewScaleRatio { get; private set; }
+        public ICommand CommandViewScaleAuto { get; private set; }
         public ICommand CommandVmPause { get; private set; }
         public ICommand CommandVmMaxSpeed { get; private set; }
         public ICommand CommandVmWarmReset { get; private set; }
@@ -384,6 +385,7 @@ namespace ZXMAK2.Host.Presentation
             CommandViewToolBar = new CommandDelegate(CommandViewToolBar_OnExecute, CommandViewToolBar_OnCanExecute);
             CommandViewStatusBar = new CommandDelegate(CommandViewStatusBar_OnExecute, CommandViewStatusBar_OnCanExecute);
             CommandViewScaleRatio = new CommandDelegate(CommandViewScaleRatio_OnExecute, CommandViewScaleRatio_OnCanExecute);
+            CommandViewScaleAuto = new CommandDelegate(CommandViewScaleAuto_OnExecute, CommandViewScaleAuto_OnCanExecute);
             CommandVmPause = new CommandDelegate(CommandVmPause_OnExecute);
             CommandVmMaxSpeed = new CommandDelegate(CommandVmMaxSpeed_OnExecute, CommandVmMaxSpeed_OnCanExecute);
             CommandVmWarmReset = new CommandDelegate(CommandVmWarmReset_OnExecute);
@@ -407,6 +409,7 @@ namespace ZXMAK2.Host.Presentation
             CommandViewDebugInfo.Text = "Debug Info";
             CommandViewToolBar.Text = "Tool Bar";
             CommandViewStatusBar.Text = "Status Bar";
+            CommandViewScaleAuto.Text = "Autosize";
             CommandVmPause.Text = "Resume";
             CommandVmMaxSpeed.Text = "Maximum Speed";
             CommandVmWarmReset.Text = "Warm Reset    Alt+Ctrl+Ins";
@@ -437,6 +440,7 @@ namespace ZXMAK2.Host.Presentation
             CommandViewToolBar.Update();
             CommandViewStatusBar.Update();
             CommandViewScaleRatio.Update();
+            CommandViewScaleAuto.Update();
             CommandVmPause.Update();
             CommandVmMaxSpeed.Update();
             CommandVmWarmReset.Update();
@@ -704,6 +708,36 @@ namespace ZXMAK2.Host.Presentation
             RenderScaleRatio = (int)objState;
             RenderScaleMode = ScaleMode.FixedPixelSize;
             IsFullScreen = false;
+        }
+
+        private bool CommandViewScaleAuto_OnCanExecute()
+        {
+            return FrameSize.Width > 0
+                && FrameSize.Height > 0
+                && FrameRatio > 0
+                && RenderSize.Width > 0
+                && RenderSize.Height > 0;
+        }
+
+        private void CommandViewScaleAuto_OnExecute()
+        {
+            if (!CommandViewScaleAuto_OnCanExecute())
+                return;
+
+            CommandViewScaleRatio_OnExecute(FindNearestScaleRatio());
+        }
+
+        private int FindNearestScaleRatio()
+        {
+            var baseW = FrameSize.Width;
+            var baseH = Math.Max(1, (int)Math.Round(FrameSize.Height * FrameRatio));
+            var denom = (double)baseW * baseW + (double)baseH * baseH;
+            if (denom <= 0)
+                return 1;
+
+            var n = (RenderSize.Width * (double)baseW + RenderSize.Height * (double)baseH) / denom;
+            var rounded = (int)Math.Round(n, MidpointRounding.AwayFromZero);
+            return Math.Max(1, rounded);
         }
 
         private void CommandVmPause_OnExecute()
