@@ -75,6 +75,9 @@ namespace ZXMAK2.Host.WinForms.Views
             BindCommandLight(menuViewSizeX2, "CommandViewScaleRatio", 2);
             BindCommandLight(menuViewSizeX3, "CommandViewScaleRatio", 3);
             BindCommandLight(menuViewSizeX4, "CommandViewScaleRatio", 4);
+            var menuViewSizeAuto = new ToolStripMenuItem { Text = "Autosize" };
+            menuViewSize.DropDownItems.Insert(0, menuViewSizeAuto);
+            BindCommand(menuViewSizeAuto, "CommandViewScaleAuto");
             _binding.Bind(this, "RenderScaleRatio", "RenderScaleRatio");
 
             BindCommand(menuFileOpen, "CommandFileOpen", this);

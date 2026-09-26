@@ -32,6 +32,7 @@ namespace Kozynax.UI
                     Branch("View",
                         Cmd(vm.CommandViewFullScreen),
                         Branch("Size",
+                            Cmd(vm.CommandViewScaleAuto),
                             Cmd(vm.CommandViewScaleRatio, 1, "100%"),
                             Cmd(vm.CommandViewScaleRatio, 2, "200%"),
                             Cmd(vm.CommandViewScaleRatio, 3, "300%"),
