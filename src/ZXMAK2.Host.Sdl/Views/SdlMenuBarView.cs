@@ -20,14 +20,15 @@ namespace ZXMAK2.Host.SdlBackend.Views
             object commandParameter,
             Func<bool> isHostQuitting = null,
             Action underlay = null,
-            IMenuImagePainter imagePainter = null)
+            IMenuImagePainter imagePainter = null,
+            ICommand smallerUiFont = null)
         {
             if (terminal == null || !terminal.IsAvailable || viewModel == null)
                 return;
             if (isHostQuitting != null && isHostQuitting())
                 return;
 
-            var root = MainMenuFactory.BuildRoot(viewModel, toolCommands);
+            var root = MainMenuFactory.BuildRoot(viewModel, toolCommands, smallerUiFont);
             var toolbar = MenuToolbarFactory.Create(viewModel);
             terminal.PrepareForUiInput();
             try

@@ -83,6 +83,17 @@ namespace ZXMAK2.Host.SdlBackend.Services
             EnsureSection(section)[key] = value.ToString(CultureInfo.InvariantCulture);
         }
 
+        public void RemoveSection(string section)
+        {
+            if (!_sections.Remove(section))
+                return;
+            for (var i = _sectionOrder.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(_sectionOrder[i], section, StringComparison.OrdinalIgnoreCase))
+                    _sectionOrder.RemoveAt(i);
+            }
+        }
+
         private bool TryGet(string section, string key, out string value)
         {
             value = null;

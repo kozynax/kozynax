@@ -50,8 +50,11 @@ namespace ZXMAK2.Host.SdlBackend
 
         /// <summary>
         /// Integer UI chrome scale from window size vs 100% frame size.
-        /// Below 300% stays 1× (including 200%); 300%→2×, 400%→3×, 500%+→4×.
+        /// Default (<see cref="UiFontSize"/> -1): 300%→2×, 400%→3×.
+        /// Smaller font (-2): 300%→1×, 400%→2×. Never below 1×.
         /// </summary>
+        public int UiFontSize { get; set; } = -1;
+
         public int ResolveUiScale()
         {
             if (!IsReady || FrameWidth <= 0 || FrameHeight <= 0)
@@ -65,7 +68,7 @@ namespace ZXMAK2.Host.SdlBackend
             var baseW = FrameWidth;
             var baseH = Math.Max(1, (int)Math.Round(FrameHeight * FrameRatio));
             var n = Math.Min(winW / (double)baseW, winH / (double)baseH);
-            var scale = (int)Math.Floor(n + 1e-6) - 1;
+            var scale = (int)Math.Floor(n + 1e-6) + UiFontSize;
             return Math.Min(MaxUiScale, Math.Max(TerminalBase.DefaultUiScale, scale));
         }
 

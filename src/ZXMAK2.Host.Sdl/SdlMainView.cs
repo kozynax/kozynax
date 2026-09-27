@@ -15,6 +15,7 @@ using ZXMAK2.Host.Presentation;
 using ZXMAK2.Host.Presentation.Interfaces;
 using RenderScaleMode = ZXMAK2.Host.Presentation.Interfaces.ScaleMode;
 using ZXMAK2.Host.SdlBackend.Platform.MacOS;
+using ZXMAK2.Host.SdlBackend.Services;
 using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Services;
 using ZXMAK2.Host.Terminal;
@@ -67,6 +68,7 @@ namespace ZXMAK2.Host.SdlBackend
         /// </summary>
         private bool _muteEmulatorInputDuringUi;
         private MacNativeMenuBar _macMenuBar;
+        private ICommand _smallerUiFont;
 
         public SdlMainView(IResolver resolver)
         {
@@ -102,6 +104,7 @@ namespace ZXMAK2.Host.SdlBackend
 
             var settings = _resolver.Resolve<ISettingService>();
             var runtime = _resolver.Resolve<SdlRuntimeContext>();
+            BindSmallerUiFont(runtime, settings);
             _window = _sdl.CreateWindow(
                 MainWindowTitle.ProductName,
                 Sdl.WindowposCentered,
@@ -277,6 +280,26 @@ namespace ZXMAK2.Host.SdlBackend
             SyncFrameSizeToRuntime();
         }
 
+        private void BindSmallerUiFont(SdlRuntimeContext runtime, ISettingService settings)
+        {
+            if (!(settings is SdlSettingService sdlSettings))
+                return;
+
+            runtime.UiFontSize = sdlSettings.FontSize;
+            var command = new CommandDelegate(() =>
+            {
+                sdlSettings.FontSize = sdlSettings.IsSmallerUiFont
+                    ? SdlSettingService.FontSizeNormal
+                    : SdlSettingService.FontSizeSmaller;
+                runtime.UiFontSize = sdlSettings.FontSize;
+                if (_smallerUiFont != null)
+                    _smallerUiFont.Checked = sdlSettings.IsSmallerUiFont;
+            });
+            command.Text = "Smaller UI Font";
+            command.Checked = sdlSettings.IsSmallerUiFont;
+            _smallerUiFont = command;
+        }
+
         private void SyncFrameSizeToRuntime()
         {
             var runtime = _resolver.TryResolve<SdlRuntimeContext>();
@@ -307,7 +330,7 @@ namespace ZXMAK2.Host.SdlBackend
             if (DataContext is not MainViewModel vm)
                 return;
             _macMenuBar?.Dispose();
-            _macMenuBar = MacNativeMenuBar.Install(vm, _commands, this, this);
+            _macMenuBar = MacNativeMenuBar.Install(vm, _commands, this, this, _smallerUiFont);
         }
 
         private void DataContext_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -673,7 +696,7 @@ namespace ZXMAK2.Host.SdlBackend
             var terminal = _resolver.Resolve<ITerminal>();
             if (terminal is StdioTerminal)
             {
-                TerminalMainMenuView.Show(terminal, vm, _commands, this, () => _quit);
+                TerminalMainMenuView.Show(terminal, vm, _commands, this, () => _quit, _smallerUiFont);
                 return;
             }
 
@@ -696,7 +719,8 @@ namespace ZXMAK2.Host.SdlBackend
                     this,
                     () => _quit,
                     DrawEmulatorUnderlay,
-                    painter);
+                    painter,
+                    _smallerUiFont);
             }
             finally
             {

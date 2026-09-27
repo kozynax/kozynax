@@ -12,13 +12,17 @@ namespace Kozynax.UI
         public static MainMenu Create(
             MainViewModel viewModel,
             IEnumerable<ICommand> toolCommands,
-            object commandParameter)
+            object commandParameter,
+            ICommand smallerUiFont = null)
         {
-            var root = BuildRoot(viewModel, toolCommands);
+            var root = BuildRoot(viewModel, toolCommands, smallerUiFont);
             return new MainMenu(root, commandParameter);
         }
 
-        public static MenuNode BuildRoot(MainViewModel vm, IEnumerable<ICommand> toolCommands)
+        public static MenuNode BuildRoot(
+            MainViewModel vm,
+            IEnumerable<ICommand> toolCommands,
+            ICommand smallerUiFont = null)
         {
             return new MenuNode
             {
@@ -36,7 +40,9 @@ namespace Kozynax.UI
                             Cmd(vm.CommandViewScaleRatio, 1, "100%"),
                             Cmd(vm.CommandViewScaleRatio, 2, "200%"),
                             Cmd(vm.CommandViewScaleRatio, 3, "300%"),
-                            Cmd(vm.CommandViewScaleRatio, 4, "400%")),
+                            Cmd(vm.CommandViewScaleRatio, 4, "400%"),
+                            Cmd(smallerUiFont, null, null,
+                                smallerUiFont != null ? () => smallerUiFont.Checked : (System.Func<bool>)null)),
                         Branch("Scale Mode",
                             Cmd(vm.CommandViewScaleMode, ScaleMode.Stretch, "Stretch",
                                 () => vm.RenderScaleMode == ScaleMode.Stretch),
