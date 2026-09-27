@@ -57,6 +57,7 @@ namespace ZXMAK2
             else
                 resolver.RegisterType<ITerminal, SdlTerminal>(true);
             resolver.RegisterType<ISettingService, SdlSettingService>(true);
+            resolver.RegisterInstance(options);
             resolver.RegisterType<IUserMessage, SdlUserMessage>();
             resolver.RegisterType<IUserQuery, SdlUserQuery>();
             resolver.RegisterType<IUserHelp, SdlUserHelp>();

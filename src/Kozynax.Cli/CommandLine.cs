@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Kozynax.Cli.Services;
 using Kozynax.Cli.Utils;
 using ZXMAK2;
@@ -80,12 +81,14 @@ namespace Kozynax.Cli
         public static HostLaunchOptions ParseHostOptions(string[] args)
         {
             var useTui = false;
+            int? windowScaleRatio = null;
             if (args == null || args.Length == 0)
-                return new HostLaunchOptions(useTui, Array.Empty<string>());
+                return new HostLaunchOptions(useTui, Array.Empty<string>(), windowScaleRatio);
 
             var filtered = new List<string>(args.Length);
-            foreach (var arg in args)
+            for (var i = 0; i < args.Length; i++)
             {
+                var arg = args[i];
                 if (string.Equals(arg, "--tui", StringComparison.OrdinalIgnoreCase))
                 {
                     useTui = true;
@@ -93,9 +96,59 @@ namespace Kozynax.Cli
                 }
                 if (string.Equals(arg, "--console", StringComparison.OrdinalIgnoreCase))
                     continue;
+
+                string scaleValue = null;
+                if (arg.StartsWith("--scale=", StringComparison.OrdinalIgnoreCase))
+                    scaleValue = arg.Substring("--scale=".Length);
+                else if (string.Equals(arg, "--scale", StringComparison.OrdinalIgnoreCase)
+                         && i + 1 < args.Length)
+                {
+                    scaleValue = args[++i];
+                }
+
+                if (scaleValue != null)
+                {
+                    if (TryParseWindowScale(scaleValue, out var scale))
+                        windowScaleRatio = scale;
+                    continue;
+                }
+
                 filtered.Add(arg);
             }
-            return new HostLaunchOptions(useTui, filtered.ToArray());
+            return new HostLaunchOptions(useTui, filtered.ToArray(), windowScaleRatio);
+        }
+
+        /// <summary>
+        /// Parses a window scale factor. The fractional part is dropped (125% → 1).
+        /// Accepts <c>100%</c>, <c>1.25</c>, or a bare percent <c>100</c> (≥ 10).
+        /// </summary>
+        public static bool TryParseWindowScale(string text, out int scale)
+        {
+            scale = 1;
+            if (string.IsNullOrWhiteSpace(text))
+                return false;
+
+            text = text.Trim();
+            var percent = text.EndsWith("%", StringComparison.Ordinal);
+            if (percent)
+                text = text.Substring(0, text.Length - 1).Trim();
+
+            if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+                || value < 0
+                || double.IsNaN(value)
+                || double.IsInfinity(value))
+            {
+                return false;
+            }
+
+            double factor;
+            if (percent || value >= 10)
+                factor = value / 100.0;
+            else
+                factor = value;
+
+            scale = Math.Max(1, (int)Math.Truncate(factor));
+            return true;
         }
 
         private static int RunConvert(string[] args)
@@ -147,14 +200,20 @@ namespace Kozynax.Cli
 
     public sealed class HostLaunchOptions
     {
-        public HostLaunchOptions(bool useTui, string[] args)
+        public HostLaunchOptions(bool useTui, string[] args, int? windowScaleRatio = null)
         {
             UseTui = useTui;
             Args = args ?? Array.Empty<string>();
+            WindowScaleRatio = windowScaleRatio;
         }
 
         /// <summary>When true, the SDL host should use <c>StdioTerminal</c>.</summary>
         public bool UseTui { get; }
+
+        /// <summary>
+        /// Integer window scale from <c>--scale</c> (100% → 1, 250% → 2). Null if not set.
+        /// </summary>
+        public int? WindowScaleRatio { get; }
 
         /// <summary>Args with host-only flags removed, suitable for <c>ILauncher.Run</c>.</summary>
         public string[] Args { get; }

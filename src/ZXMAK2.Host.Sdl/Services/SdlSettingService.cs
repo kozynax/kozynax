@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using ZXMAK2.Engine;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Presentation.Interfaces;
 
@@ -5,8 +8,45 @@ namespace ZXMAK2.Host.SdlBackend.Services
 {
     public sealed class SdlSettingService : ISettingService
     {
-        public int WindowWidth { get; set; } = 640;
-        public int WindowHeight { get; set; } = 512;
+        private const string FileName = "kozynax.ini";
+        private const string WindowSection = "Window";
+
+        private readonly IniFile _ini;
+        private int _windowWidth = 640;
+        private int _windowHeight = 512;
+
+        public SdlSettingService()
+        {
+            _ini = new IniFile(Path.Combine(Utils.GetAppDataFolder(), FileName));
+            Load();
+        }
+
+        public int WindowWidth
+        {
+            get { return _windowWidth; }
+            set
+            {
+                var w = Math.Max(1, value);
+                if (_windowWidth == w)
+                    return;
+                _windowWidth = w;
+                Save();
+            }
+        }
+
+        public int WindowHeight
+        {
+            get { return _windowHeight; }
+            set
+            {
+                var h = Math.Max(1, value);
+                if (_windowHeight == h)
+                    return;
+                _windowHeight = h;
+                Save();
+            }
+        }
+
         public bool IsToolBarVisible { get; set; } = true;
         public bool IsStatusBarVisible { get; set; } = true;
         public SyncSource SyncSource { get; set; } = SyncSource.Sound;
@@ -16,5 +56,39 @@ namespace ZXMAK2.Host.SdlBackend.Services
         public bool RenderMimicTv { get; set; } = true;
         public bool RenderDisplayIcon { get; set; } = true;
         public bool RenderDebugInfo { get; set; }
+
+        private void Load()
+        {
+            try
+            {
+                _ini.Load();
+                var width = _ini.GetInt(WindowSection, "Width", _windowWidth);
+                var height = _ini.GetInt(WindowSection, "Height", 0);
+                if (height < 1)
+                    height = _ini.GetInt(WindowSection, "Heigth", _windowHeight);
+                if (width >= 1)
+                    _windowWidth = width;
+                if (height >= 1)
+                    _windowHeight = height;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
+        }
+
+        private void Save()
+        {
+            try
+            {
+                _ini.SetInt(WindowSection, "Width", _windowWidth);
+                _ini.SetInt(WindowSection, "Height", _windowHeight);
+                _ini.Save();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
+        }
     }
 }

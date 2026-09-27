@@ -11,6 +11,7 @@ using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Presentation.Tools;
 using ZXMAK2.Mvvm;
 using System.Drawing;
+using Kozynax.Cli;
 using Kozynax.UI;
 using ZXMAK2.Mvvm.Attributes;
 
@@ -25,6 +26,8 @@ namespace ZXMAK2.Host.Presentation
         private readonly IUserMessage m_userMessage;
         private IMainView m_view;
         private string m_startupImage;
+        private int? m_startupScaleRatio;
+        private bool m_startupScaleApplied;
         private ISynchronizeInvoke m_synchronizeInvoke;
         private VirtualMachine m_vm;
         
@@ -42,9 +45,17 @@ namespace ZXMAK2.Host.Presentation
         public void Init(IMainView view, string[] args)
         {
             m_view = view;
-            if (args.Length > 0 && File.Exists(args[0]))
+            m_startupScaleRatio = ResolveStartupScale(args);
+            if (args != null)
             {
-                m_startupImage = Path.GetFullPath(args[0]);
+                foreach (var arg in args)
+                {
+                    if (arg != null && File.Exists(arg))
+                    {
+                        m_startupImage = Path.GetFullPath(arg);
+                        break;
+                    }
+                }
             }
             
             m_view.ViewOpened += MainView_OnViewOpened;
@@ -343,6 +354,12 @@ namespace ZXMAK2.Host.Presentation
                 Title = m_vm.Spectrum.BusManager.LoadManager.OpenFileName(m_startupImage, true);
             }
             m_vm.DoRun();
+            if (m_vm.FrameSize.Width > 0 && m_vm.FrameSize.Height > 0)
+            {
+                FrameSize = m_vm.FrameSize;
+                FrameRatio = m_vm.FrameRatio;
+            }
+            TryApplyStartupScale();
             UpdateAllCommands();
         }
 
@@ -997,6 +1014,43 @@ namespace ZXMAK2.Host.Presentation
 
         #region Private
 
+        private int? ResolveStartupScale(string[] args)
+        {
+            var options = m_resolver.TryResolve<HostLaunchOptions>();
+            if (options != null && options.WindowScaleRatio.HasValue)
+                return options.WindowScaleRatio;
+
+            if (args == null)
+                return null;
+            for (var i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+                if (arg == null)
+                    continue;
+                string value = null;
+                if (arg.StartsWith("--scale=", StringComparison.OrdinalIgnoreCase))
+                    value = arg.Substring("--scale=".Length);
+                else if (string.Equals(arg, "--scale", StringComparison.OrdinalIgnoreCase)
+                         && i + 1 < args.Length)
+                {
+                    value = args[++i];
+                }
+                if (value != null && CommandLine.TryParseWindowScale(value, out var scale))
+                    return scale;
+            }
+            return null;
+        }
+
+        private void TryApplyStartupScale()
+        {
+            if (m_startupScaleApplied || !m_startupScaleRatio.HasValue)
+                return;
+            if (FrameSize.Width <= 0 || FrameSize.Height <= 0)
+                return;
+            m_startupScaleApplied = true;
+            CommandViewScaleRatio_OnExecute(m_startupScaleRatio.Value);
+        }
+
         private void VirtualMachine_OnUpdateState(object sender, EventArgs e)
         {
             ExecuteSynchronizedAsync(() => IsRunning = m_vm != null && m_vm.IsRunning);
@@ -1009,6 +1063,7 @@ namespace ZXMAK2.Host.Presentation
                 {
                     FrameSize = m_vm.FrameSize;
                     FrameRatio = m_vm.FrameRatio;
+                    TryApplyStartupScale();
                 }
                 else
                 {
