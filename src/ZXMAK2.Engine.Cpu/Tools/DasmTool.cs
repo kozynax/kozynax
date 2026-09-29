@@ -74,8 +74,6 @@ namespace ZXMAK2.Engine.Cpu.Tools
             }
             else if ((opCode == 0xDD) || (opCode == 0xFD))
             {
-            REPREFIX_DDFD:
-                opCode = _memRead((ushort)(addr + curPtr));
                 fxReg = opCode == 0xDD ? "IX" : "IY";
                 curPtr++;
                 plusMinusOffsetIndex = 1;
@@ -93,6 +91,12 @@ namespace ZXMAK2.Engine.Cpu.Tools
                         length++;  // ??? for CBh
                     }
                 }
+                else if (fxCode == 0xDD || fxCode == 0xFD)
+                {
+                    // Nested DD/FD: treat the first prefix as a lone data byte
+                    length--;
+                    return string.Format("*DB\t{0}", FormatByte(opCode));
+                }
                 else if (fxCode == 0xED)
                 {
                     curPtr++;
@@ -107,10 +111,6 @@ namespace ZXMAK2.Engine.Cpu.Tools
                     {
                         mnem = "*" + mnem; // mark undocumented as "*"...
                     }
-                }
-                else if (fxCode == 0xDD || fxCode == 0xFD)     // DD/FD, DD/FD
-                {
-                    goto REPREFIX_DDFD;
                 }
                 else
                 {

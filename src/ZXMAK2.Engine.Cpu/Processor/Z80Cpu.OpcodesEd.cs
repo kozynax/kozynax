@@ -648,6 +648,7 @@ namespace ZXMAK2.Engine.Cpu.Processor
         {
             // 14T (4, 4, 3, 3)
 
+            BINT = IFF1 != IFF2;
             IFF1 = IFF2;
             var adr = (ushort)RDMEM(regs.SP);
             Tact += 3;
