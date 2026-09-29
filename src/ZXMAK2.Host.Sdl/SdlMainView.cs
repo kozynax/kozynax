@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using Kozynax.UI.Helpers;
 using Silk.NET.SDL;
 using Thread = System.Threading.Thread;
@@ -128,6 +129,8 @@ namespace ZXMAK2.Host.SdlBackend
 
             runtime.Window = _window;
             runtime.Renderer = _renderer;
+            runtime.DropFiles.Enable();
+            runtime.DropFiles.Dropped += OnFileDropped;
             ApplyRenderSize();
 
             // Wayland compositors typically do not map a window until the first present.
@@ -492,9 +495,12 @@ namespace ZXMAK2.Host.SdlBackend
         {
             // Mute only when Terminal UI consumes the same SDL event stream (SdlTerminal).
             var muteInput = _muteEmulatorInputDuringUi && TerminalUiSession.IsUiActive;
+            var dropFiles = _resolver.TryResolve<SdlRuntimeContext>()?.DropFiles;
             Event e;
             while (_sdl.PollEvent(&e) != 0)
             {
+                if (dropFiles != null && dropFiles.TryHandle(in e))
+                    continue;
                 switch ((EventType)e.Type)
                 {
                     case EventType.Quit:
@@ -735,6 +741,56 @@ namespace ZXMAK2.Host.SdlBackend
             var command = prop?.GetValue(DataContext) as ICommand;
             if (command != null && command.CanExecute(this))
                 command.Execute(this);
+        }
+
+        private void OnFileDropped(string value, bool isFilePath)
+        {
+            // Overlay UI owns the window the way a WinForms modal disables CanFocus.
+            if (_muteEmulatorInputDuringUi && TerminalUiSession.IsUiActive)
+                return;
+
+            try
+            {
+                if (!TryCreateOpenUri(value, isFilePath, out var uri))
+                    return;
+
+                var command = DataContext?.GetType().GetProperty("CommandOpenUri")?.GetValue(DataContext) as ICommand;
+                if (command == null || !command.CanExecute(uri))
+                    return;
+
+                Activate();
+                BeginInvoke(new Action(() =>
+                {
+                    if (_quit || (_muteEmulatorInputDuringUi && TerminalUiSession.IsUiActive))
+                        return;
+                    if (command.CanExecute(uri))
+                        command.Execute(uri);
+                }), null);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
+        }
+
+        /// <summary>
+        /// WinForms file drops use <c>Path.GetFullPath</c>; link drops parse the URI as-is.
+        /// SDL may also deliver a <c>file://</c> URL in a DROPFILE event.
+        /// </summary>
+        private static bool TryCreateOpenUri(string value, bool isFilePath, out Uri uri)
+        {
+            uri = null;
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            value = value.Trim();
+            if (isFilePath && value.IndexOf("://", StringComparison.Ordinal) < 0)
+            {
+                uri = new Uri(Path.GetFullPath(value));
+                return true;
+            }
+
+            return Uri.TryCreate(value, UriKind.Absolute, out uri);
         }
 
         /// <summary>
@@ -987,6 +1043,7 @@ namespace ZXMAK2.Host.SdlBackend
             var runtime = _resolver.TryResolve<SdlRuntimeContext>();
             if (runtime != null)
             {
+                runtime.DropFiles.Dropped -= OnFileDropped;
                 runtime.Window = null;
                 runtime.Renderer = null;
             }

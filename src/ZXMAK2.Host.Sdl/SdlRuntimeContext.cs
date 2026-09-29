@@ -12,6 +12,7 @@ namespace ZXMAK2.Host.SdlBackend
         private const int MaxUiScale = 4;
 
         public Sdl Sdl { get; }
+        public SdlDropFileHandler DropFiles { get; }
         public Window* Window { get; set; }
         public Renderer* Renderer { get; set; }
 
@@ -37,6 +38,7 @@ namespace ZXMAK2.Host.SdlBackend
         public SdlRuntimeContext(Sdl sdl)
         {
             Sdl = sdl;
+            DropFiles = new SdlDropFileHandler(sdl);
         }
 
         public bool IsReady => Window != null && Renderer != null;

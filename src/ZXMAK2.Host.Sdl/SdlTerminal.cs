@@ -167,6 +167,9 @@ namespace ZXMAK2.Host.SdlBackend
             Event e;
             while (_runtime.Sdl.PollEvent(&e) != 0)
             {
+                // Always consume drop events here so SDL_free runs even while UI is up.
+                if (_runtime.DropFiles.TryHandle(in e))
+                    continue;
                 switch ((EventType)e.Type)
                 {
                     case EventType.Quit:
