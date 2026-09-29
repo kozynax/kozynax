@@ -2,6 +2,7 @@
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Cpu;
+using ZXMAK2.Mvvm;
 
 
 namespace ZXMAK2.Hardware.Scorpion
@@ -12,6 +13,8 @@ namespace ZXMAK2.Hardware.Scorpion
 
         private CpuUnit m_cpu;
         private bool m_lock = false;
+        private IBusManager _bmgr;
+        private ICommand CommandMonitor { get; set; }
 
         #endregion Fields
 
@@ -35,6 +38,9 @@ namespace ZXMAK2.Hardware.Scorpion
 
         public override void BusInit(IBusManager bmgr)
         {
+            _bmgr = bmgr;
+            CommandMonitor = new CommandDelegate(CommandMonitor_OnExecute, () => true, "MONITOR");
+            bmgr.AddCommandUi(CommandMonitor);
             m_cpu = bmgr.CPU;
             bmgr.Events.SubscribeWrIo(0xD027, 0x7FFD & 0xD027, BusWritePort7FFD);
             bmgr.Events.SubscribeWrIo(0xD027, 0x1FFD & 0xD027, BusWritePort1FFD);
@@ -43,8 +49,6 @@ namespace ZXMAK2.Hardware.Scorpion
             bmgr.Events.SubscribeRdMemM1(0xC000, 0x4000, BusReadMemRamM1);
             bmgr.Events.SubscribeRdMemM1(0xC000, 0x8000, BusReadMemRamM1);
             bmgr.Events.SubscribeRdMemM1(0xC000, 0xC000, BusReadMemRamM1);
-            bmgr.Events.SubscribeNmiRq(BusNmiRq);
-            bmgr.Events.SubscribeNmiAck(BusNmiAck);
             bmgr.Events.SubscribeReset(BusReset);
 
             // Subscribe before MemoryBase.BusInit 
@@ -171,14 +175,12 @@ namespace ZXMAK2.Hardware.Scorpion
             CMR0 = 0;
         }
 
-        private void BusNmiRq(BusCancelArgs e)
+        private void CommandMonitor_OnExecute()
         {
-            e.Cancel = (m_cpu.regs.PC & 0xC000) == 0;
-        }
-
-        private void BusNmiAck()
-        {
-            DOSEN = true;
+            _bmgr.Events.RequestNmi(50000, () =>
+            {
+                DOSEN = true;
+            }, () => (m_cpu.regs.PC & 0xC000) != 0);
         }
 
         #endregion

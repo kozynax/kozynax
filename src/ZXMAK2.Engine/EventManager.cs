@@ -9,10 +9,18 @@ namespace ZXMAK2.Engine
 {
     public sealed class EventManager : IEventManager
     {
+        private sealed class SignalRequest
+        {
+            public bool IsProcessed;
+            public Func<bool> Condition;
+            public Action OnAck;
+            public long WaitTimeOut;
+        }
+
         private readonly CpuUnit m_cpu;
         private readonly RzxHandler m_rzx;
-        private int m_pendingNmi;
-        private long m_pendingNmiLastTact;
+        private readonly object m_pendingNmiSync = new object();
+        private SignalRequest m_pendingNmi;
 
 
         private BusReadProc[] m_mapReadMemoryM1;
@@ -24,7 +32,6 @@ namespace ZXMAK2.Engine
         private Action<ushort>[] m_mapWriteNoMreq;
         private Action m_preCycle;
         private Action m_reset;
-        private BusRqProc m_nmiRq;
         private Action m_nmiAck;
         private Action m_intAck;
         private Action m_beginFrame;
@@ -63,7 +70,6 @@ namespace ZXMAK2.Engine
             m_mapReadNoMreq = new Action<ushort>[0x10000];
             m_mapWriteNoMreq = new Action<ushort>[0x10000];
             m_reset = null;
-            m_nmiRq = null;
             m_nmiAck = null;
             m_intAck = null;
             m_beginFrame = null;
@@ -90,8 +96,7 @@ namespace ZXMAK2.Engine
 
         public void PreCycle()
         {
-            // Scan pending NMI
-            m_cpu.NMI = m_pendingNmi > 0 && CheckPendingNmi();
+            m_cpu.NMI = m_pendingNmi != null && ProcessPendingNmi();
             var handlerPre = m_preCycle;
             if (handlerPre != null)
             {
@@ -161,11 +166,6 @@ namespace ZXMAK2.Engine
             m_reset += proc;
         }
 
-        public void SubscribeNmiRq(BusRqProc proc)
-        {
-            m_nmiRq += proc;
-        }
-
         public void SubscribeNmiAck(Action proc)
         {
             m_nmiAck += proc;
@@ -186,10 +186,25 @@ namespace ZXMAK2.Engine
             m_endFrame += handler;
         }
 
-        public void RequestNmi(int timeOut)
+        public void RequestNmi(int timeOut, Action onAck, Func<bool> condition)
         {
-            m_pendingNmiLastTact = m_cpu.Tact;
-            m_pendingNmi = timeOut;
+            if (m_pendingNmi != null)
+            {
+                return;
+            }
+            lock (m_pendingNmiSync)
+            {
+                if (m_pendingNmi == null)
+                {
+                    m_pendingNmi = new SignalRequest
+                    {
+                        IsProcessed = false,
+                        Condition = condition,
+                        OnAck = onAck,
+                        WaitTimeOut = m_cpu.Tact + timeOut
+                    };
+                }
+            }
         }
 
         #endregion IEventManager
@@ -295,7 +310,7 @@ namespace ZXMAK2.Engine
 
         private void RESET()
         {
-            m_pendingNmi = 0;
+            m_pendingNmi = null;
             if (m_rzx != null)
             {
                 m_rzx.Reset();
@@ -318,6 +333,29 @@ namespace ZXMAK2.Engine
 
         private void NMIACK_M1()
         {
+            if (m_pendingNmi != null)
+            {
+                SignalRequest request;
+                lock (m_pendingNmiSync)
+                {
+                    request = m_pendingNmi;
+                    if (request != null)
+                    {
+                        if (request.IsProcessed)
+                        {
+                            request = null;
+                        }
+                        else
+                        {
+                            request.IsProcessed = true;
+                        }
+                    }
+                }
+                if (request != null && request.OnAck != null)
+                {
+                    request.OnAck();
+                }
+            }
             var handler = m_nmiAck;
             if (handler != null)
             {
@@ -339,23 +377,28 @@ namespace ZXMAK2.Engine
 
         #region Private
 
-        private bool CheckPendingNmi()
+        private bool ProcessPendingNmi()
         {
-            var delta = (int)(m_cpu.Tact - m_pendingNmiLastTact);
-            m_pendingNmiLastTact = m_cpu.Tact;
-            m_pendingNmi -= delta;
-            var args = new BusCancelArgs();
-            var handlerNmiRq = m_nmiRq;
-            if (handlerNmiRq != null)
+            SignalRequest pendingNmi;
+            lock (m_pendingNmiSync)
             {
-                handlerNmiRq(args);
+                pendingNmi = m_pendingNmi;
+                if (pendingNmi == null)
+                {
+                    return false;
+                }
+                if (pendingNmi.IsProcessed)
+                {
+                    m_pendingNmi = null;
+                    return false;
+                }
+                if (pendingNmi.WaitTimeOut <= m_cpu.Tact)
+                {
+                    m_pendingNmi = null;
+                    return false;
+                }
             }
-            if (!args.Cancel)
-            {
-                m_pendingNmi = 0;
-                return true;
-            }
-            return false;
+            return pendingNmi.Condition != null ? pendingNmi.Condition() : true;
         }
 
         #endregion Private

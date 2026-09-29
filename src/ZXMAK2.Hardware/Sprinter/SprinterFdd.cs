@@ -9,6 +9,7 @@ using ZXMAK2.Model.Disk;
 using ZXMAK2.Serializers;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Resources;
+using ZXMAK2.Mvvm;
 
 
 namespace ZXMAK2.Hardware.Sprinter
@@ -23,6 +24,8 @@ namespace ZXMAK2.Hardware.Sprinter
         private CpuUnit _cpu;
         private IMemoryDevice _memory;
         private Wd1793 _wd = new Wd1793(2);
+        private IBusManager _bmgr;
+        private ICommand CommandMagic { get; set; }
 
         private byte _isBdiMode;
         
@@ -57,6 +60,9 @@ namespace ZXMAK2.Hardware.Sprinter
             _cpu = bmgr.CPU;
             _sandbox = bmgr.IsSandbox;
             _memory = bmgr.FindDevice<IMemoryDevice>();
+            _bmgr = bmgr;
+            CommandMagic = new CommandDelegate(CommandMagic_OnExecute, () => true, "MAGIC");
+            bmgr.AddCommandUi(CommandMagic);
 
             bmgr.RegisterIcon(_iconRd);
             bmgr.RegisterIcon(_iconWr);
@@ -71,8 +77,6 @@ namespace ZXMAK2.Hardware.Sprinter
             OnSubscribeIo(bmgr);
 
             bmgr.Events.SubscribeReset(BusReset);
-            bmgr.Events.SubscribeNmiRq(BusNmiRq);
-            bmgr.Events.SubscribeNmiAck(BusNmiAck);
 
             foreach (var fs in LoadManagers.First().GetSerializers())
             {
@@ -293,14 +297,12 @@ namespace ZXMAK2.Hardware.Sprinter
             _isBdiMode = 1; // Возможно не верное значение
         }
 
-        private void BusNmiRq(BusCancelArgs e)
+        private void CommandMagic_OnExecute()
         {
-            e.Cancel = DOSEN;
-        }
-
-        private void BusNmiAck()
-        {
-            DOSEN = true;
+            _bmgr.Events.RequestNmi(50000, () =>
+            {
+                DOSEN = true;
+            }, () => !DOSEN);
         }
 
         private void LogIoWrite(long tact, WD93REG reg, byte value)

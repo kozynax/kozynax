@@ -15,7 +15,6 @@ namespace ZXMAK2.Engine.Interfaces
         void SubscribeRdNoMreq(int addrMask, int maskedValue, Action<ushort> proc);
         void SubscribeWrNoMreq(int addrMask, int maskedValue, Action<ushort> proc);
         void SubscribeReset(Action proc);
-        void SubscribeNmiRq(BusRqProc proc);
         void SubscribeNmiAck(Action proc);
         void SubscribeIntAck(Action proc);
 
@@ -23,6 +22,6 @@ namespace ZXMAK2.Engine.Interfaces
         void SubscribeBeginFrame(Action handler);
         void SubscribeEndFrame(Action handler);
 
-        void RequestNmi(int timeOut);
+        void RequestNmi(int timeOut, Action onAck, Func<bool> condition);
     }
 }

@@ -2,6 +2,7 @@
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Cpu;
+using ZXMAK2.Mvvm;
 
 
 namespace ZXMAK2.Hardware.Quorum
@@ -24,6 +25,9 @@ namespace ZXMAK2.Hardware.Quorum
         #region Fields
 
         protected CpuUnit Cpu;
+        private IBusManager _bmgr;
+
+        public ICommand CommandMonitor { get; private set; }
 
         #endregion Fields
 
@@ -46,6 +50,9 @@ namespace ZXMAK2.Hardware.Quorum
 
         public override void BusInit(IBusManager bmgr)
         {
+            _bmgr = bmgr;
+            CommandMonitor = new CommandDelegate(CommandMonitor_OnExecute, () => true, "QUORUM-NMI");
+            bmgr.AddCommandUi(CommandMonitor);
             Cpu = bmgr.CPU;
 
             bmgr.Events.SubscribeWrIo(0x0099, 0x0000 & 0x0099, BusWritePort0000);
@@ -56,8 +63,6 @@ namespace ZXMAK2.Hardware.Quorum
             bmgr.Events.SubscribeRdMemM1(0xC000, 0xC000, BusReadMemRam);
 
             bmgr.Events.SubscribeReset(BusReset);
-            bmgr.Events.SubscribeNmiRq(BusNmiRq);
-            bmgr.Events.SubscribeNmiAck(BusNmiAck);
 
             // Subscribe before MemoryBase.BusInit 
             // to handle memory switches before read
@@ -99,15 +104,13 @@ namespace ZXMAK2.Hardware.Quorum
             OnCmr1Change?.Invoke();
         }
 
-        protected virtual void BusNmiRq(BusCancelArgs e)
+        private void CommandMonitor_OnExecute()
         {
-            //e.Cancel = DOSEN;
-        }
-
-        protected virtual void BusNmiAck()
-        {
-            CMR1 = 0x00;
-            OnCmr1Change?.Invoke();
+            _bmgr.Events.RequestNmi(50000, () =>
+            {
+                CMR1 = 0x00;
+                OnCmr1Change?.Invoke();
+            }, null);
         }
 
         #endregion

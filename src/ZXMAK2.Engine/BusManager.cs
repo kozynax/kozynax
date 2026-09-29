@@ -684,11 +684,9 @@ namespace ZXMAK2.Engine
                 x.BusOrder > y.BusOrder ? 1 : 0;
         }
 
-        public void RequestNmi(int timeOut)
+        public void RequestNmi(int timeOut, Action onAck, Func<bool> condition)
         {
-            m_eventManager.RequestNmi(timeOut);
-            //m_pendingNmiLastTact = m_cpu.Tact;
-            //m_pendingNmi = timeOut;
+            m_eventManager.RequestNmi(timeOut, onAck, condition);
         }
     }
 }

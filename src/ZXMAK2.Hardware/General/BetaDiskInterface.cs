@@ -1,10 +1,14 @@
 using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Mvvm;
 
 
 namespace ZXMAK2.Hardware.General
 {
     public class BetaDiskInterface : FddController
     {
+        private IBusManager _bmgr;
+        private ICommand CommandMagic { get; set; }
+
         public BetaDiskInterface()
         {
             Name = "BDI-128";
@@ -16,6 +20,9 @@ namespace ZXMAK2.Hardware.General
 
         public override void BusInit(IBusManager bmgr)
         {
+            _bmgr = bmgr;
+            CommandMagic = new CommandDelegate(CommandMagic_OnExecute, () => true, "MAGIC");
+            bmgr.AddCommandUi(CommandMagic);
             base.BusInit(bmgr);
 
             bmgr.Events.SubscribeRdMemM1(0xFF00, 0x3D00, BusReadMem3D00_M1);
@@ -24,8 +31,6 @@ namespace ZXMAK2.Hardware.General
             bmgr.Events.SubscribeRdMemM1(0xC000, 0xC000, BusReadMemRam);
 
             bmgr.Events.SubscribeReset(BusReset);
-            bmgr.Events.SubscribeNmiRq(BusNmiRq);
-            bmgr.Events.SubscribeNmiAck(BusNmiAck);
         }
 
         #endregion
@@ -54,14 +59,12 @@ namespace ZXMAK2.Hardware.General
             m_memory.DOSEN = false;
         }
 
-        protected virtual void BusNmiRq(BusCancelArgs e)
+        private void CommandMagic_OnExecute()
         {
-            e.Cancel = !m_memory.IsRom48;
-        }
-
-        protected virtual void BusNmiAck()
-        {
-            m_memory.DOSEN = true;
+            _bmgr.Events.RequestNmi(50000, () =>
+            {
+                m_memory.DOSEN = true;
+            }, () => m_memory.IsRom48);
         }
 
         #endregion

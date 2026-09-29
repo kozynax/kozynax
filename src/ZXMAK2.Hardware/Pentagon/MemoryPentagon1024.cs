@@ -3,6 +3,7 @@ using System.Xml;
 using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
+using ZXMAK2.Mvvm;
 
 
 namespace ZXMAK2.Hardware.Pentagon
@@ -13,6 +14,9 @@ namespace ZXMAK2.Hardware.Pentagon
 
         private bool m_enableShadow;
         private bool m_lock = false;
+        private IBusManager _bmgr;
+        private ICommand CommandMonitor { get; set; }
+        private ICommand CommandMagic { get; set; }
         
         #endregion Fields
 
@@ -29,6 +33,11 @@ namespace ZXMAK2.Hardware.Pentagon
 
         public override void BusInit(IBusManager bmgr)
         {
+            _bmgr = bmgr;
+            CommandMonitor = new CommandDelegate(CommandMonitor_OnExecute, () => true, "MONITOR");
+            bmgr.AddCommandUi(CommandMonitor);
+            CommandMagic = new CommandDelegate(CommandMagic_OnExecute, () => true, "MAGIC");
+            bmgr.AddCommandUi(CommandMagic);
             bmgr.Events.SubscribeWrIo(0xC002, 0x4000, writePort7FFD);
             bmgr.Events.SubscribeWrIo(0xF008, 0xE000, writePortEFF7);
 
@@ -36,8 +45,6 @@ namespace ZXMAK2.Hardware.Pentagon
             bmgr.Events.SubscribeRdMemM1(0xC000, 0x4000, BusReadMemRamM1);
             bmgr.Events.SubscribeRdMemM1(0xC000, 0x8000, BusReadMemRamM1);
             bmgr.Events.SubscribeRdMemM1(0xC000, 0xC000, BusReadMemRamM1);
-            bmgr.Events.SubscribeNmiRq(BusNmiRq);
-            bmgr.Events.SubscribeNmiAck(BusNmiAck);
             bmgr.Events.SubscribeReset(BusReset);
 
             // Subscribe before MemoryBase.BusInit 
@@ -151,25 +158,28 @@ namespace ZXMAK2.Hardware.Pentagon
             CMR1 = value;
         }
 
-        private void BusNmiRq(BusCancelArgs e)
-        {
-            // check DOSEN to avoid conflict with BDI
-            e.Cancel = EnableShadow ? DOSEN : !IsRom48;
-        }
-
-        private void BusNmiAck()
-        {
-            // enable shadow rom
-            SYSEN = EnableShadow;
-            DOSEN = !EnableShadow;
-        }
-
         private void BusReset()
         {
             CMR0 = 0;
             CMR1 = 0;
             SYSEN = EnableShadow;
             DOSEN = false;
+        }
+
+        private void CommandMonitor_OnExecute()
+        {
+            _bmgr.Events.RequestNmi(50000, () =>
+            {
+                SYSEN = true;
+            }, () => IsRom48 && EnableShadow);
+        }
+
+        private void CommandMagic_OnExecute()
+        {
+            _bmgr.Events.RequestNmi(50000, () =>
+            {
+                DOSEN = true;
+            }, () => IsRom48 && !EnableShadow);
         }
 
         #endregion

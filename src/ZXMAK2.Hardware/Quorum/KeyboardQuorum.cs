@@ -13,6 +13,7 @@ namespace ZXMAK2.Hardware.Quorum
         private long m_intState;
         private UInt64 m_extState;
         private IKeyboardState m_keyboardState;
+        private MemoryQuorum m_memory;
         protected IBusManager m_busManager;
         protected CpuUnit m_cpu;
         private bool m_nmiTriggered;
@@ -36,7 +37,7 @@ namespace ZXMAK2.Hardware.Quorum
 
         public override void BusInit(IBusManager bmgr)
         {
-            m_busManager = bmgr;
+            m_memory = bmgr.FindDevice<MemoryQuorum>();
             bmgr.Events.SubscribeRdIo(0x99, 0x98, readPortFE);
             bmgr.Events.SubscribeRdIo(0x99, 0x18, readPortKbdExt);
 
@@ -135,7 +136,10 @@ namespace ZXMAK2.Hardware.Quorum
                 if (!m_nmiTriggered)
                 {
                     m_nmiTriggered = true;
-                    m_busManager.Events.RequestNmi(50000);
+                    if (m_memory != null && m_memory.CommandMonitor != null)
+                    {
+                        m_memory.CommandMonitor.Execute(null);
+                    }
                 }
             }
             else

@@ -4,6 +4,7 @@ using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Engine.Entities;
 using ZXMAK2.Engine.Attributes;
 using ZXMAK2.Engine.Cpu;
+using ZXMAK2.Mvvm;
 
 
 namespace ZXMAK2.Hardware.Profi
@@ -16,6 +17,8 @@ namespace ZXMAK2.Hardware.Profi
         protected UlaProfi3XX m_ulaProfi;
         protected bool m_lock = false;
         protected int m_cmr1mask;
+        private IBusManager _bmgr;
+        private ICommand CommandMagic { get; set; }
         
         #endregion Fields
 
@@ -40,6 +43,9 @@ namespace ZXMAK2.Hardware.Profi
 
         public override void BusInit(IBusManager bmgr)
         {
+            _bmgr = bmgr;
+            CommandMagic = new CommandDelegate(CommandMagic_OnExecute, () => true, "MAGIC");
+            bmgr.AddCommandUi(CommandMagic);
             m_cpu = bmgr.CPU;
             m_ulaProfi = bmgr.FindDevice<UlaProfi3XX>();
 
@@ -51,8 +57,6 @@ namespace ZXMAK2.Hardware.Profi
             bmgr.Events.SubscribeRdMemM1(0xC000, 0x8000, BusReadMemRamM1);
             bmgr.Events.SubscribeRdMemM1(0xC000, 0xC000, BusReadMemRamM1);
             bmgr.Events.SubscribeReset(BusReset);
-            bmgr.Events.SubscribeNmiRq(BusNmiRq);
-            bmgr.Events.SubscribeNmiAck(BusNmiAck);
 
             // Subscribe before MemoryBase.BusInit 
             // to handle memory switches before read
@@ -194,7 +198,7 @@ namespace ZXMAK2.Hardware.Profi
 
         protected virtual void BusReadMem3D00_M1(ushort addr, ref byte value)
         {
-            if (!DOSEN && IsRom48)
+            if (!DOSEN && IsRom48 && !CPM)
             {
                 DOSEN = true;
             }
@@ -220,14 +224,12 @@ namespace ZXMAK2.Hardware.Profi
             DOSEN = false;
         }
 
-        protected virtual void BusNmiRq(BusCancelArgs e)
+        private void CommandMagic_OnExecute()
         {
-            e.Cancel = !IsRom48;
-        }
-
-        protected virtual void BusNmiAck()
-        {
-            DOSEN = true;
+            _bmgr.Events.RequestNmi(50000, () =>
+            {
+                DOSEN = true;
+            }, () => IsRom48);
         }
 
 

@@ -143,7 +143,7 @@ namespace ZXMAK2.Engine
 
         public void DebugNmi()
         {
-            BusManager.RequestNmi(BusManager.FrameTactCount * 50);
+            BusManager.RequestNmi(BusManager.FrameTactCount * 2, null, null);
             OnUpdateState();
         }
 
