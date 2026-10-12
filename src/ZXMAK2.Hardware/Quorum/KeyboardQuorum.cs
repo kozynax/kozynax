@@ -38,7 +38,7 @@ namespace ZXMAK2.Hardware.Quorum
         {
             m_busManager = bmgr;
             bmgr.Events.SubscribeRdIo(0x99, 0x98, readPortFE);
-            bmgr.Events.SubscribeRdIo(0x99, 0x18, readPort7E);
+            bmgr.Events.SubscribeRdIo(0x99, 0x18, readPortKbdExt);
 
             m_cpu = bmgr.CPU;
         }
@@ -49,7 +49,7 @@ namespace ZXMAK2.Hardware.Quorum
             value = (byte)(value | ((byte)(this.scanFEPort(addr) & 0x1f)));
         }
 
-        protected void readPort7E(ushort addr, ref byte value, ref bool handled)
+        protected void readPortKbdExt(ushort addr, ref byte value, ref bool handled)
         {
             // Quorum ROM contains modificated keyboard procedures so we MUST handle 0x7E port
             // otherwise we'll get no keyboard at all, even 0xFE one
