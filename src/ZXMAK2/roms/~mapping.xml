@@ -102,4 +102,8 @@
 	<RomSet name="Magic-05 v6.5">
 		<Page name="RAW" image="MAGIC/MAGIC6_5.ROM" />
 	</RomSet>
+	<RomSet name="QMagic-07">
+		<Page name="128" image="MAGIC/QMAGIC-128.ROM"/>
+		<Page name="SOS" image="MAGIC/QMAGIC-48.ROM"/>
+	</RomSet>
 </Mapping>
