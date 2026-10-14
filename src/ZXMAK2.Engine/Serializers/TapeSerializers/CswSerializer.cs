@@ -98,41 +98,61 @@ namespace ZXMAK2.Serializers.TapeSerializers
 
                 var ratio = tactsPerSecond / (double)cswSampleRate; // usually 3.5mhz / 44khz
 
-                var list = new List<TapeBlock>();
-                var pulses = new List<int>();
+                var list = new List<TapeBlock>
+                {
+                    new TapeBlock
+                    {
+                        Type = TapeType.COMMENT,
+                        Description = string.Format("[CSW V{0}.{1} @ {2} Hz]", version, hdr[0x18], cswSampleRate),
+                    },
+                    new TapeBlock
+                    {
+                        Type = TapeType.SET_SIGNAL_LEVEL,
+                        Tag = cswFlags & 1,
+                        Description = string.Format("[Set signal level {0}]", cswFlags & 1),
+                    },
+                };
+                if (txtInfo != string.Empty)
+                {
+                    list.Insert(1, new TapeBlock
+                    {
+                        Type = TapeType.ARCHIVE_INFO,
+                        Description = string.Format("[{0}]", txtInfo),
+                    });
+                }
+
+                var pulses = new List<TapePeriod>();
                 var blockTime = 0;
                 var blockCounter = 0;
                 foreach (var rle in rleData)
                 {
                     var len = (int)Math.Round(rle * ratio, MidpointRounding.AwayFromZero);
-                    pulses.Add(len);
+                    pulses.Add(new TapePeriod(len));
 
                     blockTime += len;
                     if (blockTime >= tactsPerSecond * 2)
                     {
-                        var tb = new TapeBlock();
-                        tb.Description = string.Format("CSW-{0:D3}", blockCounter++);
-                        tb.Periods = new List<int>(pulses);
-                        list.Add(tb);
+                        list.Add(new TapeBlock
+                        {
+                            Type = TapeType.CSW_RECORDING,
+                            Description = string.Format("CSW-{0:D3}", blockCounter++),
+                            Periods = new List<TapePeriod>(pulses),
+                        });
                         blockTime = 0;
                         pulses.Clear();
                     }
                 }
                 if (pulses.Count > 0)
                 {
-                    var tb = new TapeBlock();
-                    tb.Description = string.Format("CSW-{0:D3}", blockCounter++);
-                    tb.Periods = new List<int>(pulses);
-                    list.Add(tb);
+                    list.Add(new TapeBlock
+                    {
+                        Type = TapeType.CSW_RECORDING,
+                        Description = string.Format("CSW-{0:D3}", blockCounter++),
+                        Periods = new List<TapePeriod>(pulses),
+                    });
                 }
-
-                if (txtInfo != string.Empty)
-                {
-                    var desc = new TapeBlock();
-                    desc.Periods = new List<int>();
-                    desc.Description = string.Format("[{0}]", txtInfo);
-                    list.Insert(0, desc);
-                }
+                if (blockCounter > 0)
+                    list[list.Count - 1].Pause = 1000;
                 return list;
             }
             catch (Exception ex)

@@ -1,34 +1,42 @@
 using System;
-using System.IO;
-using System.Text;
 using System.Collections.Generic;
-
+using System.IO;
+using System.Linq;
+using System.Text;
 using ZXMAK2.Dependency;
+using ZXMAK2.Engine;
+using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Model.Tape.Entities;
 using ZXMAK2.Model.Tape.Interfaces;
-using ZXMAK2.Engine.Interfaces;
-
+using ZipLib = ICSharpCode.SharpZipLib;
 
 namespace ZXMAK2.Serializers.TapeSerializers
 {
     public class TzxSerializer : FormatSerializer
     {
-        private ITapeDevice _tape;
+        private struct SymDef
+        {
+            public byte SymbolFlags;
+            public ushort[] PulseLengths;
+        }
 
+        private struct PulseRun
+        {
+            public byte Symbol;
+            public ushort NumberOfRepetitions;
+        }
+
+        private readonly ITapeDevice _tape;
 
         public TzxSerializer(ITapeDevice tape)
         {
             _tape = tape;
         }
 
-
-        #region FormatSerializer
-
         public override string FormatGroup { get { return "Tape images"; } }
         public override string FormatName { get { return "TZX image"; } }
         public override string FormatExtension { get { return "TZX"; } }
-
         public override bool CanDeserialize { get { return true; } }
 
         public override void Deserialize(Stream stream)
@@ -36,447 +44,558 @@ namespace ZXMAK2.Serializers.TapeSerializers
             _tape.Blocks.Clear();
             var blocks = Load(stream, _tape.TactsPerSecond);
             if (blocks != null)
-            {
                 _tape.Blocks.AddRange(blocks);
-            }
             _tape.Reset();
         }
 
         private static IEnumerable<ITapeBlock> Load(Stream stream, int frequency)
         {
-            byte[] snbuf = new byte[stream.Length];
-            stream.Read(snbuf, 0, snbuf.Length);
+            if (frequency <= 0)
+                frequency = 3500000;
 
-            if (Encoding.ASCII.GetString(snbuf, 0, 7) != "ZXTape!" || snbuf[7] != 0x1A)
+            var snbuf = new byte[stream.Length];
+            stream.Read(snbuf, 0, snbuf.Length);
+            var signature = Encoding.ASCII.GetString(snbuf, 0, 7);
+            if (signature != "ZXTape!" || snbuf[7] != 0x1A)
             {
                 Locator.Resolve<IUserMessage>()
                     .Error("TZX loader\n\nInvalid TZX file, identifier not found!");
                 return null;
             }
-            //int verMajor = snbuf[0x08];
-            //int verMinor = snbuf[0x09];
 
-
-            int ptr = 0;
-            int size, pause, i, n, t, t0, j;
-            int pl, p, last;//, *end; char *p;
-            //int loop_n = 0, loop_p = 0;
-            //byte[] nm = new byte[512];
-
-            //TapeBlock tb = null;
-            //bool grouping = false;
-
-            //int newOffset;
-
-            List<TapeBlock> tzxBlocks = new List<TapeBlock>();
-            Stack<KeyValuePair<int, int>> loopStack = new Stack<KeyValuePair<int, int>>();
-            
-            while (ptr < snbuf.Length)
+            var tzxBlocks = new List<TapeBlock>();
+            var ptr = 10; // skip ZXTape! + 1A + version
+            var blockId = -1;
+            var encoding = Encoding.Default;
+            try
             {
-                int blockId = snbuf[ptr++];
-
-                TapeBlock tb = new TapeBlock();
-                tb.TzxId = blockId;
-
-                switch (blockId)
+                while (ptr < snbuf.Length)
                 {
-                    #region ID 10 - Standard Speed Data Block
-                    case 0x10: // Standard Speed Data Block
-                        size = getUInt16(snbuf, ptr + 2);
-                        pause = getUInt16(snbuf, ptr);
-                        ptr += 4;
-                        tb.Description = TapSerializer.getBlockDescription(snbuf, ptr, size);
-                        tb.Periods = TapSerializer.getBlockPeriods(snbuf, ptr, size, 2168, 667, 735, 855, 1710, (snbuf[ptr] < 4) ? 8064 : 3220, pause, 8);
-                        tb.TapData = TapSerializer.getBlockTapData(snbuf, ptr, size);
-                        ptr += size;
-                        break;
-                    #endregion
-                    
-                    #region ID 11 - Turbo Speed Data Block
-                    case 0x11: // Turbo Speed Data Block
-                        size = 0xFFFFFF & getInt32(snbuf, ptr + 0x0F);
-                        tb.Description = TapSerializer.getBlockDescription(snbuf, ptr + 0x12, size);
-                        tb.Periods = TapSerializer.getBlockPeriods(snbuf, ptr + 0x12, size,
-                           getUInt16(snbuf, ptr), getUInt16(snbuf, ptr + 2),
-                           getUInt16(snbuf, ptr + 4), getUInt16(snbuf, ptr + 6),
-                           getUInt16(snbuf, ptr + 8), getUInt16(snbuf, ptr + 10),
-                           getUInt16(snbuf, ptr + 13), snbuf[ptr + 12]);
-                        //tb.TapData = TapSerializer.getBlockTapData(snbuf, ptr+0x12, size);
-                        // todo: test used bits - ptr+12
-                        ptr += size + 0x12;
-                        break;
-                    #endregion
-
-                    #region ID 12 - Pure Tone
-                    case 0x12: // Pure Tone
-                        tb.Description = "Pure Tone";
-                        pl = getUInt16(snbuf, ptr);
-                        n = getUInt16(snbuf, ptr + 2);
-                        tb.Periods = new List<int>(n);
-                        for (i = 0; i < n; i++)
-                            tb.Periods.Add(pl);
-                        ptr += 4;
-                        break;
-                    #endregion
-                    
-                    #region ID 13 - Pulse sequence
-                    case 0x13: // Pulse sequence
-                        tb.Description = "Pulse sequence";
-                        n = snbuf[ptr++];
-                        tb.Periods = new List<int>(n);
-                        for (i = 0; i < n; i++, ptr += 2)
-                            tb.Periods.Add(getUInt16(snbuf, ptr));
-                        break;
-                    #endregion
-                    
-                    #region ID 14 - Pure Data Block
-                    case 0x14: // Pure Data Block
-                        tb.Description = "Pure Data Block";
-                        size = 0xFFFFFF & getInt32(snbuf, ptr + 7);
-                        tb.Periods = TapSerializer.getBlockPeriods(snbuf, ptr + 0x0A, size,
-                           0, 0, 0, getUInt16(snbuf, ptr),
-                           getUInt16(snbuf, ptr + 2),
-                           -1,
-                           getUInt16(snbuf, ptr + 5), snbuf[ptr + 4]);
-                        tb.TapData = TapSerializer.getBlockTapData(snbuf, ptr + 0x0A, size);
-                        ptr += size + 0x0A;
-                        break;
-                    #endregion
-                    
-                    #region ID 15 - Direct Recording
-                    case 0x15: // Direct Recording
-                        tb.Description = "Direct Recording";
-                        size = 0xFFFFFF & getInt32(snbuf, ptr + 5);
-                        t0 = getUInt16(snbuf, ptr);
-                        pause = getUInt16(snbuf, ptr + 2);
-                        last = snbuf[ptr + 4];
-                        ptr += 8;
-                        pl = 0; n = 0;
-                        for (i = 0; i < size; i++) // count number of pulses
-                            for (j = 0x80; j != 0; j >>= 1)
-                                if (((snbuf[ptr + i] ^ pl) & j) != 0)
-                                {
-                                    n++;
-                                    pl ^= -1;
-                                }
-                        t = 0; pl = 0;
-                        tb.Periods = new List<int>(n + 2);
-                        for (i = 1; i < size; i++, ptr++) // find pulses
-                            for (j = 0x80; j != 0; j >>= 1)
-                            {
-                                t += t0;
-                                if (((snbuf[ptr] ^ pl) & j) != 0)
-                                {
-                                    tb.Periods.Add(t);
-                                    pl ^= -1;
-                                    t = 0;
-                                }
-                            }
-                        // find pulses - last byte
-                        for (j = 0x80; j != (byte)(0x80 >> last); j >>= 1)
+                    blockId = snbuf[ptr++];
+                    var tb = new TapeBlock { Type = (TapeType)blockId };
+                    switch (blockId)
+                    {
+                        case 0x10:
                         {
-                            t += t0;
-                            if (((snbuf[ptr] ^ pl) & j) != 0)
-                            {
-                                tb.Periods.Add(t);
-                                pl ^= -1;
-                                t = 0;
-                            }
-                        }
-                        ptr++;
-                        tb.Periods.Add(t); // last pulse ???
-                        if (pause != 0)
-                            tb.Periods.Add(pause * 3500);
-                        break;
-                    #endregion
-
-                    //#region ID 18
-                    //case 0x18:
-                    //    tb.Description = "CSW Recording";
-                    //    break;
-                    //#endregion
-
-                    #region ID 19 - Generalized Data Block
-                    case 0x19:
-                        ptr += ReadGeneralizedDataBlock(snbuf, ptr, ref tb);
-                        break;
-                    #endregion
-
-                    #region ID 20 - Pause (silence) or 'Stop the Tape' command
-                    case 0x20: // Pause (silence) or 'Stop the Tape' command
-                        pause = getUInt16(snbuf, ptr);
-                        tb.Description = (pause != 0 ? "[Pause " + pause + " ms]" : "[Stop the Tape]");
-                        tb.Periods = new List<int>(2);
-                        ptr += 2;
-                        if (pause == 0) // at least 1ms pulse as specified in TZX 1.13
-                        {
-                            tb.Command = TapeCommand.STOP_THE_TAPE;
-                            tb.Periods.Add(3500);
-                            pause = -1;
-                        }
-                        else pause *= 3500;
-                        tb.Periods.Add(pause);
-                        break;
-                    #endregion
-
-                    #region ID 21 - Group start
-                    case 0x21: // Group start
-                        n = snbuf[ptr++];
-                        tb.Description = "[GROUP: " + Encoding.ASCII.GetString(snbuf, ptr, n) + "]";
-                        tb.Command = TapeCommand.BEGIN_GROUP;
-                        ptr += n;
-                        tb.Periods = new List<int>();
-                        //grouping = true;
-                        break;
-                    #endregion
-                    
-                    #region ID 22 - Group end
-                    case 0x22: // Group end
-                        tb.Description = "[END GROUP]";
-                        tb.Command = TapeCommand.END_GROUP;
-                        tb.Periods = new List<int>();
-                        //grouping = false;
-                        break;
-                    #endregion
-
-                    #region ID 23 - Jump to block
-                    case 0x23: // Jump to block
-                        tb.Description = "[JUMP TO BLOCK " + getUInt16(snbuf, ptr) + "]";  // 1=next block, 2=skip 1 block, -1=prev block
-                        tb.Periods = new List<int>();
-                        ptr += 2;
-                        break;
-                    #endregion
-
-                    #region ID 24 - Loop start
-                    case 0x24: // Loop start
-                        {
-                            int loop_p = tzxBlocks.Count + 1; // from next
-                            int loop_n = getUInt16(snbuf, ptr);  // TODO: as Command
-                            loopStack.Push(new KeyValuePair<int, int>(loop_p, loop_n));
-                            ptr += 2;
-                            tb.Description = string.Format("[LOOP {0}]", loop_n);
-                            tb.Periods = new List<int>();
+                            var pause = getUInt16(snbuf, ptr); ptr += 2;
+                            var size = getUInt16(snbuf, ptr); ptr += 2;
+                            EnsureAvailable(snbuf, ptr, size, size);
+                            var data = Slice(snbuf, ptr, size); ptr += size;
+                            var pilotLen = size == 0 ? 0 : ((data[0] & 0x80) == 0 ? 8063 : 3223);
+                            tb.Pause = pause;
+                            tb.Description = "STANDARD " + TapSerializer.getBlockDescription(data, 0, data.Length);
+                            tb.Periods = GetBlockPeriods(data, 0, data.Length, 2168, 667, 735, 855, 1710, pilotLen, 8);
+                            tb.TapData = data;
                             break;
                         }
-                    #endregion
-                    
-                    #region ID 25 - Loop end
-                    case 0x25: // Loop end
+                        case 0x11:
                         {
-                            tb.Description = string.Format("[END LOOP]");
-                            tb.Periods = new List<int>();
-
-                            KeyValuePair<int, int> loopInfo = loopStack.Pop();
-                            int loop_p = loopInfo.Key;
-                            int loop_n = loopInfo.Value;
-
-                            if (loop_n == 0)
-                                break;  // loop_n is repeat count, =1 for mem economy
-                            size = tzxBlocks.Count - loop_p;
-                            for (i = 0; i < loop_n; i++)
+                            var pilotT = getUInt16(snbuf, ptr); ptr += 2;
+                            var s1 = getUInt16(snbuf, ptr); ptr += 2;
+                            var s2 = getUInt16(snbuf, ptr); ptr += 2;
+                            var zeroT = getUInt16(snbuf, ptr); ptr += 2;
+                            var oneT = getUInt16(snbuf, ptr); ptr += 2;
+                            var pilotLen = getUInt16(snbuf, ptr); ptr += 2;
+                            var last = snbuf[ptr++];
+                            var pause = getUInt16(snbuf, ptr); ptr += 2;
+                            var size = getUInt24(snbuf, ptr); ptr += 3;
+                            EnsureAvailable(snbuf, ptr, size, size);
+                            var data = Slice(snbuf, ptr, size); ptr += size;
+                            tb.Pause = pause;
+                            tb.Description = "TURBO " + TapSerializer.getBlockDescription(data, 0, data.Length);
+                            tb.Periods = GetBlockPeriods(data, 0, data.Length, pilotT, s1, s2, zeroT, oneT, pilotLen, last);
+                            break;
+                        }
+                        case 0x12:
+                        {
+                            var pulse = getUInt16(snbuf, ptr); ptr += 2;
+                            var count = getUInt16(snbuf, ptr); ptr += 2;
+                            tb.Description = "PURE-TONE";
+                            tb.Periods = new List<TapePeriod>(count);
+                            for (var i = 0; i < count; i++)
+                                tb.Periods.Add(new TapePeriod(pulse));
+                            break;
+                        }
+                        case 0x13:
+                        {
+                            var count = snbuf[ptr++];
+                            tb.Description = "PULSES";
+                            tb.Periods = new List<TapePeriod>(count);
+                            for (var i = 0; i < count; i++, ptr += 2)
+                                tb.Periods.Add(new TapePeriod(getUInt16(snbuf, ptr)));
+                            break;
+                        }
+                        case 0x14:
+                        {
+                            var zeroT = getUInt16(snbuf, ptr); ptr += 2;
+                            var oneT = getUInt16(snbuf, ptr); ptr += 2;
+                            var last = snbuf[ptr++];
+                            var pause = getUInt16(snbuf, ptr); ptr += 2;
+                            var size = getUInt24(snbuf, ptr); ptr += 3;
+                            EnsureAvailable(snbuf, ptr, size, size);
+                            var data = Slice(snbuf, ptr, size); ptr += size;
+                            tb.Description = "PURE-DATA";
+                            tb.Pause = pause;
+                            tb.Periods = GetBlockPeriods(data, 0, data.Length, 0, 0, 0, zeroT, oneT, 0, last);
+                            tb.TapData = data;
+                            break;
+                        }
+                        case 0x15:
+                            ReadDirectRecording(snbuf, ref ptr, tb);
+                            break;
+                        case 0x18:
+                            ReadCswRecording(snbuf, ref ptr, tb, frequency);
+                            break;
+                        case 0x19:
+                            ReadGeneralizedDataBlock(snbuf, ref ptr, tb);
+                            break;
+                        case 0x20:
+                        {
+                            var pause = getUInt16(snbuf, ptr); ptr += 2;
+                            tb.Type = TapeType.PAUSE;
+                            tb.Pause = pause;
+                            tb.Description = pause != 0
+                                ? string.Format("PAUSE {0} ms", pause)
+                                : "PAUSE 0 ms (STOP)";
+                            break;
+                        }
+                        case 0x21:
+                        {
+                            var n = snbuf[ptr++];
+                            tb.Description = string.Format("GROUP-START \"{0}\"", Stringify(encoding.GetString(snbuf, ptr, n)));
+                            ptr += n;
+                            break;
+                        }
+                        case 0x22:
+                            tb.Description = "GROUP-END";
+                            break;
+                        case 0x23:
+                        {
+                            var offset = getInt16(snbuf, ptr); ptr += 2;
+                            tb.Tag = offset;
+                            tb.Description = string.Format("JUMP to {0}", tzxBlocks.Count + offset);
+                            break;
+                        }
+                        case 0x24:
+                        {
+                            var repeats = getUInt16(snbuf, ptr); ptr += 2;
+                            tb.Tag = repeats;
+                            tb.Description = string.Format("LOOP-START {0}x times", repeats);
+                            break;
+                        }
+                        case 0x25:
+                            tb.Description = "LOOP-END";
+                            break;
+                        case 0x26:
+                        {
+                            var count = getUInt16(snbuf, ptr); ptr += 2;
+                            var offsets = new int[count];
+                            for (var i = 0; i < count; i++, ptr += 2)
+                                offsets[i] = getInt16(snbuf, ptr);
+                            tb.TagArray = offsets;
+                            tb.Description = string.Format(
+                                "SEQUENCE-CALL {0}",
+                                string.Join(",", offsets.Select(o => (tzxBlocks.Count + o).ToString())));
+                            break;
+                        }
+                        case 0x27:
+                            tb.Description = "SEQUENCE-RET";
+                            break;
+                        case 0x28:
+                        {
+                            var length = getUInt16(snbuf, ptr); ptr += 2;
+                            var end = ptr + length;
+                            var n = snbuf[ptr++];
+                            var parts = new List<string>(n);
+                            for (var i = 0; i < n; i++)
                             {
-                                TapeBlock repeatBlock = new TapeBlock();
-                                repeatBlock.Description = string.Format("[LOOP REPEAT {0}]", i+1);
-                                repeatBlock.Periods = new List<int>();
-                                tzxBlocks.Add(repeatBlock);
-                                for (int z = 0; z < size; z++)
-                                {
-                                    tzxBlocks.Add(tzxBlocks[loop_p + z]);
-                                }
+                                var offset = getInt16(snbuf, ptr); ptr += 2;
+                                var len = snbuf[ptr++];
+                                var text = encoding.GetString(snbuf, ptr, len); ptr += len;
+                                parts.Add(string.Format("\"{0}\": {1}", text, tzxBlocks.Count + offset));
                             }
+                            if (ptr != end)
+                                throw new InvalidDataException("SELECT block size mismatch");
+                            tb.Description = "SELECT " + string.Join("; ", parts);
                             break;
                         }
-                    #endregion
-
-                    #region ID 26 - Call sequence
-                    case 0x26: // Call sequence
-                        tb.Description = "[CALL SEQUENCE]";
-                        tb.Periods = new List<int>();
-                        ptr += 2 + 2 * getUInt16(snbuf, ptr);
-                        break;
-                    #endregion
-                    
-                    #region ID 27 - Return from sequence
-                    case 0x27: // Return from sequence
-                        tb.Description = "[RETURN SEQUENCE]";
-                        tb.Periods = new List<int>();
-                        break;
-                    #endregion
-
-                    #region ID 28 - Select block
-                    case 0x28: // Select block
-                        tb.Description = "[SELECT BLOCK]";
-                        tb.Periods = new List<int>();
-                        ptr += 2 + getUInt16(snbuf, ptr);
-                        break;
-                    #endregion
-                    
-                    #region ID 2A - Stop tape if in 48K mode
-                    case 0x2A: // Stop tape if in 48K mode
-                        tb.Description = "[Stop tape if in 48K mode]";
-                        tb.Command = TapeCommand.STOP_THE_TAPE_48K;
-                        tb.Periods = new List<int>();
-                        ptr += 4 + getUInt16(snbuf, ptr);
-                        break;
-                    #endregion
-
-
-                    #region ID 30 - Text description
-                    case 0x30: // Text description
-                        n = snbuf[ptr++];
-                        tb.Description = "[" + Encoding.ASCII.GetString(snbuf, ptr, n) + "]";
-                        tb.Periods = new List<int>();
-                        ptr += n;
-                        break;
-                    #endregion
-                    
-                    #region ID 31 - Message block
-                    case 0x31: // Message block
-                        ptr++;//n = snbuf[ptr++]; // msg display time
-                        n = snbuf[ptr++];
-                        tb.Description = "[Message: " + Encoding.ASCII.GetString(snbuf, ptr, n) + "]";
-                        tb.Command = TapeCommand.SHOW_MESSAGE;
-                        tb.Periods = new List<int>();
-                        ptr += n;
-                        break;
-                    #endregion
-                    
-                    #region ID 32 - Archive info+
-                    case 0x32: // Archive info
+                        case 0x2A:
                         {
-                            tb.Description = "Archive info";
-                            tb.Periods = new List<int>();
-                            p = ptr + 3;
-                            StringBuilder builderInfo = new StringBuilder();
-                            for (i = 0; i < snbuf[ptr + 2]; i++)
-                            {
-                                string info;
-                                int infoType = snbuf[p++];
-                                switch (infoType)
-                                {
-                                    case 0: info = "Full title"; break;
-                                    case 1: info = "Publisher"; break;
-                                    case 2: info = "Author"; break;
-                                    case 3: info = "Year"; break;
-                                    case 4: info = "Language"; break;
-                                    case 5: info = "Type"; break;
-                                    case 6: info = "Price"; break;
-                                    case 7: info = "Protection"; break;
-                                    case 8: info = "Origin"; break;
-                                    case 0xFF: info = "Comment"; break;
-                                    default: info = "info"; break;
-                                }
-                                size = snbuf[p++];
-                                string infoValue = Encoding.ASCII.GetString(snbuf, p, size);
-                                p += size;
-
-                                if (infoType == 0 || infoType == 7 || infoType == 0xFF)
-                                {
-                                    if (builderInfo.Length > 0 && infoValue.Length > 0) // insert separator
-                                        builderInfo.Append("; ");
-                                    builderInfo.Append(string.Format("{0}: {1}", info, infoValue));
-                                }
-                            }
-                            tb.Description = builderInfo.ToString();
-                            ptr += 2 + getUInt16(snbuf, ptr);
+                            var extra = getInt32(snbuf, ptr); ptr += 4;
+                            ptr += extra & 0x7FFFFFFF;
+                            tb.Description = "STOP-48K";
                             break;
                         }
-                    #endregion
-                    
-                    #region ID 33 - Hardware type
-                    case 0x33: // Hardware type
-                        n = snbuf[ptr++];    // hwinfo count
-                        tb.Description = "[HARDWARE TYPE]";
-                        tb.Periods = new List<int>();
-                        ptr += 3 * n;
-                        break;
-                    #endregion
-                    
-                    #region ID 34 - Emulation info
-                    case 0x34: // Emulation info
-                        tb.Description = "[EMULATION INFO]";
-                        tb.Periods = new List<int>();
-                        ptr += 8;
-                        break;
-                    #endregion
-                    
-                    #region ID 35 - Custom info block+
-                    case 0x35: // Custom info block
+                        case 0x2B:
                         {
-                            string infoValue = Encoding.ASCII.GetString(snbuf, ptr, 0x10);
-                            tb.Description = string.Format("[CUSTOM INFO - {0}]", infoValue);
-                            ptr += 0x10;
-                            tb.Periods = new List<int>();
-                            int customLength = BitConverter.ToInt32(snbuf, ptr);
-                            ptr += 4 + customLength;
+                            var extra = getInt32(snbuf, ptr); ptr += 4;
+                            tb.Tag = snbuf[ptr];
+                            ptr += extra & 0x7FFFFFFF;
+                            tb.Description = string.Format("POLARITY {0}", tb.Tag);
                             break;
                         }
-                    #endregion
-                    
-                    #region ID 40 - Snapshot block
-                    case 0x40: // Snapshot block
-                        tb.Description = "[SNAPSHOT - ";
-                        if (snbuf[ptr] == 0)
-                            tb.Description += ".Z80]";
-                        else if (snbuf[ptr] == 1)
-                            tb.Description += ".SNA]";
-                        else
-                            tb.Description += "???]";
-                        ptr++;
-                        size = snbuf[ptr] | snbuf[ptr + 1] << 8 | snbuf[ptr + 2] << 16;
-                        ptr += 3;
-                        tb.Periods = new List<int>();
-                        ptr += size;
-                        break;
-                    #endregion
-
-                    #region ID 5A - "Glue" block+
-                    case 0x5A: // "Glue" block
-                        tb.Description = string.Format("[GLUE]");
-                        tb.Periods = new List<int>();
-                        ptr += 9;
-                        break;
-                    #endregion
-
-                    default:
-                        tb.Description = string.Format(
-                            "[NOT SUPPORTED BLOCK 0x{0:X2}]",
-                            snbuf[ptr - 1]);
-                        tb.Periods = new List<int>();
-                        ptr += getInt32(snbuf, ptr) & 0xFFFFFF;
-                        ptr += 4;
-                        break;
+                        case 0x30:
+                        {
+                            var n = snbuf[ptr++];
+                            tb.Description = string.Format("INFO \"{0}\"", Stringify(encoding.GetString(snbuf, ptr, n)));
+                            ptr += n;
+                            break;
+                        }
+                        case 0x31:
+                        {
+                            ptr++; // display time
+                            var n = snbuf[ptr++];
+                            tb.Description = string.Format("MESSAGE \"{0}\"", Stringify(encoding.GetString(snbuf, ptr, n)));
+                            ptr += n;
+                            break;
+                        }
+                        case 0x32:
+                            tb.Description = ReadArchiveInfo(snbuf, ref ptr, encoding);
+                            break;
+                        case 0x33:
+                        {
+                            var n = snbuf[ptr++];
+                            ptr += 3 * n;
+                            tb.Description = "HARDWARE-INFO";
+                            break;
+                        }
+                        case 0x34:
+                            ptr += 8;
+                            tb.Description = "EMULATION-INFO";
+                            break;
+                        case 0x35:
+                        {
+                            var ident = encoding.GetString(snbuf, ptr, 16); ptr += 16;
+                            var size = getInt32(snbuf, ptr); ptr += 4;
+                            EnsureAvailable(snbuf, ptr, size, size);
+                            ptr += size;
+                            tb.Description = string.Format("CUSTOM-INFO \"{0}\"", Stringify(ident));
+                            break;
+                        }
+                        case 0x40:
+                        {
+                            var kind = snbuf[ptr++];
+                            var size = getUInt24(snbuf, ptr); ptr += 3;
+                            ptr += size;
+                            tb.Description = kind == 0 ? "SNAPSHOT - Z80" :
+                                kind == 1 ? "SNAPSHOT - SNA" :
+                                string.Format("SNAPSHOT - ??0x{0:x2}??", kind);
+                            break;
+                        }
+                        case 0x5A:
+                            ptr += 9;
+                            continue;
+                        default:
+                        {
+                            var size = getInt32(snbuf, ptr); ptr += 4;
+                            ptr += size & 0x7FFFFFFF;
+                            tb.Description = string.Format("[NOT SUPPORTED BLOCK 0x{0:X2}]", (byte)blockId);
+                            break;
+                        }
+                    }
+                    tb.Description = string.Format("{0:D3}: #{1:x2} {2}", tzxBlocks.Count, blockId, tb.Description);
+                    tzxBlocks.Add(tb);
                 }
-                tzxBlocks.Add(tb);
             }
-            var ltb = tzxBlocks.Count > 0 ?
-                tzxBlocks[tzxBlocks.Count-1] :
-                null;
-            if (ltb != null)
+            catch (Exception ex)
             {
-                ltb.Periods.Add(frequency / 220);
-                ltb.Periods.Add(frequency / 220);
+                Logger.Error(ex);
+                var where = blockId >= 0
+                    ? string.Format("TZX@{0} ({1:D3}:#{2:x2}): {3}", ptr, tzxBlocks.Count, blockId, ex.Message)
+                    : string.Format("TZX@{0} ({1:D3}): {2}", ptr, tzxBlocks.Count, ex.Message);
+                Locator.Resolve<IUserMessage>().Warning("{0}: {1}", ex.GetType().Name, where);
             }
             return tzxBlocks;
         }
 
-        private static int ReadGeneralizedDataBlock(byte[] buf, int index, ref TapeBlock tb)
+        private static void ReadDirectRecording(byte[] snbuf, ref int ptr, TapeBlock tb)
         {
-            tb.Description = "CSW Recording";
-            int size = getInt32(buf, index); index += 4;
-            int pause = getUInt16(buf, index); index += 2;
-            int totp = getInt32(buf, index); index += 4;
-            int npp = buf[index]; index+=1;
-            int asp = buf[index]; index += 1;
-            int totd = getInt32(buf, index); index += 4;
-            int npd = buf[index]; index += 1;
-            int asd = buf[index]; index += 1;
-
-
-            return size;
+            var t0 = getUInt16(snbuf, ptr); ptr += 2;
+            var pause = getUInt16(snbuf, ptr); ptr += 2;
+            var last = snbuf[ptr++];
+            var size = getUInt24(snbuf, ptr); ptr += 3;
+            EnsureAvailable(snbuf, ptr, size, size);
+            var data = Slice(snbuf, ptr, size); ptr += size;
+            tb.Description = "DIRECT-REC";
+            tb.Pause = pause;
+            if (size == 0)
+            {
+                tb.Periods = new List<TapePeriod>();
+                return;
+            }
+            var polarity = 0;
+            var pulses = 0;
+            for (var i = 0; i < size; i++)
+            {
+                for (var bit = 0x80; bit != 0; bit >>= 1)
+                {
+                    if (((data[i] ^ polarity) & bit) != 0)
+                    {
+                        pulses++;
+                        polarity ^= -1;
+                    }
+                }
+            }
+            polarity = 0;
+            var acc = 0;
+            tb.Periods = new List<TapePeriod>(pulses + 2);
+            for (var i = 0; i < size - 1; i++)
+            {
+                for (var bit = 0x80; bit != 0; bit >>= 1)
+                {
+                    acc += t0;
+                    if (((data[i] ^ polarity) & bit) != 0)
+                    {
+                        tb.Periods.Add(new TapePeriod(acc));
+                        polarity ^= -1;
+                        acc = 0;
+                    }
+                }
+            }
+            for (var bit = 0x80; bit != (byte)(0x80 >> last); bit >>= 1)
+            {
+                acc += t0;
+                if (((data[size - 1] ^ polarity) & bit) != 0)
+                {
+                    tb.Periods.Add(new TapePeriod(acc));
+                    polarity ^= -1;
+                    acc = 0;
+                }
+            }
+            if (acc > 0)
+                tb.Periods.Add(new TapePeriod(acc));
         }
 
-        #endregion
+        private static void ReadCswRecording(byte[] snbuf, ref int ptr, TapeBlock tb, int frequency)
+        {
+            var blockLen = getInt32(snbuf, ptr); ptr += 4;
+            var end = ptr + blockLen;
+            var pause = getUInt16(snbuf, ptr); ptr += 2;
+            var sampleRate = getUInt24(snbuf, ptr); ptr += 3;
+            var compression = snbuf[ptr++];
+            var pulseCount = getInt32(snbuf, ptr); ptr += 4;
+            var dataSize = (int)((blockLen - 10) & 0x7FFFFFFF);
+            EnsureAvailable(snbuf, ptr, dataSize, dataSize);
+            var pulses = ReadCswRle(snbuf, ptr, dataSize, compression, (uint)pulseCount);
+            ptr += dataSize;
+            if (ptr != end)
+                throw new InvalidDataException("CSW block size mismatch");
+            tb.Description = "CSW";
+            tb.Pause = pause;
+            var ratio = (double)frequency / sampleRate;
+            tb.Periods = pulses
+                .Select(p => (int)Math.Round(p * ratio, MidpointRounding.AwayFromZero))
+                .Select(t => new TapePeriod(t))
+                .ToList();
+        }
 
+        private static IEnumerable<uint> ReadCswRle(byte[] buffer, int offset, int length, byte compression, uint pulseCount)
+        {
+            if (compression != 1 && compression != 2)
+                throw new NotSupportedException(string.Format("Not supported CSW compression: 0x{0:x2}", compression));
+
+            using (var memory = new MemoryStream(buffer, offset, length))
+            {
+                Stream stream = memory;
+                if (compression == 2)
+                    stream = new ZipLib.Zip.Compression.Streams.InflaterInputStream(memory);
+                var list = new List<uint>();
+                var buf = new byte[4];
+                for (var i = 0; i < pulseCount; i++)
+                {
+                    Array.Clear(buf, 0, 4);
+                    if (stream.Read(buf, 0, 1) != 1 ||
+                        (buf[0] == 0 && stream.Read(buf, 0, 4) != 4))
+                    {
+                        Logger.Warn("CSW: Unexpected end of stream @ {0}", stream.Position);
+                        break;
+                    }
+                    list.Add((uint)getInt32(buf, 0));
+                }
+                if (compression == 2)
+                    stream.Dispose();
+                return list;
+            }
+        }
+
+        private static void ReadGeneralizedDataBlock(byte[] snbuf, ref int ptr, TapeBlock tb)
+        {
+            var blockLen = getInt32(snbuf, ptr); ptr += 4;
+            var end = ptr + blockLen;
+            var pause = getUInt16(snbuf, ptr); ptr += 2;
+            var totp = getInt32(snbuf, ptr); ptr += 4;
+            var npp = snbuf[ptr++];
+            int asp = snbuf[ptr++];
+            var totd = getInt32(snbuf, ptr); ptr += 4;
+            var npd = snbuf[ptr++];
+            int asd = snbuf[ptr++];
+            if (asp == 0) asp = 256;
+            if (asd == 0) asd = 256;
+
+            var pilotSym = ReadSymDefs(snbuf, ref ptr, asp, npp);
+            var pilot = new PulseRun[totp];
+            for (var i = 0; i < totp; i++)
+            {
+                pilot[i].Symbol = snbuf[ptr++];
+                pilot[i].NumberOfRepetitions = getUInt16(snbuf, ptr); ptr += 2;
+            }
+            var dataSym = ReadSymDefs(snbuf, ref ptr, asd, npd);
+            var bitsPerSymbol = (int)Math.Ceiling(Math.Log(asd, 2.0));
+            var dataBytes = (int)Math.Ceiling((bitsPerSymbol * (double)totd) / 8.0);
+            EnsureAvailable(snbuf, ptr, dataBytes, dataBytes);
+            var data = Slice(snbuf, ptr, dataBytes); ptr += dataBytes;
+            if (ptr != end)
+                throw new InvalidDataException("GENERALIZED block size mismatch");
+
+            tb.Description = string.Format("GENERALIZED asd:{0}, nb:{1}", asd, bitsPerSymbol);
+            tb.Pause = pause;
+            tb.Periods = new List<TapePeriod>();
+            AppendSymbols(tb.Periods, pilotSym, pilot);
+            if (bitsPerSymbol == 3 || bitsPerSymbol == 5 || bitsPerSymbol == 6 || bitsPerSymbol == 7 || bitsPerSymbol > 8)
+                Logger.Warn("invalid number of data symbols: asd={0}, nb={1}", asd, bitsPerSymbol);
+            if (bitsPerSymbol <= 0)
+                return;
+            var mask = (uint)((1 << bitsPerSymbol) - 1);
+            for (var i = 0; i < data.Length; i++)
+            {
+                var b = data[i];
+                var steps = 8 / bitsPerSymbol;
+                for (var s = 0; s < steps; s++)
+                {
+                    b = (byte)((b << bitsPerSymbol) | (b >> (8 - bitsPerSymbol)));
+                    var symbol = b & mask;
+                    AppendSymbol(tb.Periods, dataSym[symbol]);
+                }
+            }
+        }
+
+        private static SymDef[] ReadSymDefs(byte[] snbuf, ref int ptr, int count, int pulses)
+        {
+            var defs = new SymDef[count];
+            for (var i = 0; i < count; i++)
+            {
+                defs[i].SymbolFlags = snbuf[ptr++];
+                defs[i].PulseLengths = new ushort[pulses];
+                for (var p = 0; p < pulses; p++, ptr += 2)
+                    defs[i].PulseLengths[p] = getUInt16(snbuf, ptr);
+            }
+            return defs;
+        }
+
+        private static void AppendSymbols(List<TapePeriod> dest, SymDef[] table, PulseRun[] runs)
+        {
+            foreach (var run in runs)
+            {
+                for (var r = 0; r < run.NumberOfRepetitions; r++)
+                    AppendSymbol(dest, table[run.Symbol]);
+            }
+        }
+
+        private static void AppendSymbol(List<TapePeriod> dest, SymDef def)
+        {
+            for (var i = 0; i < def.PulseLengths.Length && def.PulseLengths[i] != 0; i++)
+            {
+                var flags = (TapeFlags)0;
+                if (i == 0)
+                {
+                    switch (def.SymbolFlags & 3)
+                    {
+                        case 1: flags = TapeFlags.NO_EDGE; break;
+                        case 2: flags = TapeFlags.LEVEL_LOW; break;
+                        case 3: flags = TapeFlags.LEVEL_HIGH; break;
+                    }
+                }
+                dest.Add(new TapePeriod(def.PulseLengths[i], flags));
+            }
+        }
+
+        private static string ReadArchiveInfo(byte[] snbuf, ref int ptr, Encoding encoding)
+        {
+            var length = getUInt16(snbuf, ptr); ptr += 2;
+            var end = ptr + length;
+            var n = snbuf[ptr++];
+            var parts = new List<string>();
+            for (var i = 0; i < n; i++)
+            {
+                var type = snbuf[ptr++];
+                var len = snbuf[ptr++];
+                var value = encoding.GetString(snbuf, ptr, len); ptr += len;
+                if (type == 0 || type == 7 || type == 0xFF)
+                    parts.Add(string.Format("{0}: {1}", ArchiveType(type), Stringify(value)));
+            }
+            if (ptr != end)
+                throw new InvalidDataException("ARCHIVE-INFO size mismatch");
+            return "ARCHIVE-INFO " + string.Join(";", parts);
+        }
+
+        private static string ArchiveType(byte type)
+        {
+            switch (type)
+            {
+                case 0: return "Full title";
+                case 1: return "Publisher";
+                case 2: return "Author";
+                case 3: return "Year";
+                case 4: return "Language";
+                case 5: return "Type";
+                case 6: return "Price";
+                case 7: return "Protection";
+                case 8: return "Origin";
+                case 0xFF: return "Comment";
+                default: return "Unknown";
+            }
+        }
+
+        public static List<TapePeriod> GetBlockPeriods(
+            byte[] block, int indexOffset, int blockLength,
+            int pilotT, int s1T, int s2T, int zeroT, int oneT,
+            int pilotLen, int last)
+        {
+            var periods = new List<TapePeriod>();
+            if (pilotLen > 0)
+            {
+                for (var i = 0; i < pilotLen; i++)
+                    periods.Add(new TapePeriod(pilotT));
+                periods.Add(new TapePeriod(s1T));
+                periods.Add(new TapePeriod(s2T));
+            }
+            if (blockLength <= 0)
+                return periods;
+            var src = indexOffset;
+            for (var i = 0; i < blockLength - 1; i++, src++)
+            {
+                for (var bit = 0x80; bit != 0; bit >>= 1)
+                    AddBit(periods, (block[src] & bit) != 0, zeroT, oneT);
+            }
+            for (var bit = 0x80; bit != (byte)(0x80 >> last); bit >>= 1)
+                AddBit(periods, (block[src] & bit) != 0, zeroT, oneT);
+            return periods;
+        }
+
+        private static void AddBit(List<TapePeriod> periods, bool one, int zeroT, int oneT)
+        {
+            var tstates = one ? oneT : zeroT;
+            var flags = one ? TapeFlags.LENGTH_LONG : TapeFlags.LENGTH_SHORT;
+            periods.Add(new TapePeriod(tstates, flags));
+            periods.Add(new TapePeriod(tstates, flags));
+        }
+
+        private static byte[] Slice(byte[] src, int offset, int size)
+        {
+            var data = new byte[size];
+            Array.Copy(src, offset, data, 0, size);
+            return data;
+        }
+
+        private static void EnsureAvailable(byte[] buf, int ptr, int size, int reported)
+        {
+            if (size < 0 || ptr + size > buf.Length)
+                throw new InvalidDataException(string.Format("unexpected size={0} (available {1})", reported, buf.Length - ptr));
+        }
+
+        private static string Stringify(string text)
+        {
+            return text.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+        }
     }
 }

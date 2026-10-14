@@ -46,6 +46,16 @@ namespace ZXMAK2.Serializers
 			return (ushort)(buf[offsetIndex] | buf[offsetIndex + 1] << 8);
 		}
 
+		protected static short getInt16(byte[] buf, int offsetIndex)
+		{
+			return (short)(buf[offsetIndex] | buf[offsetIndex + 1] << 8);
+		}
+
+		protected static int getUInt24(byte[] buf, int offsetIndex)
+		{
+			return buf[offsetIndex] | buf[offsetIndex + 1] << 8 | buf[offsetIndex + 2] << 16;
+		}
+
 		protected static int getInt32(byte[] buf, int offsetIndex)
 		{
 			return buf[offsetIndex] | buf[offsetIndex + 1] << 8 | buf[offsetIndex + 2] << 16 | buf[offsetIndex + 3] << 24;
