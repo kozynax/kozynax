@@ -13,10 +13,15 @@ namespace ZXMAK2.Hardware.Quorum
         private bool m_lock;
         #endregion
 
-        public MemoryQuorum256(int ramPageCount)
-            : base("Quorum128", 4, ramPageCount) // Quorum 256 does not use a separate ROM set
+        public MemoryQuorum256(string romSetName, int ramPageCount)
+            : base(romSetName, 4, ramPageCount)
         {
             Name = $"QUORUM {ramPageCount * 16}K";
+        }
+
+        public MemoryQuorum256(int ramPageCount)
+            : this("Quorum128", ramPageCount) // Quorum 256 does not use a separate ROM set
+        {
         }
 
         public MemoryQuorum256() : this(16)

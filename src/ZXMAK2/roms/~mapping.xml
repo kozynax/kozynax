@@ -61,6 +61,9 @@
 	<RomSet name="Quorum128">
 		<Page name="RAW" image="QUORUM/QU7V42.rom" />
 	</RomSet>
+	<RomSet name="Quorum1024Plus">
+		<Page name="RAW" image="QUORUM/quorum-1024plus.rom" />
+	</RomSet>
 	<RomSet name="Quorum64">
 		<Page name="RAW" image="QUORUM/QU4I1993.ROM" />
 	</RomSet>

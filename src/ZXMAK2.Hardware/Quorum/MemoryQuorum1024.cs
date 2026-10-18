@@ -6,8 +6,9 @@ namespace ZXMAK2.Hardware.Quorum
 	{
 		private UlaQuorum1024Plus _ula;
 
-		public MemoryQuorum1024() : base(64)
+		public MemoryQuorum1024() : base("Quorum1024Plus", 64)
 		{
+			Name = "QUORUM 1024+";
 			OnCmr1Change += OnOnCmr1Change;
 		}
 
