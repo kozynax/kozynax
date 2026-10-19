@@ -22,16 +22,27 @@ namespace ZXMAK2.Hardware.Quorum
 		{
 			base.BusInit(bmgr);
 			_ula = bmgr.FindDevice<UlaQuorum1024Plus>();
+
+			// Fearure or Quorum-1024+ only: port #00 is readable
+			bmgr.Events.SubscribeRdIo(0x0099, 0x0000 & 0x0099, BusReadPort0000);
+		}
+
+		private void BusReadPort0000(ushort addr, ref byte value, ref bool handled)
+		{
+			value = CMR1;
+			handled = true;
 		}
 
 		protected override int GetRamPage()
 		{
 			var ramPage = CMR0 & 7;
 			ramPage |= ((CMR0 & 0xE0) >> 2);
-			if ((CMR0 & Q_BLK_128) != 0)
-				ramPage &= 0x07; // 128 kb mode
+
+			// Port #00 D4: 0 = 128K, 1 = 1024K
+			if ((CMR1 & Q_BLK_128) == 0)
+				ramPage &= 0x07;
 			else
-				ramPage &= 0x3F; // Use all 1024 Kb
+				ramPage &= 0x3F;
 			return ramPage;
 		}
 	}
