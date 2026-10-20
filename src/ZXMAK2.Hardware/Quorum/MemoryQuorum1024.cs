@@ -37,9 +37,8 @@ namespace ZXMAK2.Hardware.Quorum
 		{
 			var ramPage = CMR0 & 7;
 			ramPage |= ((CMR0 & 0xE0) >> 2);
-
-			// Port #00 D4: 0 = 128K, 1 = 1024K
-			if ((CMR1 & Q_BLK_128) == 0)
+			// Port #00 D4: 0 = 1024K, 1 = 128K-only
+			if ((CMR1 & Q_BLK_128) != 0)
 				ramPage &= 0x07;
 			else
 				ramPage &= 0x3F;
