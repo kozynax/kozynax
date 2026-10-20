@@ -71,7 +71,7 @@ namespace ZXMAK2.Hardware.Quorum
             {
                 romPage = GetRomIndex(RomId.ROM_SYS);
             }
-            if (DOSEN)      // trdos or 48/128
+            else if (DOSEN)
             {
                 romPage = GetRomIndex(RomId.ROM_DOS);
                 isNoRom = !isDosRom;
