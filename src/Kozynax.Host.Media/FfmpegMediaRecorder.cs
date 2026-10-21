@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -30,6 +31,8 @@ namespace Kozynax.Host.Media
 
         private int _width;
         private int _height;
+        /// <summary>FrameVideo.Ratio: display height = pixel height × ratio.</summary>
+        private float _pixelHeightRatio = 1f;
         private Process _ffmpeg;
         private Stream _videoStdin;
         private FileStream _audioStream;
@@ -102,6 +105,7 @@ namespace Kozynax.Host.Media
                 {
                     Width = width,
                     Height = height,
+                    Ratio = videoFrame.Ratio > 0.01f ? videoFrame.Ratio : 1f,
                     Image = image,
                     Audio = audio,
                 });
@@ -169,7 +173,7 @@ namespace Kozynax.Host.Media
 
         private void WriteFrame(MediaFrame frame)
         {
-            EnsureStarted(frame.Width, frame.Height);
+            EnsureStarted(frame.Width, frame.Height, frame.Ratio);
 
             if (frame.Width != _width || frame.Height != _height)
             {
@@ -188,7 +192,7 @@ namespace Kozynax.Host.Media
             _audioStream.Write(audioBytes, 0, audioBytes.Length);
         }
 
-        private void EnsureStarted(int width, int height)
+        private void EnsureStarted(int width, int height, float ratio)
         {
             if (_ffmpeg != null)
                 return;
@@ -206,6 +210,8 @@ namespace Kozynax.Host.Media
 
                 if (_width <= 0 || _height <= 0)
                     throw new InvalidOperationException("Invalid video frame size.");
+
+                _pixelHeightRatio = ratio > 0.01f ? ratio : 1f;
 
                 // yuv420p requires even dimensions.
                 if ((_width & 1) != 0)
@@ -228,6 +234,9 @@ namespace Kozynax.Host.Media
                 args.Append("-framerate ").Append(FrameRate).Append(' ');
                 args.Append("-i pipe:0 ");
                 args.Append("-an ");
+                // Keep pixel buffer as-is; tell players to stretch via sample aspect ratio.
+                // FrameVideo.Ratio multiplies display height (Profi 640x256, ratio 2 → 640x512).
+                AppendAspectArgs(args, _width, _height, _pixelHeightRatio);
                 args.Append("-c:v libx264 -preset ultrafast -crf 18 -pix_fmt yuv420p ");
                 QuotePath(args, _tempVideoPath);
 
@@ -434,10 +443,74 @@ namespace Kozynax.Host.Media
             }
         }
 
+        /// <summary>
+        /// Embeds display aspect via SAR so 640x256@ratio=2 plays as 640x512 without scaling pixels.
+        /// </summary>
+        private static void AppendAspectArgs(StringBuilder args, int width, int height, float pixelHeightRatio)
+        {
+            if (pixelHeightRatio <= 0.01f)
+                pixelHeightRatio = 1f;
+
+            // SAR = 1 : ratio  (each sample is 'ratio' times taller than a square pixel)
+            int sarNum;
+            int sarDen;
+            if (TryFloatToFraction(1f, pixelHeightRatio, out sarNum, out sarDen))
+                args.Append("-vf setsar=").Append(sarNum).Append('/').Append(sarDen).Append(' ');
+            else
+                args.Append("-vf setsar=")
+                    .Append((1.0 / pixelHeightRatio).ToString(CultureInfo.InvariantCulture))
+                    .Append(' ');
+
+            // Also set container/display aspect (width : height×ratio) for picky players.
+            var displayHeight = Math.Max(1, (int)Math.Round(height * (double)pixelHeightRatio));
+            args.Append("-aspect ").Append(width).Append(':').Append(displayHeight).Append(' ');
+        }
+
+        private static bool TryFloatToFraction(float num, float den, out int outNum, out int outDen)
+        {
+            outNum = 1;
+            outDen = 1;
+            if (num <= 0 || den <= 0)
+                return false;
+
+            // Exact integers (1 and 2 cover Spectrum / Profi / ATM modes in this codebase).
+            var n = (int)Math.Round(num);
+            var d = (int)Math.Round(den);
+            if (Math.Abs(num - n) < 0.001f && Math.Abs(den - d) < 0.001f && n > 0 && d > 0)
+            {
+                var g = Gcd(n, d);
+                outNum = n / g;
+                outDen = d / g;
+                return true;
+            }
+
+            // Fixed-point fallback to thousandths.
+            n = Math.Max(1, (int)Math.Round(num * 1000f));
+            d = Math.Max(1, (int)Math.Round(den * 1000f));
+            var g2 = Gcd(n, d);
+            outNum = n / g2;
+            outDen = d / g2;
+            return true;
+        }
+
+        private static int Gcd(int a, int b)
+        {
+            a = Math.Abs(a);
+            b = Math.Abs(b);
+            while (b != 0)
+            {
+                var t = a % b;
+                a = b;
+                b = t;
+            }
+            return a == 0 ? 1 : a;
+        }
+
         private sealed class MediaFrame
         {
             public int Width;
             public int Height;
+            public float Ratio;
             public int[] Image;
             public uint[] Audio;
         }
