@@ -7,6 +7,7 @@ using ZXMAK2.Engine;
 using ZXMAK2.Engine.Interfaces;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Entities;
+using Kozynax.Host.Media;
 using ZXMAK2.Host.Presentation.Interfaces;
 using ZXMAK2.Host.Presentation.Tools;
 using ZXMAK2.Mvvm;
@@ -123,6 +124,7 @@ namespace ZXMAK2.Host.Presentation
         public ICommand CommandTapePause { get; private set; }
         public ICommand CommandQuickLoad { get; private set; }
         public ICommand CommandOpenUri { get; private set; }
+        public ICommand CommandRecord { get; private set; }
 
         #endregion Commands
 
@@ -415,6 +417,7 @@ namespace ZXMAK2.Host.Presentation
             CommandTapePause = new CommandDelegate(CommandTapePause_OnExecute, CommandTapePause_CanExecute);
             CommandQuickLoad = new CommandDelegate(CommandQuickLoad_OnExecute, CommandQuickLoad_OnCanExecute);
             CommandOpenUri = new CommandDelegate(CommandOpenUri_OnExecute, CommandOpenUri_OnCanExecute);
+            CommandRecord = new CommandDelegate(CommandRecord_OnExecute, CommandRecord_OnCanExecute);
 
             CommandFileOpen.Text = "Open...";
             CommandFileSave.Text = "Save As...";
@@ -439,6 +442,7 @@ namespace ZXMAK2.Host.Presentation
             CommandTapePause.Text = "Pause Tape";
             CommandQuickLoad.Text = "Quick Boot";
             CommandOpenUri.Text = "Open Url";
+            CommandRecord.Text = "Record Video";
         }
 
         private void UpdateAllCommands()
@@ -470,6 +474,7 @@ namespace ZXMAK2.Host.Presentation
             CommandTapePause.Update();
             CommandQuickLoad.Update();
             CommandOpenUri.Update();
+            CommandRecord.Update();
         }
 
         private ICommand CreateViewHolderCommand<T>()
@@ -913,6 +918,85 @@ namespace ZXMAK2.Host.Presentation
             else
             {
                 tape.Play();
+            }
+        }
+
+        private bool CommandRecord_OnCanExecute(object objState)
+        {
+            return (objState is bool? || objState == null) &&
+                m_view != null &&
+                m_view.Host != null &&
+                m_vm != null;
+        }
+
+        private void CommandRecord_OnExecute(object objState)
+        {
+            if (!CommandRecord_OnCanExecute(objState))
+                return;
+
+            var state = objState as bool?;
+            var wantRecord = state ?? !CommandRecord.Checked;
+            if (wantRecord == CommandRecord.Checked)
+                return;
+
+            if (wantRecord)
+                StartVideoRecording();
+            else
+                StopVideoRecording();
+        }
+
+        private void StartVideoRecording()
+        {
+            try
+            {
+                if (FfmpegLocator.Find() == null)
+                {
+                    m_userMessage.Error(
+                        "ffmpeg was not found. Install ffmpeg and ensure it is on PATH.");
+                    return;
+                }
+
+                var path = VideoRecordingPaths.CreateDefaultOutputPath();
+                var recorder = new FfmpegMediaRecorder(
+                    path,
+                    FrameSize.Width,
+                    FrameSize.Height,
+                    m_view.Host.SampleRate);
+                m_view.Host.MediaRecorder = recorder;
+                CommandRecord.Checked = true;
+                CommandRecord.Text = "Stop Recording";
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                m_userMessage.Error(ex);
+                CommandRecord.Checked = false;
+                CommandRecord.Text = "Record Video";
+            }
+        }
+
+        private void StopVideoRecording()
+        {
+            var host = m_view != null ? m_view.Host : null;
+            var recorder = host != null ? host.MediaRecorder as FfmpegMediaRecorder : null;
+            try
+            {
+                // Setter disposes the previous recorder (joins ffmpeg / mux).
+                if (host != null)
+                    host.MediaRecorder = null;
+
+                if (recorder != null && recorder.Error != null)
+                    m_userMessage.Error(recorder.Error);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+                m_userMessage.Error(ex);
+            }
+            finally
+            {
+                CommandRecord.Checked = false;
+                CommandRecord.Text = "Record Video";
             }
         }
 

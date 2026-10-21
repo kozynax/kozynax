@@ -15,6 +15,7 @@ namespace ZXMAK2.Resources
         public static Image EmuFullScreen_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuFullScreen_32x32.png");
         public static Image EmuQuickLoad_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuQuickLoad_32x32.png");
         public static Image EmuSettings_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuSettings_32x32.png");
+        public static Image EmuRecord_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuRecord_32x32.png");
         public static Image EmuWindowed_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuWindowed_32x32.png");
         public static Image EmuPause_32x32 => LoadImage("ZXMAK2.Resources.Icons.EmuPause_32x32.png");
         public static Image DebuggerClose => LoadImage("ZXMAK2.Resources.Icons.DebuggerClose.png");
@@ -52,6 +53,7 @@ namespace ZXMAK2.Resources
         public static Stream EmuWindowedPng => OpenStream("ZXMAK2.Resources.Icons.EmuWindowed_32x32.png");
         public static Stream EmuQuickLoadPng => OpenStream("ZXMAK2.Resources.Icons.EmuQuickLoad_32x32.png");
         public static Stream EmuSettingsPng => OpenStream("ZXMAK2.Resources.Icons.EmuSettings_32x32.png");
+        public static Stream EmuRecordPng => OpenStream("ZXMAK2.Resources.Icons.EmuRecord_32x32.png");
         public static Image KeyboardHelp => LoadImage("ZXMAK2.Resources.Icons.KeyboardHelp.png");
         public static Icon IconDebugger => LoadIcon("ZXMAK2.Resources.Icons.IconDebugger.ico");
         public static Icon IconApp => new Icon(OpenStream("ZXMAK2.Resources.Icons.IconApp.ico"), 64, 64);

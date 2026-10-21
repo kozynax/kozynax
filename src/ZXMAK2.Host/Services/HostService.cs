@@ -92,7 +92,15 @@ namespace ZXMAK2.Host.Services
         public IMediaRecorder MediaRecorder 
         {
             get { return m_mediaRecorder; }
-            set { m_mediaRecorder = value; }
+            set
+            {
+                var previous = m_mediaRecorder;
+                m_mediaRecorder = value;
+                if (previous != null && !ReferenceEquals(previous, value))
+                {
+                    previous.Dispose();
+                }
+            }
         }
 
 

@@ -94,6 +94,7 @@
             this.tbrButtonMaxSpeed = new System.Windows.Forms.ToolStripButton();
             this.tbrButtonWarmReset = new System.Windows.Forms.ToolStripButton();
             this.tbrButtonColdReset = new System.Windows.Forms.ToolStripButton();
+            this.tbrButtonRecord = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.tbrButtonFullScreen = new System.Windows.Forms.ToolStripButton();
             this.tbrButtonQuickLoad = new System.Windows.Forms.ToolStripButton();
@@ -482,6 +483,7 @@
             this.tbrButtonMaxSpeed,
             this.tbrButtonWarmReset,
             this.tbrButtonColdReset,
+            this.tbrButtonRecord,
             this.toolStripSeparator1,
             this.tbrButtonFullScreen,
             this.tbrButtonQuickLoad,
@@ -547,6 +549,16 @@
             this.tbrButtonColdReset.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbrButtonColdReset.Name = "tbrButtonColdReset";
             this.tbrButtonColdReset.Size = new System.Drawing.Size(36, 36);
+            // 
+            // tbrButtonRecord
+            // 
+            this.tbrButtonRecord.CheckOnClick = true;
+            this.tbrButtonRecord.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tbrButtonRecord.Image = global::ZXMAK2.Resources.ResourceImages.EmuRecord_32x32;
+            this.tbrButtonRecord.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbrButtonRecord.Name = "tbrButtonRecord";
+            this.tbrButtonRecord.Size = new System.Drawing.Size(36, 36);
+            this.tbrButtonRecord.ToolTipText = "Record Video";
             // 
             // toolStripSeparator1
             // 
@@ -673,6 +685,7 @@
         private System.Windows.Forms.ToolStripMenuItem menuViewCustomizeShowStatusBar;
         private System.Windows.Forms.StatusStrip sbrStrip;
         private System.Windows.Forms.ToolStripButton tbrButtonColdReset;
+        private System.Windows.Forms.ToolStripButton tbrButtonRecord;
         private System.Windows.Forms.ToolStripMenuItem menuVmColdReset;
         private ZXMAK2.Host.WinForms.Controls.MenuStripEx mnuStrip;
         private ZXMAK2.Host.WinForms.Controls.ToolStripEx tbrStrip;

@@ -43,6 +43,12 @@ namespace Kozynax.UI
                     "Maximum Speed",
                     () => vm.CommandVmMaxSpeed.Checked),
                 Button(vm.CommandVmWarmReset, () => ResourceImages.EmuWarmResetPng, () => "warm", "Warm Reset"),
+                Button(
+                    vm.CommandRecord,
+                    () => ResourceImages.EmuRecordPng,
+                    () => "record",
+                    "Record Video",
+                    () => vm.CommandRecord.Checked),
                 Separator(),
                 Button(
                     vm.CommandViewFullScreen,
