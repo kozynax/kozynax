@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Nemesis The Warlock - Side 1.tzx", "Sinclair48", 0x8F17, "\x28\x26\x01\xFE\xF7\xED\x78\xCB\x4F\x28\x50\x01\xFE\xF7\xED\x78")

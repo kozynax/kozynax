@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Chase HQ - Side 1.tzx", "Sinclair48", 0xFEFE, "\xC3\x19\xEF\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")

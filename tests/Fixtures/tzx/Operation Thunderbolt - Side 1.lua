@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Operation Thunderbolt - Side 1.tzx", "Sinclair48", 0x5B5B, "\xC3\x54\x61\xDD\x7E\x00\x26\x00\x6F\x29\x29\x11\x54\x71\x19\xDD")

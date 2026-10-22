@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Beach Head (Americana).tzx", "Sinclair48", 0x6060, "\xFB\xED\x4D\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")

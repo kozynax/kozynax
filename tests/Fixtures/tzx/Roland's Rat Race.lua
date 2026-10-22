@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Roland's Rat Race.tzx", "Sinclair48", 0xE2E4, "\x39\x38\xEE\x79\xA3\x28\xF8\x08\xB7\x20\xE2\x7D\x08\x21\x60\x3F")

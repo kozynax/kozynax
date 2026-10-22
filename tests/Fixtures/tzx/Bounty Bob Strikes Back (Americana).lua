@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Bounty Bob Strikes Back (Americana).tzx", "Sinclair48", 0xAC52, "\x10\xFE\x0D\xC2\x52\xAC\xC9\x0E\x01\x06\x00\x10\xFE\x0D\xC2\x5D")

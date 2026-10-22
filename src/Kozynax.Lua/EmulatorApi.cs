@@ -26,6 +26,17 @@ namespace Kozynax.Lua
             _session.Load(path);
         }
 
+        public void WaitFrames(int frames)
+        {
+            _session.Wait(frames, null);
+        }
+
+        // Polled every 100 frames. Return true when the wait should stop.
+        public void WaitFrames(int frames, Closure until)
+        {
+            _session.Wait(frames, until);
+        }
+
         // j+<SS>pp-<SS><ENTER>
         //   J, hold symbol shift, P, P, release symbol shift, Enter.
         // <CS> is caps shift, <SPACE> is space.
@@ -51,13 +62,10 @@ namespace Kozynax.Lua
                     continue;
                 }
 
-                _session.Tap(ParseKey(ReadToken(sequence, ref i)));
+                _session.TapKey(ParseKey(ReadToken(sequence, ref i)));
             }
         }
 
-        // +<LEFT><FIRE><FIRE>-<LEFT>
-        //   hold left, tap fire, tap fire, release left.
-        // Directions: <LEFT> <RIGHT> <UP> <DOWN> <FIRE>.
         public void SendKempston(string sequence)
         {
             if (sequence == null)
@@ -81,6 +89,16 @@ namespace Kozynax.Lua
 
                 _session.TapJoy(ParseJoy(ReadToken(sequence, ref i)));
             }
+        }
+
+        public bool IsHeadless
+        {
+            get { return _session.IsHeadless; }
+        }
+
+        public void Stop()
+        {
+            _session.Stop();
         }
 
         public void Exit(int code)

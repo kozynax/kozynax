@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Gift From The Gods.tzx", "Sinclair48", 0x8080, "\xC3\x53\x9D\x01\x02\x02\x04\x00\x00\x00\x00\x00\x00\x29\x01\x12")

@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Kong Strikes Back (Zafiro).tzx", "Sinclair48", 0xFEFE, "\xC3\x96\x6A\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")

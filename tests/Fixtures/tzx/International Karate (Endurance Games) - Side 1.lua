@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("International Karate (Endurance Games) - Side 1.tzx", "Sinclair48", 0x6C23, "\x4F\x20\x02\x06\x01\x21\x4C\x68\x70\xCB\x5F\x3E\x00\x20\x01\x3D")
