@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Sgrizam (Americana).tzx", "Sinclair48", 0x8344, "\xE1\xC1\x3E\xF7\xDB\xFE\xCB\x47\xC8\x3E\xF7\xDB\xFE\xCB\x4F\xC8")

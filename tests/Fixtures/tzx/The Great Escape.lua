@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("The Great Escape.tzx", "Sinclair48", 0xF3A1, "\x39\x38\xED\x79\xA3\x28\xF8\x08\xB7\x20\xDF\x7A\x08\x21\x6A\xF0")

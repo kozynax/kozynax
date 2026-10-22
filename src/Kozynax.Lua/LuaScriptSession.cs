@@ -16,8 +16,8 @@ namespace Kozynax.Lua
     /// </summary>
     public sealed class LuaScriptSession : IDisposable
     {
-        private const int BootFrames = 100;
         private const int KeyDownFrames = 12;
+        private const int WaitPollFrames = 100;
         private const int KeyUpFrames = 16;
         private const int EnterUpFrames = 30;
 
@@ -29,6 +29,7 @@ namespace Kozynax.Lua
         private Spectrum _machine;
         private int? _exitCode;
         private bool _maximumSpeed;
+        private bool _stop;
 
         public LuaScriptSession(string scriptDirectory)
             : this(scriptDirectory, null, null)
@@ -64,6 +65,7 @@ namespace Kozynax.Lua
         public TapeApi Tape { get; }
         public DebuggerApi Debugger { get; }
         public bool HostPacesFrames { get; set; }
+        public bool IsHeadless { get { return _host == null; } }
 
         public bool MaximumSpeed
         {
@@ -156,7 +158,6 @@ namespace Kozynax.Lua
             var machine = RequireMachine();
             machine.IsRunning = true;
             machine.DebugReset();
-            RunFrames(BootFrames);
         }
 
         public void Load(string path)
@@ -236,14 +237,38 @@ namespace Kozynax.Lua
             throw new LuaExitException(code);
         }
 
-        public void Wait(int frames)
+        /// <summary>
+        /// Returns from the current <see cref="Wait"/> without ending the process.
+        /// </summary>
+        public void Stop()
+        {
+            _stop = true;
+        }
+
+        public void Wait(int frames, Closure until)
         {
             if (frames < 0)
                 throw new ScriptRuntimeException("Wait frame count is negative");
-            RunFrames(frames);
+            if (until == null)
+            {
+                RunFrames(frames);
+                return;
+            }
+
+            var left = frames;
+            while (left > 0)
+            {
+                var step = left < WaitPollFrames ? left : WaitPollFrames;
+                RunFrames(step);
+                if (_stop)
+                    return;
+                left -= step;
+                if (until.Call().CastToBool())
+                    return;
+            }
         }
 
-        public void Tap(Key key)
+        public void TapKey(Key key)
         {
             Keys.Press(key);
             RefreshKeyboard();
@@ -287,6 +312,8 @@ namespace Kozynax.Lua
             var machine = RequireMachine();
             for (var i = 0; i < count; i++)
             {
+                if (_stop)
+                    return;
                 if (!machine.IsRunning)
                     machine.IsRunning = true;
                 machine.ExecuteFrame();
@@ -295,6 +322,8 @@ namespace Kozynax.Lua
                     DispatchBreakpoint();
                     if (_exitCode.HasValue)
                         throw new LuaExitException(_exitCode.Value);
+                    if (_stop)
+                        return;
 
                     machine.DebugClearBreakpoints();
                     machine.IsRunning = true;

@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Winter Games - 48k - Side 2.tzx", "Sinclair48", 0xFDFD, "\xC3\x83\x70\xFD\xFD\xFD\xFD\xFD\xFD\xFD\xFD\xFD\xFD\xFD\xFD\xFD")

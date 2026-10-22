@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Mission 2 - Project Gibraltar.tzx", "Sinclair48", 0x6BDA, "\xB7\x28\xFA\xFE\x02\x28\x03\x32\x27\x64\xC1\xE1\xC9\xCD\x6C\x6B")

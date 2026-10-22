@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Short Circuit - 128k.tzx", "Sinclair48", 0x84F0, "\xDB\xFE\xE6\x1F\xFE\x1F\x20\x07\x19\xCB\x01\x10\xF2\x37\xC9\xF5")

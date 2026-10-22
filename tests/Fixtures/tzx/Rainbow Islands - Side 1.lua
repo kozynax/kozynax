@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Rainbow Islands - Side 1.tzx", "Sinclair48", 0x8486, "\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98\x98")

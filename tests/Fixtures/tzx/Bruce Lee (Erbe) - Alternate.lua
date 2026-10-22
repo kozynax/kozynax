@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Bruce Lee (Erbe) - Alternate.tzx", "Sinclair48", 0xFD02, "\x76\x60\x6A\x14\x1E\x18\x22\x6E\x74\x02\x08\x16\x62\x68\xF3\xAF")

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Kozynax.Cli.Services;
 using MoonSharp.Interpreter;
@@ -116,12 +117,7 @@ namespace Kozynax.Lua
 
             try
             {
-                UserData.RegisterType<CpuRegs>();
-                UserData.RegisterType<LuaCpu>();
-                UserData.RegisterType<EmulatorApi>();
-                UserData.RegisterType<MachineApi>();
-                UserData.RegisterType<TapeApi>();
-                UserData.RegisterType<DebuggerApi>();
+                RegisterScriptTypes();
 
                 var script = new Script();
                 script.Globals["Emulator"] = session.Emulator;
@@ -132,9 +128,17 @@ namespace Kozynax.Lua
                 {
                     if (args.Count < 1 || args[0].Type != DataType.Number)
                         throw new ScriptRuntimeException("Wait(frames) expects a frame count");
-                    session.Wait((int)args[0].Number);
+                    Closure until = null;
+                    if (args.Count >= 2 && !args[1].IsNil())
+                    {
+                        if (args[1].Type != DataType.Function)
+                            throw new ScriptRuntimeException("Wait callback must be a function");
+                        until = args[1].Function;
+                    }
+                    session.Wait((int)args[0].Number, until);
                     return DynValue.Nil;
                 });
+                InstallInclude(script, Path.GetDirectoryName(path));
 
                 script.DoFile(path);
                 return session.HasExit ? session.ExitCode : 0;
@@ -154,6 +158,77 @@ namespace Kozynax.Lua
                 Logger.Error(ex);
                 return 1;
             }
+        }
+
+        private static void RegisterScriptTypes()
+        {
+            RegisterScriptType<CpuRegs>();
+            RegisterScriptType<LuaCpu>();
+            RegisterScriptType<EmulatorApi>();
+            RegisterScriptType<MachineApi>();
+            RegisterScriptType<TapeApi>();
+            RegisterScriptType<DebuggerApi>();
+        }
+
+        private static void RegisterScriptType<T>()
+        {
+            if (!UserData.IsTypeRegistered<T>())
+                UserData.RegisterType<T>();
+        }
+
+        private static void InstallInclude(Script script, string entryDirectory)
+        {
+            var stack = new Stack<string>();
+            stack.Push(entryDirectory ?? "");
+            var loaded = new HashSet<string>(StringComparer.Ordinal);
+
+            script.Globals["include"] = DynValue.NewCallback((ctx, args) =>
+            {
+                if (args.Count < 1 || args[0].Type != DataType.String)
+                    throw new ScriptRuntimeException("include expects a path");
+
+                var full = ResolveInclude(args[0].String, stack.Peek(), entryDirectory);
+                if (!loaded.Add(full))
+                    return DynValue.Nil;
+
+                stack.Push(Path.GetDirectoryName(full) ?? "");
+                try
+                {
+                    script.Call(script.LoadFile(full, null, full));
+                }
+                finally
+                {
+                    stack.Pop();
+                }
+                return DynValue.Nil;
+            });
+        }
+
+        private static string ResolveInclude(string requested, string currentDirectory, string entryDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(requested))
+                throw new ScriptRuntimeException("include path is empty");
+
+            if (Path.IsPathRooted(requested))
+            {
+                if (!File.Exists(requested))
+                    throw new ScriptRuntimeException("include not found: " + requested);
+                return Path.GetFullPath(requested);
+            }
+
+            var besideCurrent = Path.GetFullPath(Path.Combine(currentDirectory ?? "", requested));
+            if (File.Exists(besideCurrent))
+                return besideCurrent;
+
+            var besideEntry = Path.GetFullPath(Path.Combine(entryDirectory ?? "", requested));
+            if (File.Exists(besideEntry))
+                return besideEntry;
+
+            var fromCwd = Path.GetFullPath(requested);
+            if (File.Exists(fromCwd))
+                return fromCwd;
+
+            throw new ScriptRuntimeException("include not found: " + requested);
         }
 
         private static LuaExitException FindExit(Exception ex)

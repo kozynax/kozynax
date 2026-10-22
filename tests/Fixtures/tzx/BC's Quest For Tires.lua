@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("BC's Quest For Tires.tzx", "Sinclair48", 0xFE3C, "\x09\x11\xFA\x5D\x19\x38\xFD\x11\x31\xFE\x19\xD9\x2A\x3A\xFE\x09")
