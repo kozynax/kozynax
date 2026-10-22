@@ -56,8 +56,11 @@ namespace ZXMAK2
                 return;
             }
 
+            var options = CommandLine.ParseHostOptions(args);
+
             var resolver = new ResolverSimple();
 
+            resolver.RegisterInstance(options);
             resolver.RegisterType<ISettingService, SettingService>(true);
             resolver.RegisterType<IUserMessage, UserMessage>();
             resolver.RegisterType<IUserQuery, UserQuery>();
@@ -93,7 +96,7 @@ namespace ZXMAK2
             
             Locator.Init(resolver);
             var launcher = Locator.Resolve<ILauncher>();
-            launcher.Run(args);
+            launcher.Run(options.Args);
             Locator.Shutdown();
         }
     }
