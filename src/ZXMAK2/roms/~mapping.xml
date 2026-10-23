@@ -93,13 +93,16 @@
 	<RomSet name="PentEvo">
 		<Page name="RAW" image="EVO/zxevo.rom"/>
 	</RomSet>
-	<RomSet name="Magic-05 v5.1">
+	<RomSet name="Magic-05">
+		<Page name="RAW" image="MAGIC/magic91.rom" />
+	</RomSet>
+	<RomSet name="Magic-05M v5.1">
 		<Page name="RAW" image="MAGIC/MAGIC5_1.ROM" />
 	</RomSet>
-	<RomSet name="Magic-05 v6.3">
+	<RomSet name="Magic-06 v6.3">
 		<Page name="RAW" image="MAGIC/MAGIC6_3.ROM" />
 	</RomSet>
-	<RomSet name="Magic-05 v6.5">
+	<RomSet name="Magic-06 v6.5">
 		<Page name="RAW" image="MAGIC/MAGIC6_5.ROM" />
 	</RomSet>
 	<RomSet name="QMagic-07">
