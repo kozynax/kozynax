@@ -1,2 +1,2 @@
 include "load.lua"
-LoadTape("Jonah Barrington's Squash (Zafiro).tzx", "Sinclair48", 0x93C7, "\x28\xF8\x11\x31\x31\xFE\xFE\x28\x0E\x11\x33\x32\xFE\xFB\x28\x07")
+LoadTape("Jonah Barrington's Squash (Zafiro).tzx", "Sinclair48", 0x9353, "\x20\x17\x01\xFE\xEF\xED\x78\xF6\xE7\xFE\xFF\x28\xE1\x21\x07\x94")

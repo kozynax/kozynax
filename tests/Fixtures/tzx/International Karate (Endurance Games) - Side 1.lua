@@ -1,2 +1,2 @@
 include "load.lua"
-LoadTape("International Karate (Endurance Games) - Side 1.tzx", "Sinclair48", 0x6C23, "\x4F\x20\x02\x06\x01\x21\x4C\x68\x70\xCB\x5F\x3E\x00\x20\x01\x3D")
+LoadTape("International Karate (Endurance Games) - Side 1.tzx", "Sinclair48", 0xA786, "\x00\x00\x08\x1D\xD3\xFE\x20\x17\xDD\x5C\xAA\x08\x2D\xC2\xAC\xA7")
