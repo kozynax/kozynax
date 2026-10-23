@@ -1,2 +1,3 @@
+-- TZX File MD5: 7674cc49be5a5a7a1e6dead388154ec2
 include "load.lua"
 LoadTape("Raid Over Moscow (Americana).tzx", "Sinclair48", 0x6060, "\xFB\xED\x4D\xD1\x62\x06\x0E\xDD\x6E\x00\xDD\x66\x01\xDD\x7E\x02")

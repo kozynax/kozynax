@@ -1,2 +1,3 @@
+-- TZX File MD5: a86e5c8f6545ea27628cf48846732742
 include "load.lua"
 LoadTape("Jonah Barrington's Squash.tzx", "Sinclair48", 0x934F, "\xF6\xFC\xFE\xFF\x20\x17\x01\xFE\xEF\xED\x78\xF6\xE7\xFE\xFF\x28")

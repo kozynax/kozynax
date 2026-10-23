@@ -1,2 +1,3 @@
+-- TZX File MD5: f105e0fedd2a2dcd9494bc7486d8886e
 include "load.lua"
 LoadTape("Mantronix.tzx", "Sinclair48", 0xA5C4, "\x28\xFE\x08\x2D\xCA\xB5\xA5\xD3\xFE\x00\x00\x10\xD4\x0C\xC2\xA7")

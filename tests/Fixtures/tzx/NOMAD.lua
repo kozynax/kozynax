@@ -1,2 +1,3 @@
+-- TZX File MD5: 43ab974268537654028f09c4386d4451
 include "load.lua"
 LoadTape("NOMAD.tzx", "Sinclair48", 0xEFC6, "\x10\xF0\xAF\xD3\xFE\x18\xEB\x0D\x00\x00\x0C\x00\x00\x0A\x00\x00")

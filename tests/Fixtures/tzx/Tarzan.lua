@@ -1,2 +1,3 @@
+-- TZX File MD5: 80f822f2b406702f081cb3dc7f834149
 include "load.lua"
 LoadTape("Tarzan.tzx", "Sinclair48", 0x4FD8, "\x10\xFE\x0D\x20\xFB\x18\xEC\x11\x3F\x07\xC3\x59\x53\x9F\x06\x40")

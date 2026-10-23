@@ -1,2 +1,3 @@
+-- TZX File MD5: fb530875e2a81300904d40c838ecdfb6
 include "load.lua"
 LoadTape("Arkanoid.tzx", "Sinclair48", 0xF446, "\x00\x00\x08\x1D\xD3\xFE\x20\x17\xDD\x5C\xAA\x08\x2D\xC2\x6C\xF4")

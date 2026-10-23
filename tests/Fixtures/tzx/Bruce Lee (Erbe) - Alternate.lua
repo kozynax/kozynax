@@ -1,2 +1,3 @@
+-- TZX File MD5: 26029110c057b17d51a524d66f2cbe62
 include "load.lua"
 LoadTape("Bruce Lee (Erbe) - Alternate.tzx", "Sinclair48", 0xC6D5, "\x76\xC5\xCD\x8E\x02\xC1\x20\xF5\x7B\xB9\x20\xF1\x10\xF2\xC9\xCD")

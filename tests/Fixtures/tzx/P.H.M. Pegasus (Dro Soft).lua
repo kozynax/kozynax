@@ -1,2 +1,3 @@
+-- TZX File MD5: e3d3bab15fb5aa5286afa2158184f576
 include "load.lua"
 LoadTape("P.H.M. Pegasus (Dro Soft).tzx", "Sinclair128", 0xF5B1, "\xAF\xDB\xFE\x2F\xE6\x1F\x28\xF8\xC9\x00\x00\x00\x00\x00\x00\x00")
