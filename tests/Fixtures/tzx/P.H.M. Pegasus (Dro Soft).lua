@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("P.H.M. Pegasus (Dro Soft).tzx", "Sinclair48", 0xFA12, "\x10\xFD\x0C\xDB\xFE\xCB\x1F\x0D\x20\xFB\xC9\x21\x5E\xFA\xCD\xDD")

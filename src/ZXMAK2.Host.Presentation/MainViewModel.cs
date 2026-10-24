@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.ComponentModel;
+using System.Threading;
+using System.Xml;
 
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine;
@@ -12,6 +14,7 @@ using ZXMAK2.Host.Presentation.Tools;
 using ZXMAK2.Mvvm;
 using System.Drawing;
 using Kozynax.Cli;
+using Kozynax.Lua;
 using Kozynax.UI;
 using ZXMAK2.Mvvm.Attributes;
 
@@ -361,6 +364,7 @@ namespace ZXMAK2.Host.Presentation
             }
             TryApplyStartupScale();
             UpdateAllCommands();
+            StartScript();
         }
 
         private void MainView_OnViewClosed(object sender, EventArgs e)
@@ -1041,6 +1045,21 @@ namespace ZXMAK2.Host.Presentation
             return null;
         }
 
+        private void StartScript()
+        {
+            var options = m_resolver.TryResolve<HostLaunchOptions>();
+            if (options == null || string.IsNullOrWhiteSpace(options.ScriptPath) || m_vm == null)
+                return;
+
+            var path = options.ScriptPath;
+            var vm = m_vm;
+            var host = new ScriptHost(this);
+            var thread = new Thread(() => LuaScriptRunner.Run(vm, path, host));
+            thread.IsBackground = true;
+            thread.Name = "LuaScript";
+            thread.Start();
+        }
+
         private void TryApplyStartupScale()
         {
             if (m_startupScaleApplied || !m_startupScaleRatio.HasValue)
@@ -1190,5 +1209,66 @@ namespace ZXMAK2.Host.Presentation
         }
 
         #endregion Private
+        
+        #region IScriptHost
+        
+        private sealed class ScriptHost : IScriptHost
+        {
+            private readonly MainViewModel _owner;
+
+            public ScriptHost(MainViewModel owner)
+            {
+                _owner = owner;
+            }
+
+            public void SetMaximumSpeed(bool enabled)
+            {
+                var sync = _owner.m_synchronizeInvoke;
+                if (sync != null && sync.InvokeRequired)
+                    sync.Invoke(new Action(() => _owner.IsMaxSpeed = enabled), null);
+                else
+                    _owner.IsMaxSpeed = enabled;
+            }
+
+            public void ShowError(string message)
+            {
+                _owner.ExecuteSynchronizedAsync(() =>
+                {
+                    if (_owner.m_userMessage != null)
+                        _owner.m_userMessage.Error("{0}", message);
+                });
+            }
+
+            public void Close()
+            {
+                var sync = _owner.m_synchronizeInvoke;
+                if (sync != null && sync.InvokeRequired)
+                    sync.BeginInvoke(new Action(_owner.CloseView), null);
+                else
+                    _owner.CloseView();
+            }
+
+            public void LoadBus(XmlNode busNode)
+            {
+                Action work = () =>
+                {
+                    if (_owner.m_vm != null)
+                        _owner.m_vm.Spectrum.BusManager.LoadConfigXml(busNode);
+                };
+                var sync = _owner.m_synchronizeInvoke;
+                if (sync != null && sync.InvokeRequired)
+                    sync.Invoke(work, null);
+                else
+                    work();
+            }
+        }
+
+        private void CloseView()
+        {
+            if (m_view != null)
+                m_view.Close();
+        }
+        
+        #endregion
     }
 }

@@ -48,35 +48,54 @@ namespace ZXMAK2.Serializers.TapeSerializers
 
             var ratio = tactsPerSecond / (double)reader.Header.FmtSampleRate; // usually 3.5mhz / 44khz
 
-            var rleData = LoadRleData(reader);
+            var rleData = LoadRleData(reader, out var initialHigh);
 
-            var list = new List<TapeBlock>();
-            var pulses = new List<int>();
+            var list = new List<TapeBlock>
+            {
+                new TapeBlock
+                {
+                    Type = TapeType.COMMENT,
+                    Description = string.Format("[WAV @ {0} Hz]", reader.Header.FmtSampleRate),
+                },
+                new TapeBlock
+                {
+                    Type = TapeType.SET_SIGNAL_LEVEL,
+                    Tag = initialHigh ? 1 : 0,
+                    Description = string.Format("[Set signal level {0}]", initialHigh ? 1 : 0),
+                },
+            };
+            var pulses = new List<TapePeriod>();
             var blockTime = 0;
             var blockCounter = 0;
             foreach (var rle in rleData)
             {
                 var len = (int)Math.Round(rle * ratio, MidpointRounding.AwayFromZero);
-                pulses.Add(len);
+                pulses.Add(new TapePeriod(len));
 
                 blockTime += len;
                 if (blockTime >= tactsPerSecond * 2)
                 {
-                    var tb = new TapeBlock();
-                    tb.Description = string.Format("WAV-{0:D3}", blockCounter++);
-                    tb.Periods = new List<int>(pulses);
-                    list.Add(tb);
+                    list.Add(new TapeBlock
+                    {
+                        Type = TapeType.CSW_RECORDING,
+                        Description = string.Format("WAV-{0:D3}", blockCounter++),
+                        Periods = new List<TapePeriod>(pulses),
+                    });
                     blockTime = 0;
                     pulses.Clear();
                 }
             }
             if (pulses.Count > 0)
             {
-                var tb = new TapeBlock();
-                tb.Description = string.Format("WAV-{0:D3}", blockCounter++);
-                tb.Periods = new List<int>(pulses);
-                list.Add(tb);
+                list.Add(new TapeBlock
+                {
+                    Type = TapeType.CSW_RECORDING,
+                    Description = string.Format("WAV-{0:D3}", blockCounter++),
+                    Periods = new List<TapePeriod>(pulses),
+                });
             }
+            if (blockCounter > 0)
+                list[list.Count - 1].Pause = 1000;
             return list;
         }
 
@@ -85,11 +104,12 @@ namespace ZXMAK2.Serializers.TapeSerializers
 
         #region Private
 
-        private static IEnumerable<int> LoadRleData(WavStreamReader reader)
+        private static IEnumerable<int> LoadRleData(WavStreamReader reader, out bool initialHigh)
         {
             var list = new List<int>();
             var smpCounter = 0;
             var state = reader.ReadNext();
+            initialHigh = state >= 0;
             for (var i = 0; i < reader.Count; i++)
             {
                 var sample = reader.ReadNext();

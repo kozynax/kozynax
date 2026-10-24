@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("World Series Basketball.tzx", "Sinclair48", 0x7227, "\xDB\xFE\xE6\x1F\xBB\x28\x10\xCB\x03\xCB\xC3\xCB\xAB\x15\x20\xEF")

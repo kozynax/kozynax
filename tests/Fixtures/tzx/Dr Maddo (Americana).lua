@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Dr Maddo (Americana).tzx", "Sinclair48", 0xDFDF, "\xF3\xF5\xC5\xD5\xE5\xDD\xE5\xFD\xE5\xD9\xF5\xC5\xD5\xE5\xDD\xE5")

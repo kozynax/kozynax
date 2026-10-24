@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Samantha Fox Strip Poker - Side B.tzx", "Sinclair48", 0x5EA2, "\x00\x38\xF7\x18\xF2\xF5\xD5\x16\x14\xCD\x07\x80\xD1\xCD\xCF\x5E")

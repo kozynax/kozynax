@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Match Day (The Hit Squad).tzx", "Sinclair48", 0xB51A, "\x10\xFE\x7C\xB5\x20\xF9\xC9\x5E\x23\x56\x23\x4E\x23\x46\x23\xC5")

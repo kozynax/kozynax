@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("The Untouchables - Side 1.tzx", "Sinclair48", 0x5B5B, "\xC3\xF5\x72\x20\xC0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")

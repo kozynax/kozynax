@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Kozynax.Cli.Services;
 using Kozynax.Cli.Utils;
+using Kozynax.Lua;
 using ZXMAK2;
 using ZXMAK2.Dependency;
 using ZXMAK2.Host.Interfaces;
@@ -29,7 +30,7 @@ namespace Kozynax.Cli
         }
 
         /// <summary>
-        /// Handles known commands such as <c>convert</c>.
+        /// Handles known commands such as <c>convert</c> and <c>--script</c>.
         /// Returns true when <paramref name="args"/> was a CLI command (caller should exit).
         /// </summary>
         public static bool TryHandle(string[] args, out int exitCode)
@@ -38,11 +39,33 @@ namespace Kozynax.Cli
             if (args == null || args.Length == 0)
                 return false;
 
-            if (!string.Equals(args[0], "convert", StringComparison.OrdinalIgnoreCase))
-                return false;
+            if (string.Equals(args[0], "convert", StringComparison.OrdinalIgnoreCase))
+            {
+                exitCode = RunConvert(args);
+                return true;
+            }
 
-            exitCode = RunConvert(args);
-            return true;
+            if (IsHeadless(args) && TryGetScriptPath(args, out var scriptPath))
+            {
+                if (string.IsNullOrWhiteSpace(scriptPath))
+                {
+                    PrintScriptUsage();
+                    exitCode = 1;
+                    return true;
+                }
+
+                exitCode = LuaScriptRunner.Run(scriptPath);
+                return true;
+            }
+
+            if (TryGetScriptPath(args, out var guiScript) && string.IsNullOrWhiteSpace(guiScript))
+            {
+                PrintScriptUsage();
+                exitCode = 1;
+                return true;
+            }
+
+            return false;
         }
 
         private static bool NeedsConsole(string[] args)
@@ -51,6 +74,9 @@ namespace Kozynax.Cli
                 return false;
 
             if (string.Equals(args[0], "convert", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (IsHeadless(args) && IsScriptRequest(args))
                 return true;
 
             foreach (var arg in args)
@@ -82,11 +108,20 @@ namespace Kozynax.Cli
         {
             var useTui = false;
             int? windowScaleRatio = null;
+            string scriptPath = null;
             if (args == null || args.Length == 0)
-                return new HostLaunchOptions(useTui, Array.Empty<string>(), windowScaleRatio);
+                return new HostLaunchOptions(useTui, Array.Empty<string>(), windowScaleRatio, scriptPath);
+
+            var start = 0;
+            if (string.Equals(args[0], "script", StringComparison.OrdinalIgnoreCase))
+            {
+                if (args.Length >= 2)
+                    scriptPath = args[1];
+                start = args.Length >= 2 ? 2 : 1;
+            }
 
             var filtered = new List<string>(args.Length);
-            for (var i = 0; i < args.Length; i++)
+            for (var i = start; i < args.Length; i++)
             {
                 var arg = args[i];
                 if (string.Equals(arg, "--tui", StringComparison.OrdinalIgnoreCase))
@@ -94,8 +129,21 @@ namespace Kozynax.Cli
                     useTui = true;
                     continue;
                 }
-                if (string.Equals(arg, "--console", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(arg, "--console", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(arg, "--headless", StringComparison.OrdinalIgnoreCase))
                     continue;
+
+                if (arg.StartsWith("--script=", StringComparison.OrdinalIgnoreCase))
+                {
+                    scriptPath = arg.Substring("--script=".Length);
+                    continue;
+                }
+                if (string.Equals(arg, "--script", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i + 1 < args.Length)
+                        scriptPath = args[++i];
+                    continue;
+                }
 
                 string scaleValue = null;
                 if (arg.StartsWith("--scale=", StringComparison.OrdinalIgnoreCase))
@@ -115,7 +163,7 @@ namespace Kozynax.Cli
 
                 filtered.Add(arg);
             }
-            return new HostLaunchOptions(useTui, filtered.ToArray(), windowScaleRatio);
+            return new HostLaunchOptions(useTui, filtered.ToArray(), windowScaleRatio, scriptPath);
         }
 
         /// <summary>
@@ -188,6 +236,68 @@ namespace Kozynax.Cli
             }
         }
 
+        private static bool IsHeadless(string[] args)
+        {
+            if (args == null)
+                return false;
+            foreach (var arg in args)
+            {
+                if (string.Equals(arg, "--headless", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool IsScriptRequest(string[] args)
+        {
+            string ignored;
+            return TryGetScriptPath(args, out ignored);
+        }
+
+        /// <summary>
+        /// <c>script file.lua</c>, <c>--script file.lua</c>, or <c>--script=file.lua</c>.
+        /// Returns true when a script command is present. <paramref name="path"/> is
+        /// null when the filename was omitted.
+        /// </summary>
+        private static bool TryGetScriptPath(string[] args, out string path)
+        {
+            path = null;
+            if (args == null || args.Length == 0)
+                return false;
+
+            if (string.Equals(args[0], "script", StringComparison.OrdinalIgnoreCase))
+            {
+                if (args.Length >= 2)
+                    path = args[1];
+                return true;
+            }
+
+            for (var i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+                if (arg.StartsWith("--script=", StringComparison.OrdinalIgnoreCase))
+                {
+                    path = arg.Substring("--script=".Length);
+                    return true;
+                }
+
+                if (string.Equals(arg, "--script", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i + 1 < args.Length)
+                        path = args[i + 1];
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void PrintScriptUsage()
+        {
+            Console.Error.WriteLine($"Usage: {AppName} --script <file.lua> [--headless]");
+            Console.Error.WriteLine($"       {AppName} script <file.lua> [--headless]");
+        }
+
         private static void PrintConvertUsage()
         {
             Console.Error.WriteLine($"Usage: {AppName} convert <input> <output>");
@@ -200,11 +310,12 @@ namespace Kozynax.Cli
 
     public sealed class HostLaunchOptions
     {
-        public HostLaunchOptions(bool useTui, string[] args, int? windowScaleRatio = null)
+        public HostLaunchOptions(bool useTui, string[] args, int? windowScaleRatio = null, string scriptPath = null)
         {
             UseTui = useTui;
             Args = args ?? Array.Empty<string>();
             WindowScaleRatio = windowScaleRatio;
+            ScriptPath = string.IsNullOrWhiteSpace(scriptPath) ? null : scriptPath;
         }
 
         /// <summary>When true, the SDL host should use <c>StdioTerminal</c>.</summary>
@@ -217,5 +328,8 @@ namespace Kozynax.Cli
 
         /// <summary>Args with host-only flags removed, suitable for <c>ILauncher.Run</c>.</summary>
         public string[] Args { get; }
+
+        /// <summary>Lua file from <c>--script</c>. Null when the window should just start.</summary>
+        public string ScriptPath { get; }
     }
 }

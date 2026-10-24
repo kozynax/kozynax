@@ -7,6 +7,8 @@
     <IsPackable>false</IsPackable>
     <RootNamespace>Kozynax.Tests</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <!-- Tape scripts take too long for the build server. Pass an explicit filter to run them. -->
+    <VSTestTestCaseFilter>FullyQualifiedName!~TzxLuaTests</VSTestTestCaseFilter>
   </PropertyGroup>
 
   <ItemGroup>

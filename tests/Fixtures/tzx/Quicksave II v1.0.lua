@@ -1,0 +1,2 @@
+include "load.lua"
+LoadTape("Quicksave II v1.0.tzx", "Sinclair48", 0x52C7, "\xA7\x28\xFA\xF3\xF5\x01\x20\x09\xCD\xE2\x0D\x3E\x14\xCD\xCB\x0A")
