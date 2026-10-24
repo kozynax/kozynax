@@ -95,6 +95,14 @@ namespace ZXMAK2.Host.SdlBackend
                 Environment.SetEnvironmentVariable("SDL_VIDEODRIVER", "wayland");
             }
 
+            if (OperatingSystem.IsWindows())
+            {
+                // Keep window size in physical pixels. SDL's DPI scaling mode
+                // would resample the framebuffer by 1.25 and blur the bitmap font.
+                _sdl.SetHint("SDL_WINDOWS_DPI_AWARENESS", "permonitorv2");
+                _sdl.SetHint("SDL_WINDOWS_DPI_SCALING", "0");
+            }
+
             if (_sdl.Init(Sdl.InitVideo | Sdl.InitAudio | Sdl.InitJoystick | Sdl.InitGamecontroller) != 0)
                 throw new InvalidOperationException($"SDL_Init failed: {_sdl.GetErrorS()}");
 

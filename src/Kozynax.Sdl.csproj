@@ -17,6 +17,11 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
+  <!-- Windows display scaling stretches a DPI-unaware SDL window and blurs the UI. -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) OR $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win'))">
+    <ApplicationManifest>ZXMAK2.Host.Sdl/Platform/Windows/app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="1.2.0.9" />
     <PackageReference Include="Silk.NET.SDL" Version="2.22.0" />
