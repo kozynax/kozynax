@@ -280,10 +280,78 @@ namespace Kozynax.UI
             if (_knownMachines == null || _knownMachines.Count == 0)
                 return;
 
-            var items = _knownMachines.Cast<object>().ToArray();
-            var picked = ObjectSelectorDialog.Select(items, "Select machine") as MachineConfiguration;
-            if (picked != null)
-                CreateMachine(picked);
+            var stack = new Stack<PickLevel>();
+            var level = new PickLevel("Select machine", MachineMenuGrouping.Group(_knownMachines));
+            while (level != null)
+            {
+                var items = new List<object>();
+                if (stack.Count > 0)
+                    items.Add(MachineMenuBack.Instance);
+                foreach (var entry in level.Entries)
+                    items.Add(new MachineMenuChoice(entry));
+
+                var picked = ObjectSelectorDialog.Select(items.ToArray(), level.Title);
+                if (picked == null || ReferenceEquals(picked, MachineMenuBack.Instance))
+                {
+                    if (stack.Count == 0)
+                        return;
+                    level = stack.Pop();
+                    continue;
+                }
+
+                var choice = picked as MachineMenuChoice;
+                if (choice == null)
+                    return;
+
+                if (choice.Entry.IsGroup)
+                {
+                    // A lone group is opened immediately. Don't push it, or Cancel
+                    // would select that same group again and loop.
+                    if (items.Count > 1)
+                        stack.Push(level);
+                    level = new PickLevel(choice.Entry.Caption, choice.Entry.Children);
+                    continue;
+                }
+
+                CreateMachine(choice.Entry.Machine);
+                return;
+            }
+        }
+
+        private sealed class PickLevel
+        {
+            public PickLevel(string title, IReadOnlyList<MachineMenuGrouping.Entry> entries)
+            {
+                Title = title;
+                Entries = entries ?? Array.Empty<MachineMenuGrouping.Entry>();
+            }
+
+            public string Title { get; }
+            public IReadOnlyList<MachineMenuGrouping.Entry> Entries { get; }
+        }
+
+        private sealed class MachineMenuChoice
+        {
+            public MachineMenuChoice(MachineMenuGrouping.Entry entry)
+            {
+                Entry = entry;
+            }
+
+            public MachineMenuGrouping.Entry Entry { get; }
+
+            public override string ToString()
+                => Entry != null && Entry.IsGroup ? Entry.Caption + " >" : (Entry?.Caption ?? string.Empty);
+        }
+
+        private sealed class MachineMenuBack
+        {
+            public static readonly MachineMenuBack Instance = new MachineMenuBack();
+
+            private MachineMenuBack()
+            {
+            }
+
+            public override string ToString() => "..";
         }
 
         public void Init(IHostService host, IVirtualMachine vm)

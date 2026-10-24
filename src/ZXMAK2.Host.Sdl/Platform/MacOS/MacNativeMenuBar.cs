@@ -55,7 +55,7 @@ namespace ZXMAK2.Host.SdlBackend.Platform.MacOS
             IEnumerable<ICommand> toolCommands,
             object commandParameter,
             ISynchronizeInvoke sync = null,
-            ICommand smallerUiFont = null)
+            ICommand preferences = null)
         {
             if (!OperatingSystem.IsMacOS())
                 return null;
@@ -65,7 +65,7 @@ namespace ZXMAK2.Host.SdlBackend.Platform.MacOS
             var bar = new MacNativeMenuBar(commandParameter, sync);
             _current = bar;
             EnsureMenuTargetClass();
-            bar.BuildAndAttach(viewModel, toolCommands, smallerUiFont);
+            bar.BuildAndAttach(viewModel, toolCommands, preferences);
             return bar;
         }
 
@@ -120,9 +120,9 @@ namespace ZXMAK2.Host.SdlBackend.Platform.MacOS
         private void BuildAndAttach(
             MainViewModel viewModel,
             IEnumerable<ICommand> toolCommands,
-            ICommand smallerUiFont)
+            ICommand preferences)
         {
-            var root = MainMenuFactory.BuildRoot(viewModel, toolCommands, smallerUiFont);
+            var root = MainMenuFactory.BuildRoot(viewModel, toolCommands, preferences);
             var mainMenu = MacObjC.AllocInit("NSMenu");
             var emptyKey = MacObjC.NsString(string.Empty);
 

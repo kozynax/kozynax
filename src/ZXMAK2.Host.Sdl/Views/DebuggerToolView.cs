@@ -69,6 +69,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             var host = new TerminalKozuiDialogHost<DebuggerDialog>(_terminal, _runtime)
             {
                 Session = _session,
+                UiScale = _terminal.DebuggerUiScale,
             };
             host.Init(_dialog);
 

@@ -112,6 +112,21 @@ namespace ZXMAK2.Host.Terminal
             _activeRegion = FindActiveRegion();
             _terminal.Clear(Bg);
             DrawControl(_root);
+            var openCombo = FindOpenCombo(_root);
+            if (openCombo != null)
+                DrawComboPopup(openCombo);
+        }
+
+        /// <summary>
+        /// Closes an open combo drop-down. Returns true when Escape was consumed.
+        /// </summary>
+        public bool TryConsumeEscape()
+        {
+            var open = FindOpenCombo(_root);
+            if (open == null)
+                return false;
+            open.CloseDropDown();
+            return true;
         }
 
         public bool RouteInput(KozuiInput input)
@@ -132,7 +147,25 @@ namespace ZXMAK2.Host.Terminal
             if (input.Kind != KozuiInputKind.KeyDown)
                 return false;
 
+            var openCombo = FindOpenCombo(_root);
+            if (openCombo != null && HandleOpenComboKey(openCombo, input))
+                return true;
+
             var focused = FocusedControl();
+
+            if (focused is ComboBox combo && combo.Enabled && !combo.IsDropDownOpen)
+            {
+                if (input.Key == KozuiInputKey.Left)
+                {
+                    combo.SelectedIndex = Math.Max(0, combo.SelectedIndex - 1);
+                    return true;
+                }
+                if (input.Key == KozuiInputKey.Right)
+                {
+                    combo.SelectedIndex = Math.Min(combo.ItemCount - 1, Math.Max(0, combo.SelectedIndex) + 1);
+                    return true;
+                }
+            }
 
             if (focused is TextBox textBox && textBox.Enabled)
             {
@@ -166,14 +199,14 @@ namespace ZXMAK2.Host.Terminal
                     MoveFocus(input.Shift ? -1 : 1);
                     return true;
                 case KozuiInputKey.Right:
-                    if (!(focused is ListView) && !(focused is TrackBar) && !(focused is TextBox))
+                    if (!(focused is ListView) && !(focused is TrackBar) && !(focused is TextBox) && !(focused is ComboBox))
                     {
                         MoveFocus(1);
                         return true;
                     }
                     break;
                 case KozuiInputKey.Left:
-                    if (!(focused is ListView) && !(focused is TrackBar) && !(focused is TextBox))
+                    if (!(focused is ListView) && !(focused is TrackBar) && !(focused is TextBox) && !(focused is ComboBox))
                     {
                         MoveFocus(-1);
                         return true;
@@ -285,11 +318,43 @@ namespace ZXMAK2.Host.Terminal
             ClearPointerPress();
 
             PixelToCell(input.X, input.Y, out var cellX, out var cellY);
+
+            var openCombo = FindOpenCombo(_root);
+            if (openCombo != null)
+            {
+                var popup = ComboPopupBounds(openCombo);
+                var row = HitComboPopupRow(openCombo, popup, cellX, cellY);
+                if (row >= 0)
+                {
+                    openCombo.CloseDropDown();
+                    openCombo.SelectedIndex = row;
+                    FocusControl(openCombo);
+                    return true;
+                }
+
+                if (ContainsCell(openCombo.ArrangedBounds, cellX, cellY))
+                {
+                    openCombo.CloseDropDown();
+                    FocusControl(openCombo);
+                    return true;
+                }
+
+                // Dismiss without activating whatever was underneath.
+                openCombo.CloseDropDown();
+                return true;
+            }
+
             var hit = HitTestInteractive(_root, cellX, cellY);
             if (hit == null || !hit.Enabled)
                 return false;
 
             FocusControl(hit);
+
+            if (hit is ComboBox combo)
+            {
+                combo.OpenDropDown();
+                return true;
+            }
 
             if (hit is Button button)
             {
@@ -336,6 +401,16 @@ namespace ZXMAK2.Host.Terminal
         private bool HandleMouseMove(KozuiInput input)
         {
             PixelToCell(input.X, input.Y, out var cellX, out var cellY);
+
+            var openCombo = FindOpenCombo(_root);
+            if (openCombo != null)
+            {
+                var popup = ComboPopupBounds(openCombo);
+                var row = HitComboPopupRow(openCombo, popup, cellX, cellY);
+                if (row >= 0)
+                    openCombo.SetHighlight(row);
+                return true;
+            }
 
             if (_pressedListView != null)
             {
@@ -436,6 +511,13 @@ namespace ZXMAK2.Host.Terminal
             if (input.WheelDelta == 0)
                 return false;
 
+            var openCombo = FindOpenCombo(_root);
+            if (openCombo != null)
+            {
+                openCombo.MoveHighlight(input.WheelDelta > 0 ? -1 : 1);
+                return true;
+            }
+
             PixelToCell(input.X, input.Y, out var cellX, out var cellY);
             var hit = HitTestInteractive(_root, cellX, cellY) as ListView
                       ?? FocusedControl() as ListView;
@@ -499,7 +581,7 @@ namespace ZXMAK2.Host.Terminal
         }
 
         private static bool IsInteractive(KozuiControl control)
-            => control is Button || control is CheckBox || control is TrackBar || control is ListView || control is TextBox;
+            => control is Button || control is CheckBox || control is ComboBox || control is TrackBar || control is ListView || control is TextBox;
 
         private static bool HandleTrackBarInput(TrackBar trackBar, KozuiInputKey key)
         {
@@ -636,6 +718,12 @@ namespace ZXMAK2.Host.Terminal
                 return;
             }
 
+            if (focused is ComboBox combo && combo.Enabled)
+            {
+                combo.ToggleDropDown();
+                return;
+            }
+
             if (focused is ListView list && list.Enabled)
                 list.ActivateItem();
         }
@@ -728,6 +816,8 @@ namespace ZXMAK2.Host.Terminal
                 list.Add(button);
             else if (control is CheckBox checkBox && checkBox.Enabled)
                 list.Add(checkBox);
+            else if (control is ComboBox combo && combo.Enabled)
+                list.Add(combo);
             else if (control is TrackBar trackBar && trackBar.Enabled)
                 list.Add(trackBar);
             else if (control is ListView listView && listView.Enabled)
@@ -834,6 +924,12 @@ namespace ZXMAK2.Host.Terminal
             if (control is Button button)
             {
                 DrawButton(button);
+                return;
+            }
+
+            if (control is ComboBox combo)
+            {
+                DrawComboBox(combo);
                 return;
             }
 
@@ -972,6 +1068,166 @@ namespace ZXMAK2.Host.Terminal
             var text = Truncate(shown, bounds.Width);
             var color = !textBox.Enabled ? Disabled : focused ? Accent : Fg;
             _terminal.DrawText(px, py, text, _scale, color);
+        }
+
+        private static bool HandleOpenComboKey(ComboBox combo, KozuiInput input)
+        {
+            switch (input.Key)
+            {
+                case KozuiInputKey.Up:
+                case KozuiInputKey.Left:
+                    combo.MoveHighlight(-1);
+                    return true;
+                case KozuiInputKey.Down:
+                case KozuiInputKey.Right:
+                    combo.MoveHighlight(1);
+                    return true;
+                case KozuiInputKey.PageUp:
+                    combo.MoveHighlight(-8);
+                    return true;
+                case KozuiInputKey.PageDown:
+                    combo.MoveHighlight(8);
+                    return true;
+                case KozuiInputKey.Home:
+                    combo.SetHighlight(0);
+                    return true;
+                case KozuiInputKey.End:
+                    combo.SetHighlight(combo.ItemCount - 1);
+                    return true;
+                case KozuiInputKey.Enter:
+                    combo.CommitHighlight();
+                    return true;
+                case KozuiInputKey.Escape:
+                    combo.CloseDropDown();
+                    return true;
+                case KozuiInputKey.Tab:
+                    combo.CloseDropDown();
+                    return false;
+                default:
+                    combo.CloseDropDown();
+                    return false;
+            }
+        }
+
+        private static ComboBox FindOpenCombo(KozuiControl control)
+        {
+            if (control == null || !control.Visible)
+                return null;
+            if (control is ComboBox combo && combo.IsDropDownOpen)
+                return combo;
+            if (control is Panel panel)
+            {
+                foreach (var child in panel.Children)
+                {
+                    var found = FindOpenCombo(child);
+                    if (found != null)
+                        return found;
+                }
+            }
+            else if (control is Placeholder placeholder)
+            {
+                return FindOpenCombo(placeholder.Content);
+            }
+            return null;
+        }
+
+        private LayoutRect ComboPopupBounds(ComboBox combo)
+        {
+            var cells = GetAvailableCells();
+            var anchor = combo.ArrangedBounds;
+            var count = Math.Max(0, combo.ItemCount);
+            var width = Math.Max(8, anchor.Width);
+            var below = Math.Max(0, cells.Height - (anchor.Y + anchor.Height));
+            var above = Math.Max(0, anchor.Y);
+            var rows = Math.Min(count, 8);
+            var openUp = below < Math.Max(1, rows) && above > below;
+            var room = openUp ? above : below;
+            if (room < 1)
+                room = 1;
+            rows = Math.Max(1, Math.Min(Math.Max(1, rows), room));
+            if (count == 0)
+                rows = 1;
+            combo.EnsureHighlightVisible(rows);
+
+            var x = anchor.X;
+            if (x + width > cells.Width)
+                x = Math.Max(0, cells.Width - width);
+            var y = openUp ? anchor.Y - rows : anchor.Y + anchor.Height;
+            if (y < 0)
+                y = 0;
+            return new LayoutRect(x, y, width, rows);
+        }
+
+        private static int HitComboPopupRow(ComboBox combo, LayoutRect popup, int cellX, int cellY)
+        {
+            if (combo == null || !ContainsCell(popup, cellX, cellY))
+                return -1;
+            var index = combo.DropDownScroll + (cellY - popup.Y);
+            if (index < 0 || index >= combo.ItemCount)
+                return -1;
+            return index;
+        }
+
+        private void DrawComboBox(ComboBox combo)
+        {
+            var bounds = combo.ArrangedBounds;
+            if (bounds.Width <= 0 || bounds.Height <= 0)
+                return;
+
+            var focused = ReferenceEquals(combo, FocusedControl());
+            var open = combo.IsDropDownOpen;
+            int px, py;
+            CellToPixel(bounds.X, bounds.Y, out px, out py);
+            var pw = bounds.Width * TerminalFont.GlyphWidth * _scale;
+            var ph = bounds.Height * TerminalFont.GlyphHeight * _scale;
+            _terminal.FillRect(px, py, pw, ph, (focused || open) ? SelectedBg : PanelBg);
+            DrawRectOutline(px, py, pw, ph, (focused || open) ? PanelBorderActive : PanelBorder, Math.Max(1, _scale));
+
+            var selected = combo.SelectedText ?? string.Empty;
+            var prefix = combo.ClosedPrefix ?? string.Empty;
+            var caption = prefix.Length == 0 ? selected : prefix + selected;
+            if (caption.Length == 0)
+                caption = " ";
+            var textWidth = Math.Max(0, bounds.Width - 1);
+            var line = Truncate(" " + caption, textWidth);
+            var color = !combo.Enabled ? Disabled : (focused || open) ? Accent : Fg;
+            _terminal.DrawText(px, py, line, _scale, color);
+            if (bounds.Width > 0)
+            {
+                int gx, gy;
+                CellToPixel(bounds.X + bounds.Width - 1, bounds.Y, out gx, out gy);
+                _terminal.DrawText(gx, gy, open ? "^" : "v", _scale, color);
+            }
+        }
+
+        private void DrawComboPopup(ComboBox combo)
+        {
+            var popup = ComboPopupBounds(combo);
+            if (popup.Width <= 0 || popup.Height <= 0)
+                return;
+
+            int px, py;
+            CellToPixel(popup.X, popup.Y, out px, out py);
+            var pw = popup.Width * TerminalFont.GlyphWidth * _scale;
+            var ph = popup.Height * TerminalFont.GlyphHeight * _scale;
+            _terminal.FillRect(px, py, pw, ph, PanelBg);
+            DrawRectOutline(px, py, pw, ph, PanelBorderActive, Math.Max(1, _scale));
+
+            var cellH = TerminalFont.GlyphHeight * _scale;
+            var scroll = combo.DropDownScroll;
+            for (var row = 0; row < popup.Height; row++)
+            {
+                var index = scroll + row;
+                if (index < 0 || index >= combo.ItemCount)
+                    break;
+                var selected = index == combo.HighlightIndex;
+                int rx, ry;
+                CellToPixel(popup.X, popup.Y + row, out rx, out ry);
+                if (selected)
+                    _terminal.FillRect(rx, ry, pw, cellH, SelectedBg);
+                var text = Truncate(" " + combo.GetItem(index), popup.Width);
+                _terminal.DrawText(rx, ry, text, _scale, selected ? Accent : Fg);
+            }
         }
 
         private void DrawButton(Button button)

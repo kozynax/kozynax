@@ -8,6 +8,7 @@ using Kozui.Interfaces;
 using Kozynax.Cli;
 using Kozynax.UI;
 using ZXMAK2.Host.SdlBackend;
+using ZXMAK2.Host.SdlBackend.Platform.Windows;
 using ZXMAK2.Host.SdlBackend.Services;
 using ZXMAK2.Host.SdlBackend.Views;
 using ZXMAK2.Host.Terminal;
@@ -19,6 +20,7 @@ namespace ZXMAK2
         [STAThread]
         public static void Main(string[] args)
         {
+            WindowsDpi.IgnoreSystemScaling();
             try
             {
                 AppDomain.CurrentDomain.UnhandledException +=
@@ -63,6 +65,7 @@ namespace ZXMAK2
             resolver.RegisterType<IUserHelp, SdlUserHelp>();
             resolver.RegisterType<IOpenFileDialog, SdlOpenFileDialog>();
             resolver.RegisterType<ISaveFileDialog, SdlSaveFileDialog>();
+            resolver.RegisterType<IViewImplementation<PreferencesDialog>, TerminalKozuiDialogHost<PreferencesDialog>>();
             resolver.RegisterType<IViewImplementation<ConfirmDialog>, TerminalKozuiDialogHost<ConfirmDialog>>();
             resolver.RegisterType<IViewImplementation<InputDialog>, TerminalKozuiDialogHost<InputDialog>>();
             resolver.RegisterType<IViewImplementation<ObjectSelectorDialog>, TerminalKozuiDialogHost<ObjectSelectorDialog>>();

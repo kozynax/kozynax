@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Kozynax.UI;
 using ZXMAK2.Engine;
 using ZXMAK2.Host.Entities;
 using ZXMAK2.Host.Presentation.Interfaces;
@@ -12,13 +13,11 @@ namespace ZXMAK2.Host.SdlBackend.Services
         private const string WindowSection = "Window";
         private const string SdlSection = "SDL";
 
-        public const int FontSizeNormal = -1;
-        public const int FontSizeSmaller = -2;
-
         private readonly IniFile _ini;
         private int _windowWidth = 640;
         private int _windowHeight = 512;
-        private int _fontSize = FontSizeNormal;
+        private int _fontSize = UiFontSteps.Regular;
+        private int _dbgFontSize = UiFontSteps.Regular;
 
         public SdlSettingService()
         {
@@ -53,14 +52,15 @@ namespace ZXMAK2.Host.SdlBackend.Services
         }
 
         /// <summary>
-        /// UI font vs window zoom: -1 default, -2 one step smaller.
+        /// Menu font offset vs window zoom. See <see cref="UiFontSteps"/>.
+        /// Saved as [SDL] FontSize.
         /// </summary>
         public int FontSize
         {
             get { return _fontSize; }
             set
             {
-                var size = value <= FontSizeSmaller ? FontSizeSmaller : FontSizeNormal;
+                var size = UiFontSteps.Clamp(value);
                 if (_fontSize == size)
                     return;
                 _fontSize = size;
@@ -68,8 +68,22 @@ namespace ZXMAK2.Host.SdlBackend.Services
             }
         }
 
-        public bool IsSmallerUiFont
-            => _fontSize == FontSizeSmaller;
+        /// <summary>
+        /// Debugger font offset vs window zoom. Same steps as <see cref="FontSize"/>.
+        /// Saved as [SDL] DbgFontSize.
+        /// </summary>
+        public int DbgFontSize
+        {
+            get { return _dbgFontSize; }
+            set
+            {
+                var size = UiFontSteps.Clamp(value);
+                if (_dbgFontSize == size)
+                    return;
+                _dbgFontSize = size;
+                Save();
+            }
+        }
 
         public bool IsToolBarVisible { get; set; } = true;
         public bool IsStatusBarVisible { get; set; } = true;
@@ -96,8 +110,10 @@ namespace ZXMAK2.Host.SdlBackend.Services
                     _windowHeight = height;
                 var fontSize = _ini.GetInt(SdlSection, "FontSize", int.MinValue);
                 if (fontSize == int.MinValue)
-                    fontSize = _ini.GetInt("Render", "FontSize", FontSizeNormal);
-                _fontSize = fontSize <= FontSizeSmaller ? FontSizeSmaller : FontSizeNormal;
+                    fontSize = _ini.GetInt("Render", "FontSize", UiFontSteps.Regular);
+                _fontSize = UiFontSteps.Clamp(fontSize);
+                _dbgFontSize = UiFontSteps.Clamp(
+                    _ini.GetInt(SdlSection, "DbgFontSize", UiFontSteps.Regular));
             }
             catch (Exception ex)
             {
@@ -112,6 +128,7 @@ namespace ZXMAK2.Host.SdlBackend.Services
                 _ini.SetInt(WindowSection, "Width", _windowWidth);
                 _ini.SetInt(WindowSection, "Height", _windowHeight);
                 _ini.SetInt(SdlSection, "FontSize", _fontSize);
+                _ini.SetInt(SdlSection, "DbgFontSize", _dbgFontSize);
                 _ini.RemoveSection("Render");
                 _ini.Save();
             }

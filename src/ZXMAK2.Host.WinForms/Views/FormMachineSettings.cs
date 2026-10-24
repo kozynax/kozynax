@@ -340,11 +340,25 @@ namespace ZXMAK2.Host.WinForms.Views
         {
             ctxMenuWizard.Items.Clear();
 
-            foreach (var m in machines)
+            foreach (var entry in MachineMenuGrouping.Group(machines))
             {
-                var item = ctxMenuWizard.Items.Add(m.Name);
-                item.Tag = m;
-                item.Click += new EventHandler(ctxMenuWizardItem_Click);
+                if (entry.IsGroup)
+                {
+                    var parent = new ToolStripMenuItem(entry.Caption);
+                    foreach (var child in entry.Children)
+                    {
+                        var item = parent.DropDownItems.Add(child.Caption);
+                        item.Tag = child.Machine;
+                        item.Click += new EventHandler(ctxMenuWizardItem_Click);
+                    }
+                    ctxMenuWizard.Items.Add(parent);
+                }
+                else
+                {
+                    var item = ctxMenuWizard.Items.Add(entry.Caption);
+                    item.Tag = entry.Machine;
+                    item.Click += new EventHandler(ctxMenuWizardItem_Click);
+                }
             }
 
             if (ctxMenuWizard.Items.Count < 1)
