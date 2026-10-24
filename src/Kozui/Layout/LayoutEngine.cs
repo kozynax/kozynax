@@ -239,7 +239,7 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
         /// </summary>
         private static bool CanStretchStackMainAxis(KozuiControl child, bool vertical)
         {
-            if (child is Label || child is Button || child is CheckBox || child is StackPanel)
+            if (child is Label || child is Button || child is CheckBox || child is ComboBox || child is StackPanel)
                 return false;
             return vertical
                 ? child.VerticalAlignment == VerticalAlignment.Stretch
@@ -460,6 +460,19 @@ namespace ZXMAK2.Host.WinForms.Lib.Layout
                 var text = checkBox.Text ?? string.Empty;
                 // "[x] text"
                 return new LayoutSize(Math.Max(4, text.Length + 4), 1);
+            }
+
+            if (control is ComboBox combo)
+            {
+                var width = Math.Max(12, combo.MinWidth > 0 ? combo.MinWidth : 12);
+                var count = combo.ItemCount;
+                for (var i = 0; i < count; i++)
+                {
+                    var text = combo.GetItem(i);
+                    if (!string.IsNullOrEmpty(text))
+                        width = Math.Max(width, Math.Min(48, text.Length + 4));
+                }
+                return new LayoutSize(width, 1);
             }
 
             if (control is ProgressBar)

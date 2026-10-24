@@ -96,6 +96,8 @@ namespace ZXMAK2.Host.SdlBackend.Views
 
                         if (TerminalDialogInput.IsEscape(ev))
                         {
+                            if (presenter.TryConsumeEscape())
+                                return true;
                             TryCancel(_ui);
                             closed = true;
                             return true;

@@ -19,11 +19,13 @@ namespace Kozynax.UI
     {
         private readonly bool _saveMode;
         private readonly bool _overwritePrompt;
-        private readonly string _defaultExt;
         private readonly string _suggestedName;
-        private readonly HashSet<string> _extensions;
+        private readonly List<FileType> _fileTypes = new List<FileType>();
+        private string _defaultExt;
+        private HashSet<string> _extensions;
         private string _directory;
         private List<Entry> _entries = new List<Entry>();
+        private ComboBox _typeCombo;
 
         public event EventHandler CloseRequested;
 
@@ -50,7 +52,18 @@ namespace Kozynax.UI
             _suggestedName = string.IsNullOrWhiteSpace(suggestedName)
                 ? string.Empty
                 : Path.GetFileName(suggestedName.Trim());
-            _extensions = ParseExtensions(filter);
+            if (saveMode)
+            {
+                _fileTypes.AddRange(ParseFileTypes(filter));
+                if (_fileTypes.Count > 0)
+                    SelectType(MatchFileType(_fileTypes, _defaultExt), reload: false);
+                else
+                    _extensions = ParseExtensions(filter);
+            }
+            else
+            {
+                _extensions = ParseExtensions(filter);
+            }
 
             _directory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             if (string.IsNullOrEmpty(_directory) || !Directory.Exists(_directory))
@@ -94,9 +107,27 @@ namespace Kozynax.UI
             buttons.Add(OkButton);
             buttons.Add(CancelButton);
 
+            if (_fileTypes.Count > 0)
+            {
+                _typeCombo = new ComboBox
+                {
+                    Dock = Dock.Top,
+                    Margin = new Thickness(0, 1, 0, 0),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                };
+                var captions = new string[_fileTypes.Count];
+                for (var i = 0; i < _fileTypes.Count; i++)
+                    captions[i] = _fileTypes[i].Caption;
+                _typeCombo.SetItems(captions);
+                _typeCombo.SelectedIndex = MatchFileType(_fileTypes, _defaultExt);
+                _typeCombo.SelectedIndexChanged += (_, __) => SelectType(_typeCombo.SelectedIndex, reload: true);
+            }
+
             var help = new Label
             {
-                Text = "Home/End  Enter/dbl-click open  Esc cancel",
+                Text = _typeCombo != null
+                    ? "Enter file type  Enter/dbl-click file  Esc cancel"
+                    : "Home/End  Enter/dbl-click open  Esc cancel",
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 1, 0, 0),
             };
@@ -114,6 +145,8 @@ namespace Kozynax.UI
             EntriesList.Dock = Dock.Fill;
             content.Add(TitleLabel);
             content.Add(PathLabel);
+            if (_typeCombo != null)
+                content.Add(_typeCombo);
             content.Add(help);
             content.Add(buttons);
             content.Add(EntriesList);
@@ -265,6 +298,22 @@ namespace Kozynax.UI
             return true;
         }
 
+        private void SelectType(int index, bool reload)
+        {
+            if (_fileTypes.Count == 0)
+                return;
+            if (index < 0 || index >= _fileTypes.Count)
+                index = 0;
+
+            var type = _fileTypes[index];
+            _extensions = type.Extensions;
+            _defaultExt = string.IsNullOrEmpty(type.DefaultExt)
+                ? string.Empty
+                : (type.DefaultExt.StartsWith(".") ? type.DefaultExt : "." + type.DefaultExt);
+            if (reload)
+                ReloadEntries();
+        }
+
         private void ReloadEntries()
         {
             PathLabel.Text = _directory ?? string.Empty;
@@ -383,19 +432,119 @@ namespace Kozynax.UI
             {
                 if (!part.Contains("*"))
                     continue;
-                foreach (var token in part.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+                var parsed = ParsePatternExtensions(part);
+                if (parsed.Count == 0 && part.IndexOf('*') >= 0)
                 {
-                    var pattern = token.Trim();
-                    if (pattern == "*.*" || pattern == "*")
-                    {
-                        set.Clear();
-                        return set;
-                    }
-                    if (pattern.StartsWith("*."))
-                        set.Add(pattern.Substring(1));
+                    set.Clear();
+                    return set;
                 }
+                foreach (var ext in parsed)
+                    set.Add(ext);
             }
             return set;
+        }
+
+        /// <summary>
+        /// WinForms filter pairs: "description|*.ext|description|*.ext".
+        /// </summary>
+        private static List<FileType> ParseFileTypes(string filter)
+        {
+            var types = new List<FileType>();
+            if (string.IsNullOrWhiteSpace(filter))
+                return types;
+
+            var parts = filter.Split('|');
+            for (var i = 0; i + 1 < parts.Length; i += 2)
+            {
+                var caption = parts[i].Trim();
+                var pattern = parts[i + 1].Trim();
+                if (caption.Length == 0)
+                    caption = pattern;
+                if (pattern.Length == 0 || pattern.IndexOf('*') < 0)
+                    continue;
+                types.Add(new FileType(caption, ParsePatternExtensions(pattern), FirstPlainExtension(pattern)));
+            }
+            return types;
+        }
+
+        private static int MatchFileType(IReadOnlyList<FileType> types, string defaultExt)
+        {
+            if (types == null || types.Count == 0)
+                return 0;
+            var want = NormalizeExt(defaultExt);
+            if (want.Length == 0)
+                return 0;
+            for (var i = 0; i < types.Count; i++)
+            {
+                if (string.Equals(NormalizeExt(types[i].DefaultExt), want, StringComparison.OrdinalIgnoreCase))
+                    return i;
+                foreach (var ext in types[i].Extensions)
+                {
+                    if (string.Equals(NormalizeExt(ext), want, StringComparison.OrdinalIgnoreCase))
+                        return i;
+                }
+            }
+            return 0;
+        }
+
+        private static HashSet<string> ParsePatternExtensions(string pattern)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(pattern))
+                return set;
+
+            foreach (var token in pattern.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var item = token.Trim();
+                if (item == "*.*" || item == "*")
+                    return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (item.StartsWith("*.", StringComparison.Ordinal))
+                    set.Add(item.Substring(1));
+            }
+            return set;
+        }
+
+        private static string FirstPlainExtension(string pattern)
+        {
+            if (string.IsNullOrWhiteSpace(pattern))
+                return null;
+            foreach (var token in pattern.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var item = token.Trim();
+                if (!item.StartsWith("*.", StringComparison.Ordinal) || item.Length < 3)
+                    continue;
+                var ext = item.Substring(2);
+                if (ext.Length == 0 || ext.IndexOfAny(new[] { '*', '?' }) >= 0)
+                    continue;
+                return ext;
+            }
+            return null;
+        }
+
+        private static string NormalizeExt(string ext)
+        {
+            if (string.IsNullOrWhiteSpace(ext))
+                return string.Empty;
+            ext = ext.Trim();
+            if (ext.StartsWith("*.", StringComparison.Ordinal))
+                ext = ext.Substring(2);
+            else if (ext.StartsWith(".", StringComparison.Ordinal))
+                ext = ext.Substring(1);
+            return ext;
+        }
+
+        private sealed class FileType
+        {
+            public FileType(string caption, HashSet<string> extensions, string defaultExt)
+            {
+                Caption = caption ?? string.Empty;
+                Extensions = extensions ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                DefaultExt = defaultExt;
+            }
+
+            public string Caption { get; }
+            public HashSet<string> Extensions { get; }
+            public string DefaultExt { get; }
         }
 
         public enum EntryKind
