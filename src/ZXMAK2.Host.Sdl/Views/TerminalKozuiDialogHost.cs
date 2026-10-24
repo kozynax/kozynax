@@ -30,6 +30,11 @@ namespace ZXMAK2.Host.SdlBackend.Views
         /// <summary>Optional debugger/tool session hooks (input, fit, idle).</summary>
         public IKozuiTerminalSession Session { get; set; }
 
+        /// <summary>
+        /// Glyph scale for this dialog. Null uses the menu scale (<see cref="ITerminal.UiScale"/>).
+        /// </summary>
+        public int? UiScale { get; set; }
+
         public void Init(T ui)
         {
             _ui = ui ?? throw new ArgumentNullException(nameof(ui));
@@ -51,7 +56,10 @@ namespace ZXMAK2.Host.SdlBackend.Views
             if (options.RequireImagePainter && _runtime != null)
                 imagePainter = _runtime.CreateMenuImagePainter();
 
-            var presenter = new TerminalKozuiPresenter(_terminal, _terminal.UiScale)
+            var scale = UiScale ?? _terminal.UiScale;
+            if (scale < TerminalBase.DefaultUiScale)
+                scale = TerminalBase.DefaultUiScale;
+            var presenter = new TerminalKozuiPresenter(_terminal, scale)
             {
                 ImagePainter = imagePainter,
             };

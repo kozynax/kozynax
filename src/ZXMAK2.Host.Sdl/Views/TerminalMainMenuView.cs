@@ -19,7 +19,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
             IEnumerable<ICommand> toolCommands,
             object commandParameter,
             Func<bool> isHostQuitting = null,
-            ICommand smallerUiFont = null)
+            ICommand preferences = null)
         {
             if (terminal == null || !terminal.IsAvailable || viewModel == null)
                 return;
@@ -29,7 +29,7 @@ namespace ZXMAK2.Host.SdlBackend.Views
                 if (isHostQuitting != null && isHostQuitting())
                     break;
 
-                var menu = MainMenuFactory.Create(viewModel, toolCommands, commandParameter, smallerUiFont);
+                var menu = MainMenuFactory.Create(viewModel, toolCommands, commandParameter, preferences);
                 terminal.PrepareForUiInput();
                 var presenter = new TerminalKozuiPresenter(terminal, terminal.UiScale);
                 presenter.Attach(menu.Root);

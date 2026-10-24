@@ -26,6 +26,8 @@ namespace ZXMAK2.Host.SdlBackend
 
         public override int UiScale => _runtime.ResolveUiScale();
 
+        public override int DebuggerUiScale => _runtime.ResolveDbgScale();
+
         public override int Width
         {
             get

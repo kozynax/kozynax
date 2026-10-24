@@ -9,7 +9,7 @@ namespace ZXMAK2.Host.SdlBackend
     /// </summary>
     public sealed unsafe class SdlRuntimeContext
     {
-        private const int MaxUiScale = 4;
+        private const int MaxUiScale = 6;
 
         public Sdl Sdl { get; }
         public SdlDropFileHandler DropFiles { get; }
@@ -51,13 +51,21 @@ namespace ZXMAK2.Host.SdlBackend
         }
 
         /// <summary>
-        /// Integer UI chrome scale from window size vs 100% frame size.
-        /// Default (<see cref="UiFontSize"/> -1): 300%→2×, 400%→3×.
-        /// Smaller font (-2): 300%→1×, 400%→2×. Never below 1×.
+        /// Menu font offset vs window zoom. Regular is -1: 300%→2×, 400%→3×.
+        /// Smallest..Biggest is -4..+1. Never drawn below 1×.
         /// </summary>
         public int UiFontSize { get; set; } = -1;
 
-        public int ResolveUiScale()
+        /// <summary>
+        /// Debugger font offset. Same steps as <see cref="UiFontSize"/>.
+        /// </summary>
+        public int DbgFontSize { get; set; } = -1;
+
+        public int ResolveUiScale() => ResolveScale(UiFontSize);
+
+        public int ResolveDbgScale() => ResolveScale(DbgFontSize);
+
+        private int ResolveScale(int fontOffset)
         {
             if (!IsReady || FrameWidth <= 0 || FrameHeight <= 0)
                 return TerminalBase.DefaultUiScale;
@@ -70,7 +78,7 @@ namespace ZXMAK2.Host.SdlBackend
             var baseW = FrameWidth;
             var baseH = Math.Max(1, (int)Math.Round(FrameHeight * FrameRatio));
             var n = Math.Min(winW / (double)baseW, winH / (double)baseH);
-            var scale = (int)Math.Floor(n + 1e-6) + UiFontSize;
+            var scale = (int)Math.Floor(n + 1e-6) + fontOffset;
             return Math.Min(MaxUiScale, Math.Max(TerminalBase.DefaultUiScale, scale));
         }
 

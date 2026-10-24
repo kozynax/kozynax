@@ -65,6 +65,7 @@ namespace ZXMAK2
             resolver.RegisterType<IUserHelp, SdlUserHelp>();
             resolver.RegisterType<IOpenFileDialog, SdlOpenFileDialog>();
             resolver.RegisterType<ISaveFileDialog, SdlSaveFileDialog>();
+            resolver.RegisterType<IViewImplementation<PreferencesDialog>, TerminalKozuiDialogHost<PreferencesDialog>>();
             resolver.RegisterType<IViewImplementation<ConfirmDialog>, TerminalKozuiDialogHost<ConfirmDialog>>();
             resolver.RegisterType<IViewImplementation<InputDialog>, TerminalKozuiDialogHost<InputDialog>>();
             resolver.RegisterType<IViewImplementation<ObjectSelectorDialog>, TerminalKozuiDialogHost<ObjectSelectorDialog>>();

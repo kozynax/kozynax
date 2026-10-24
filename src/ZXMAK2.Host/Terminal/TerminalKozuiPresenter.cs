@@ -1184,7 +1184,10 @@ namespace ZXMAK2.Host.Terminal
             DrawRectOutline(px, py, pw, ph, (focused || open) ? PanelBorderActive : PanelBorder, Math.Max(1, _scale));
 
             var selected = combo.SelectedText ?? string.Empty;
-            var caption = selected.Length == 0 ? "Type" : "Type: " + selected;
+            var prefix = combo.ClosedPrefix ?? string.Empty;
+            var caption = prefix.Length == 0 ? selected : prefix + selected;
+            if (caption.Length == 0)
+                caption = " ";
             var textWidth = Math.Max(0, bounds.Width - 1);
             var line = Truncate(" " + caption, textWidth);
             var color = !combo.Enabled ? Disabled : (focused || open) ? Accent : Fg;

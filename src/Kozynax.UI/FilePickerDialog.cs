@@ -114,6 +114,7 @@ namespace Kozynax.UI
                     Dock = Dock.Top,
                     Margin = new Thickness(0, 1, 0, 0),
                     HorizontalAlignment = HorizontalAlignment.Stretch,
+                    ClosedPrefix = "Type: ",
                 };
                 var captions = new string[_fileTypes.Count];
                 for (var i = 0; i < _fileTypes.Count; i++)

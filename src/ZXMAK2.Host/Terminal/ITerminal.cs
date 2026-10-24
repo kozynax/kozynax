@@ -17,6 +17,11 @@ namespace ZXMAK2.Host.Terminal
         /// </summary>
         int UiScale { get; }
 
+        /// <summary>
+        /// Glyph scale for the debugger window. Menus keep <see cref="UiScale"/>.
+        /// </summary>
+        int DebuggerUiScale { get; }
+
         void Clear(TerminalColor color);
         void FillRect(int x, int y, int width, int height, TerminalColor color);
         void DrawText(int x, int y, string text, int scale, TerminalColor color);

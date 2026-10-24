@@ -13,6 +13,8 @@ namespace ZXMAK2.Host.Terminal
         public abstract int Height { get; }
         public virtual int UiScale => DefaultUiScale;
 
+        public virtual int DebuggerUiScale => UiScale;
+
         public abstract void Clear(TerminalColor color);
         public abstract void FillRect(int x, int y, int width, int height, TerminalColor color);
         public abstract void Present();
