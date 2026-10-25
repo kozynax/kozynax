@@ -52,6 +52,7 @@ Icon=${PKG_NAME}
 Terminal=false
 Categories=Game;Emulator;
 StartupNotify=true
+StartupWMClass=${PKG_NAME}
 EOF
 
 cp "${ROOT}/LICENSE" "${STAGE}/usr/share/doc/${PKG_NAME}/copyright"
