@@ -96,13 +96,20 @@
 	<RomSet name="PentEvo">
 		<Page name="RAW" image="EVO/zxevo.rom"/>
 	</RomSet>
-	<RomSet name="Magic-05 v5.1">
-		<Page name="RAW" image="MAGIC/MAGIC5_1.ROM" />
+	<RomSet name="Magic-05">
+		<Page name="SOS" image="MAGIC/magic91.rom" />
+		<Page name="DOS" image="TRDOS/trdos.rom" />
 	</RomSet>
-	<RomSet name="Magic-05 v6.3">
-		<Page name="RAW" image="MAGIC/MAGIC6_3.ROM" />
+	<RomSet name="Magic-05M v5.1">
+		<Page name="SOS" image="MAGIC/MAGIC5_1.ROM" />
+		<Page name="DOS" image="TRDOS/trdos.rom" />
 	</RomSet>
-	<RomSet name="Magic-05 v6.5">
-		<Page name="RAW" image="MAGIC/MAGIC6_5.ROM" />
+	<RomSet name="Magic-06 v6.3">
+		<Page name="SOS" image="MAGIC/MAGIC6_3.ROM" />
+		<Page name="DOS" image="TRDOS/trdos.rom" />
+	</RomSet>
+	<RomSet name="Magic-06 v6.5">
+		<Page name="SOS" image="MAGIC/MAGIC6_5.ROM" />
+		<Page name="DOS" image="TRDOS/trdos.rom" />
 	</RomSet>
 </Mapping>
