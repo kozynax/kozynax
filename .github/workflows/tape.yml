@@ -1,0 +1,25 @@
+name: Tape scripts
+
+on:
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  tzx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Run tzx scripts
+        run: >
+          dotnet test tests/Kozynax.Tests.csproj -c Release
+          --filter FullyQualifiedName~TzxLuaTests
+          --logger "console;verbosity=detailed"
