@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace />
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -27,8 +27,8 @@
     <PackageReference Include="MoonSharp" Version="2.0.0" />
     <PackageReference Include="Silk.NET.SDL" Version="2.22.0" />
     <PackageReference Include="StbImageSharp" Version="2.30.15" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
-    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
