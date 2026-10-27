@@ -1,0 +1,3 @@
+-- TZX File MD5: 828db0a2f03e342c5e592b853e688852
+include "load.lua"
+LoadTape("Beach Head II.tzx", "Sinclair48", 0x7092, "\xDB\xFE\xE6\x1F\xBB\x28\x10\xCB\x03\xCB\xC3\xCB\xAB\x15\x20\xEF")

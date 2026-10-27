@@ -1,0 +1,3 @@
+-- TZX File MD5: f0ed53eb2d64730d42742761f670713a
+include "load.lua"
+LoadTape("International Karate - Side 1.tzx", "Sinclair48", 0xA786, "\x00\x00\x08\x1D\xD3\xFE\x20\x17\xDD\x5C\xAA\x08\x2D\xC2\xAC\xA7")

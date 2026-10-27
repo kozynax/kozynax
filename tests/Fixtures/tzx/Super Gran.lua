@@ -1,0 +1,3 @@
+-- TZX File MD5: 07ae0cf0184640dd15063dbe4c19f98c
+include "load.lua"
+LoadTape("Super Gran.tzx", "Sinclair48", 0x8181, "\xFB\xC9\xC3\x8B\x99\xC3\xC0\x96\xC3\x82\x99\xC3\xFF\x99\x3E\xFE")

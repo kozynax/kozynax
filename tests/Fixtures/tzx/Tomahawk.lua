@@ -1,0 +1,3 @@
+-- TZX File MD5: e57c6ffdbc5b0316e4a4d2c101a235cc
+include "load.lua"
+LoadTape("Tomahawk.tzx", "Sinclair48", 0xE268, "\xED\x78\x1F\x38\xF8\xAF\x3D\x20\xFD\xCD\xE5\xE7\xAF\xED\x79\xDD")

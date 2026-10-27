@@ -1,0 +1,3 @@
+-- TZX File MD5: 5822481e30eb7a7eeaae3fe2ad49742a
+include "load.lua"
+LoadTape("Super Pipeline II.tzx", "Sinclair48", 0xE7E7, "\xC3\x26\xE7\xF8\x00\xF8\x00\x00\x00\x00\x20\x10\x08\x10\x20\x00")

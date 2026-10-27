@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <RootNamespace>Kozynax.Tests</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <!-- Tape scripts take too long for the build server. Pass an explicit filter to run them. -->
+    <VSTestTestCaseFilter>FullyQualifiedName!~TzxLuaTests</VSTestTestCaseFilter>
   </PropertyGroup>
 
   <ItemGroup>

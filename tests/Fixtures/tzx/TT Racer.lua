@@ -1,0 +1,3 @@
+-- TZX File MD5: 751f8a9d583faa022120434d3ae5da75
+include "load.lua"
+LoadTape("TT Racer.tzx", "Sinclair48", 0xDA76, "\x23\xCB\x00\x38\xF5\xBB\x20\x0C\xCB\xB6\xCB\xBE\xF1\xC1\x56\xCB")

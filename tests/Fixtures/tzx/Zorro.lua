@@ -1,0 +1,3 @@
+-- TZX File MD5: df4eec6155f995c54bd94a3d4e86e1e9
+include "load.lua"
+LoadTape("Zorro.tzx", "Sinclair48", 0x61FB, "\x3E\xF7\xDB\xFE\x0E\x00\xCB\x47\x28\x0F\x0C\xCB\x4F\x28\x0A\x0C")

@@ -1,0 +1,3 @@
+-- TZX File MD5: c771cbaaf7064f662d193b07a18217b7
+include "load.lua"
+LoadTape("Nemesis The Warlock - Side 1.tzx", "Sinclair48", 0x6FE1, "\x20\xF7\x21\xFA\xA1\x22\xFC\xCA\x3E\x03\x32\xA9\xCA\x3E\xFF\x32")

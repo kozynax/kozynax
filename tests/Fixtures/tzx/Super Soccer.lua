@@ -1,0 +1,3 @@
+-- TZX File MD5: ee8cfb53442bd095c4671474989d060e
+include "load.lua"
+LoadTape("Super Soccer.tzx", "Sinclair48", 0xFFFF, "\x18\xF3\xAF\x11\xFF\xFF\xC3\xCB\x11\x2A\x5D\x5C\x22\x5F\x5C\x18")

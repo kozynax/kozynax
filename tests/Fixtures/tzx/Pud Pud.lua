@@ -1,0 +1,3 @@
+-- TZX File MD5: 30494f681da5a28097207dedbaf81ae9
+include "load.lua"
+LoadTape("Pud Pud.tzx", "Sinclair48", 0xC540, "\x78\xB1\x20\x0A\x01\x87\x00\x08\xC6\x10\xD3\xFE\x08\x2B\x1B\x7A")

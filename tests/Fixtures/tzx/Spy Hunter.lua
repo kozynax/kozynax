@@ -1,0 +1,3 @@
+-- TZX File MD5: e25e7121aefddeb1f63fdd647e8a8384
+include "load.lua"
+LoadTape("Spy Hunter.tzx", "Sinclair48", 0xDF02, "\x38\x06\x10\xFB\x78\xC3\xEF\xDE\x08\xB7\x20\xE1\xCB\x78\x20\x21")

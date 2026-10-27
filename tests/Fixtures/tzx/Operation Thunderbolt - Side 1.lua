@@ -1,0 +1,3 @@
+-- TZX File MD5: abb94ee953c02ff588464053f5e4f386
+include "load.lua"
+LoadTape("Operation Thunderbolt - Side 1.tzx", "Sinclair48", 0x9D42, "\x2F\xE6\x1F\xC9\xCD\x3F\x9D\x20\xFB\xC9\xFE\xFF\xC8\xED\x73\xAA")

@@ -1,0 +1,3 @@
+-- TZX File MD5: 573a68510fd221869374cc59e7874fad
+include "load.lua"
+LoadTape("Potty Pigeon.tzx", "Sinclair48", 0x65D5, "\x78\x0F\x38\xFB\x3E\x01\xD3\xFE\x06\x0A\x21\xA1\x5F\x36\x00\x23")

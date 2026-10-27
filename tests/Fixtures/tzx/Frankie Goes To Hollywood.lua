@@ -1,0 +1,3 @@
+-- TZX File MD5: 17c9f9708bf713cacc470bc951437c9b
+include "load.lua"
+LoadTape("Frankie Goes To Hollywood.tzx", "Sinclair48", 0xE0E0, "\xC3\x6E\xE1\x01\x03\x04\x06\x08\x0A\x0B\x0D\x0F\x07\x06\x01\x02")

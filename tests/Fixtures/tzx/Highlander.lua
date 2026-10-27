@@ -1,0 +1,3 @@
+-- TZX File MD5: ec34d55e348d4e321fcd6a66c4100cd3
+include "load.lua"
+LoadTape("Highlander.tzx", "Sinclair48", 0xC980, "\x78\xE6\x01\xC2\x7C\xC9\xCD\xC7\xE2\xCD\x44\xCB\xCD\xFB\xCC\xCD")

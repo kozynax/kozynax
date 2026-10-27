@@ -1,0 +1,3 @@
+-- TZX File MD5: 7068f68c65da2738edb0b4aeafc5185b
+include "load.lua"
+LoadTape("Dan Dare - Side 1.tzx", "Sinclair48", 0xE4E4, "\xC3\x19\xB6\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")

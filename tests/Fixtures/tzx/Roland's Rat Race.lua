@@ -1,0 +1,3 @@
+-- TZX File MD5: 0e0faf93ed2cfec32c2ee039e209b526
+include "load.lua"
+LoadTape("Roland's Rat Race.tzx", "Sinclair48", 0xE23D, "\x38\x06\x10\xFB\x78\xC3\x2A\xE2\x08\xB7\x20\xE1\xCB\x78\x20\x21")
