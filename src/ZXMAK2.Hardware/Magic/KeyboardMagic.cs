@@ -16,7 +16,7 @@ namespace ZXMAK2.Hardware.Magic
         public override void BusInit(IBusManager bmgr)
         {
             m_busManager = bmgr;
-            bmgr.Events.SubscribeRdIo(0x99, 0x98, readPortFE);
+            bmgr.Events.SubscribeRdIo(0x1F, 0x1E, readPortFE);
             bmgr.Events.SubscribeRdIo(0x1F, 0x1C, readPortKbdExt);
             
             m_cpu = bmgr.CPU;
