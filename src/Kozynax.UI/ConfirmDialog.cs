@@ -46,12 +46,10 @@ namespace Kozynax.UI
                 Text = string.IsNullOrEmpty(caption) ? "Confirm" : caption,
                 HorizontalAlignment = HorizontalAlignment.Center,
             };
-            MessageLabel = new Label
-            {
-                Text = message ?? string.Empty,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 1, 0, 1),
-            };
+            // Kozui Label is single-line; split so "\n" is not drawn as "??".
+            var messageLines = (message ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n')
+                .Split(new[] { '\n' }, StringSplitOptions.None);
+            MessageLabel = null;
             OkButton = new Button { Text = acceptText };
             CancelButton = new Button
             {
@@ -78,7 +76,28 @@ namespace Kozynax.UI
                 MinWidth = 24,
             };
             content.Add(TitleLabel);
-            content.Add(MessageLabel);
+            for (var i = 0; i < messageLines.Length; i++)
+            {
+                var label = new Label
+                {
+                    Text = messageLines[i],
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0, i == 0 ? 1 : 0, 0, i == messageLines.Length - 1 ? 1 : 0),
+                };
+                if (MessageLabel == null)
+                    MessageLabel = label;
+                content.Add(label);
+            }
+            if (MessageLabel == null)
+            {
+                MessageLabel = new Label
+                {
+                    Text = string.Empty,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0, 1, 0, 1),
+                };
+                content.Add(MessageLabel);
+            }
             content.Add(buttons);
 
             var frame = new Placeholder

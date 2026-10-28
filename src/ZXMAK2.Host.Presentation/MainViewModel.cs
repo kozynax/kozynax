@@ -346,7 +346,18 @@ namespace ZXMAK2.Host.Presentation
                 "ZXMAK2.vmz");
             if (File.Exists(fileName))
             {
-                m_vm.OpenConfig(fileName);
+                try
+                {
+                    m_vm.OpenConfig(fileName);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex);
+                    if (!AskUseDefaultConfig(ex))
+                        throw;
+                    m_vm.Spectrum.BusManager.Init(m_vm.Spectrum, false);
+                    m_vm.SaveConfigAs(fileName);
+                }
             }
             else
             {
@@ -365,6 +376,22 @@ namespace ZXMAK2.Host.Presentation
             TryApplyStartupScale();
             UpdateAllCommands();
             StartScript();
+        }
+
+        private bool AskUseDefaultConfig(Exception ex)
+        {
+            var query = m_resolver.TryResolve<IUserQuery>();
+            if (query == null)
+                return true;
+
+            var message = string.Format(
+                "Failed to load machine configuration:\n{0}\n\nUse default configuration instead?",
+                ex.Message);
+            return query.Show(
+                message,
+                "Configuration Error",
+                DlgButtonSet.YesNo,
+                DlgIcon.Error) == DlgResult.Yes;
         }
 
         private void MainView_OnViewClosed(object sender, EventArgs e)
