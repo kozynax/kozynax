@@ -1,12 +1,6 @@
-﻿using System;
-using System.Linq;
-using System.IO;
-using System.Drawing;
-using System.Drawing.Imaging;
-
+﻿using System.IO;
+using StbImageWriteSharp;
 using ZXMAK2.Engine.Interfaces;
-using ZXMAK2.Dependency;
-using ZXMAK2.Host.Interfaces;
 
 
 namespace ZXMAK2.Serializers.ScreenshotSerializers
@@ -20,26 +14,9 @@ namespace ZXMAK2.Serializers.ScreenshotSerializers
 
         public override string FormatExtension { get { return "JPG"; } }
 
-        protected override void Save(Stream stream, Bitmap bmp)
+        protected override void Save(Stream stream, byte[] rgba, int width, int height)
         {
-            var jpgEncoder = ImageCodecInfo.GetImageDecoders()
-                .FirstOrDefault(codec => codec.FormatID == ImageFormat.Jpeg.Guid);
-            if (jpgEncoder == null)
-            {
-                Locator.Resolve<IUserMessage>().Error("Could not find JPEG encoder!");
-                return;
-            }
-            using (var eps = new EncoderParameters(1))
-            {
-                eps.Param[0] = new EncoderParameter(Encoder.Quality, 500L);
-                bmp.Save(stream, jpgEncoder, eps);
-            }
-        }
-
-        private static ImageCodecInfo GetEncoder(ImageFormat format)
-        {
-            var codecs = ImageCodecInfo.GetImageDecoders();
-            return codecs.FirstOrDefault(codec => codec.FormatID == format.Guid); 
+            new ImageWriter().WriteJpg(rgba, width, height, ColorComponents.RedGreenBlueAlpha, stream, 95);
         }
     }
 }

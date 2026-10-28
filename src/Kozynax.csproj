@@ -32,6 +32,7 @@
     <Reference Include="System.Windows.Forms" />
     <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="1.2.0.9" />
     <PackageReference Include="MoonSharp" Version="2.0.0" />
+    <PackageReference Include="StbImageWriteSharp" Version="1.13.5" />
     <!-- Lets CI/SDK build net46 without a full Framework install. -->
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net46" Version="1.0.3" PrivateAssets="All" />
     <!-- Used by NativeHelper (initblk/cpblk/sizeof) without shipping .il + ilasm. -->

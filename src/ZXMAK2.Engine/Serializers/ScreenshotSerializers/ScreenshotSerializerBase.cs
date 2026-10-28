@@ -1,8 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 using ZXMAK2.Engine.Interfaces;
 
 
@@ -24,42 +21,43 @@ namespace ZXMAK2.Serializers.ScreenshotSerializers
 
         public override bool CanSerialize { get { return true; } }
 
-        public unsafe override void Serialize(Stream stream)
+        public override void Serialize(Stream stream)
         {
             var videoData = m_ulaDevice.VideoData;
-            using (var bmp = new Bitmap(videoData.Size.Width, videoData.Size.Height, PixelFormat.Format32bppArgb))
-            {
-                var size = videoData.Size;
-                var bmpData = bmp.LockBits(new Rectangle(0, 0, size.Width, size.Height), ImageLockMode.WriteOnly, bmp.PixelFormat);
-                try
-                {
-                    Marshal.Copy(videoData.Buffer, 0, bmpData.Scan0, size.Width * size.Height);
-                }
-                finally
-                {
-                    bmp.UnlockBits(bmpData);
-                }
-
-                var sizeScale = new Size(
-                    size.Width, 
-                    (int)((float)size.Height * videoData.Ratio));
-                using (var bmpScale = new Bitmap(sizeScale.Width, sizeScale.Height, bmp.PixelFormat))
-                {
-                    using (var g = Graphics.FromImage(bmpScale))
-                    {
-                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                        // -0.5 pixel shift to avoid shift after scale (looks like bug in Graphics)
-                        var dstRect = new RectangleF(-0.5F, -0.5F, sizeScale.Width, sizeScale.Height);
-                        var srcRect = new RectangleF(-0.5F, -0.5F, size.Width, size.Height);
-                        g.DrawImage(bmp, dstRect, srcRect, GraphicsUnit.Pixel);
-                    }
-                    Save(stream, bmpScale);
-                }
-            }
+            var size = videoData.Size;
+            var scaledHeight = Math.Max(1, (int)(size.Height * videoData.Ratio));
+            var rgba = ScaleToRgba(videoData.Buffer, size.Width, size.Height, scaledHeight);
+            Save(stream, rgba, size.Width, scaledHeight);
         }
 
         #endregion
 
-        protected abstract void Save(Stream stream, Bitmap bmp);
+        protected abstract void Save(Stream stream, byte[] rgba, int width, int height);
+
+        /// <summary>
+        /// Convert ARGB ints to RGBA bytes and nearest-neighbor scale height by <paramref name="scaledHeight"/>.
+        /// </summary>
+        private static byte[] ScaleToRgba(int[] argb, int width, int height, int scaledHeight)
+        {
+            var rgba = new byte[width * scaledHeight * 4];
+            for (var y = 0; y < scaledHeight; y++)
+            {
+                var srcY = height == scaledHeight
+                    ? y
+                    : (int)((long)y * height / scaledHeight);
+                var srcRow = srcY * width;
+                var dstRow = y * width * 4;
+                for (var x = 0; x < width; x++)
+                {
+                    var pixel = argb[srcRow + x];
+                    var i = dstRow + x * 4;
+                    rgba[i] = (byte)(pixel >> 16);       // R
+                    rgba[i + 1] = (byte)(pixel >> 8);    // G
+                    rgba[i + 2] = (byte)pixel;           // B
+                    rgba[i + 3] = (byte)(pixel >> 24);   // A
+                }
+            }
+            return rgba;
+        }
     }
 }

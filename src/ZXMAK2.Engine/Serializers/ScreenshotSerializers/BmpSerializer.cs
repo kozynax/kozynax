@@ -1,7 +1,5 @@
-﻿using System;
-using System.IO;
-using System.Drawing;
-using System.Drawing.Imaging;
+﻿using System.IO;
+using StbImageWriteSharp;
 using ZXMAK2.Engine.Interfaces;
 
 
@@ -16,9 +14,9 @@ namespace ZXMAK2.Serializers.ScreenshotSerializers
 
         public override string FormatExtension { get { return "BMP"; } }
 
-        protected override void Save(Stream stream, Bitmap bmp)
+        protected override void Save(Stream stream, byte[] rgba, int width, int height)
         {
-            bmp.Save(stream, ImageFormat.Bmp);
+            new ImageWriter().WriteBmp(rgba, width, height, ColorComponents.RedGreenBlueAlpha, stream);
         }
     }
 }
