@@ -28,9 +28,9 @@ public class RcInt
             // Values are 34 (mostly) and 35 (a bit more rare)
             // Also sometimes it shows 0, 20% seems good approximation for this.
             var rnd = s_intRng.Next(100);
-            if (rnd < 20)
+            /* if (rnd < 20) // disable 0 (skipped INT) temporarily as it breaks ROM keyboard read. Need to check the waveform on the actual hardware.
                 IntLength = 1;
-            else if (rnd < 55)
+            else*/ if (rnd < 55)
                 IntLength = _targetIntLength + 1;
             else
                 IntLength = _targetIntLength;
