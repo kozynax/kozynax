@@ -5,7 +5,8 @@ namespace Kozynax.UI
 {
     /// <summary>
     /// Collapses machine names that share a word prefix into one submenu.
-    /// "ZX Spectrum 48" and "ZX Spectrum 128" become "ZX Spectrum" → "48", "128".
+    /// "ZX Spectrum 48" and "ZX Spectrum 128" become "ZX Spectrum" → "ZX Spectrum 48", "ZX Spectrum 128".
+    /// Submenu items keep the full machine name.
     /// </summary>
     public static class MachineMenuGrouping
     {
@@ -64,7 +65,7 @@ namespace Kozynax.UI
 
                 if (prefixLen[i] <= 0)
                 {
-                    result.Add(Leaf(list[i], CaptionOf(words[i], 0)));
+                    result.Add(Leaf(list[i], CaptionOf(words[i])));
                     emitted[i] = true;
                     continue;
                 }
@@ -82,7 +83,7 @@ namespace Kozynax.UI
 
                 if (members.Count < 2)
                 {
-                    result.Add(Leaf(list[i], CaptionOf(words[i], 0)));
+                    result.Add(Leaf(list[i], CaptionOf(words[i])));
                     emitted[i] = true;
                     continue;
                 }
@@ -91,7 +92,7 @@ namespace Kozynax.UI
                 foreach (var j in members)
                 {
                     emitted[j] = true;
-                    children.Add(Leaf(list[j], CaptionOf(words[j], prefixLen[j])));
+                    children.Add(Leaf(list[j], CaptionOf(words[j])));
                 }
                 result.Add(new Entry(key, null, children));
             }
@@ -127,13 +128,7 @@ namespace Kozynax.UI
         private static string Prefix(string[] words, int count)
             => string.Join(" ", words, 0, Math.Max(0, Math.Min(count, words.Length)));
 
-        private static string CaptionOf(string[] words, int prefixLen)
-        {
-            if (words.Length == 0)
-                return string.Empty;
-            if (prefixLen <= 0 || prefixLen >= words.Length)
-                return string.Join(" ", words);
-            return string.Join(" ", words, prefixLen, words.Length - prefixLen);
-        }
+        private static string CaptionOf(string[] words)
+            => words.Length == 0 ? string.Empty : string.Join(" ", words);
     }
 }

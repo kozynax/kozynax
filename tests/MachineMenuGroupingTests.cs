@@ -27,24 +27,24 @@ public sealed class MachineMenuGroupingTests
         Assert.Equal(new[]
         {
             "ATM Turbo",
-            "  [V4.50]",
-            "  2+ [V7.10]",
+            "  ATM Turbo [V4.50]",
+            "  ATM Turbo 2+ [V7.10]",
             "BYTE",
-            "  48K",
-            "  128K+TRDOS",
+            "  BYTE 48K",
+            "  BYTE 128K+TRDOS",
             "DELTA-C",
             "PENTAGON",
-            "  128K",
-            "  512K",
-            "  1024K",
+            "  PENTAGON 128K",
+            "  PENTAGON 512K",
+            "  PENTAGON 1024K",
             "PENT EVO",
             "Scorpion ZS",
-            "  256 PROF-ROM",
-            "  256",
+            "  Scorpion ZS 256 PROF-ROM",
+            "  Scorpion ZS 256",
             "ZX Spectrum",
-            "  48",
-            "  128",
-            "  +3",
+            "  ZX Spectrum 48",
+            "  ZX Spectrum 128",
+            "  ZX Spectrum +3",
         }, Flatten(grouped));
     }
 
@@ -69,7 +69,9 @@ public sealed class MachineMenuGroupingTests
 
         var group = Assert.Single(grouped);
         Assert.Equal("ZX Spectrum", group.Caption);
+        Assert.Equal("ZX Spectrum 48", group.Children[0].Caption);
         Assert.Equal(spec48, group.Children[0].Machine);
+        Assert.Equal("ZX Spectrum 128", group.Children[1].Caption);
         Assert.Equal(spec128, group.Children[1].Machine);
     }
 
