@@ -44,6 +44,9 @@
     <Compile Remove="ZXMAK2.Host.Sdl\**" />
     <EmbeddedResource Remove="ZXMAK2.Host.Sdl\**" />
     <None Remove="ZXMAK2.Host.Sdl\**" />
+    <!-- Avalonia host is built by Kozynax.Avalonia.csproj only -->
+    <Compile Remove="ZXMAK2.Host.Avalonia\**" />
+    <None Remove="ZXMAK2.Host.Avalonia\**" />
     <!-- Linux TTY backend (net5+/libc); not used by WinForms -->
     <Compile Remove="ZXMAK2.Host\Terminal\StdioTerminal.cs" />
 

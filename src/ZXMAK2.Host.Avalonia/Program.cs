@@ -5,6 +5,7 @@ using Kozynax.UI;
 using ZXMAK2.Dependency;
 using ZXMAK2.Hardware.Circuits.Sound;
 using ZXMAK2.Host.AvaloniaBackend;
+using ZXMAK2.Host.AvaloniaBackend.Kozui;
 using ZXMAK2.Host.AvaloniaBackend.Services;
 using ZXMAK2.Host.AvaloniaBackend.Views;
 using ZXMAK2.Host.Interfaces;
@@ -59,20 +60,21 @@ namespace ZXMAK2
             resolver.RegisterType<IOpenFileDialog, AvaloniaOpenFileDialog>();
             resolver.RegisterType<ISaveFileDialog, AvaloniaSaveFileDialog>();
 
-            // Kozui dialogs: placeholder hosts until the Kozui -> Avalonia presenter lands.
+            // Kozui dialogs rendered through the generic Avalonia presenter; the debugger
+            // dialogs still need a terminal session port and stay on the placeholder host.
             // Tool-view adapters are shared with the SDL host (host-neutral).
-            resolver.RegisterType<IViewImplementation<PreferencesDialog>, PendingKozuiDialogHost<PreferencesDialog>>();
-            resolver.RegisterType<IViewImplementation<ConfirmDialog>, PendingKozuiDialogHost<ConfirmDialog>>();
-            resolver.RegisterType<IViewImplementation<InputDialog>, PendingKozuiDialogHost<InputDialog>>();
-            resolver.RegisterType<IViewImplementation<ObjectSelectorDialog>, PendingKozuiDialogHost<ObjectSelectorDialog>>();
-            resolver.RegisterType<IViewImplementation<FilePickerDialog>, PendingKozuiDialogHost<FilePickerDialog>>();
-            resolver.RegisterType<IViewImplementation<AboutDialog>, PendingKozuiDialogHost<AboutDialog>>();
-            resolver.RegisterType<IViewImplementation<KeyboardHelpDialog>, PendingKozuiDialogHost<KeyboardHelpDialog>>();
-            resolver.RegisterType<IViewImplementation<MemoryMap>, PendingKozuiDialogHost<MemoryMap>>();
-            resolver.RegisterType<IViewImplementation<FddDebugDialog>, PendingKozuiDialogHost<FddDebugDialog>>();
-            resolver.RegisterType<IViewImplementation<TapeSettings>, PendingKozuiDialogHost<TapeSettings>>();
-            resolver.RegisterType<IViewImplementation<MachineSettings>, PendingKozuiDialogHost<MachineSettings>>();
-            resolver.RegisterType<IViewImplementation<AddDeviceDialog>, PendingKozuiDialogHost<AddDeviceDialog>>();
+            resolver.RegisterType<IViewImplementation<PreferencesDialog>, AvaloniaKozuiDialogHost<PreferencesDialog>>();
+            resolver.RegisterType<IViewImplementation<ConfirmDialog>, AvaloniaKozuiDialogHost<ConfirmDialog>>();
+            resolver.RegisterType<IViewImplementation<InputDialog>, AvaloniaKozuiDialogHost<InputDialog>>();
+            resolver.RegisterType<IViewImplementation<ObjectSelectorDialog>, AvaloniaKozuiDialogHost<ObjectSelectorDialog>>();
+            resolver.RegisterType<IViewImplementation<FilePickerDialog>, AvaloniaKozuiDialogHost<FilePickerDialog>>();
+            resolver.RegisterType<IViewImplementation<AboutDialog>, AvaloniaKozuiDialogHost<AboutDialog>>();
+            resolver.RegisterType<IViewImplementation<KeyboardHelpDialog>, AvaloniaKozuiDialogHost<KeyboardHelpDialog>>();
+            resolver.RegisterType<IViewImplementation<MemoryMap>, AvaloniaKozuiDialogHost<MemoryMap>>();
+            resolver.RegisterType<IViewImplementation<FddDebugDialog>, AvaloniaKozuiDialogHost<FddDebugDialog>>();
+            resolver.RegisterType<IViewImplementation<TapeSettings>, AvaloniaKozuiDialogHost<TapeSettings>>();
+            resolver.RegisterType<IViewImplementation<MachineSettings>, AvaloniaKozuiDialogHost<MachineSettings>>();
+            resolver.RegisterType<IViewImplementation<AddDeviceDialog>, AvaloniaKozuiDialogHost<AddDeviceDialog>>();
             resolver.RegisterType<IViewImplementation<DebuggerDialog>, PendingKozuiDialogHost<DebuggerDialog>>();
             resolver.RegisterType<IViewImplementation<SprinterDebuggerDialog>, PendingKozuiDialogHost<SprinterDebuggerDialog>>();
             resolver.RegisterType<ITapeView, TapeToolView>();

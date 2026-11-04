@@ -577,14 +577,30 @@ namespace ZXMAK2.Engine
             {
                 asmName = Assembly.GetCallingAssembly().FullName;
             }
-            var asm = asmName != null ?
-                Assembly.Load(asmName) :
-                oldAsmName != null ? Assembly.LoadFrom(oldAsmName) : null;
-            if (asm != null)
+            var asm = (Assembly)null;
+            try
             {
-                return asm.GetType(typeName);
+                asm = asmName != null ?
+                    Assembly.Load(asmName) :
+                    oldAsmName != null ? Assembly.LoadFrom(oldAsmName) : null;
             }
-            return null;
+            catch (FileNotFoundException)
+            {
+                asm = null;
+            }
+            catch (FileLoadException)
+            {
+                asm = null;
+            }
+            var type = asm != null ? asm.GetType(typeName) : null;
+            if (type == null)
+            {
+                // Each host (Kozynax / Kozynax.Sdl / Kozynax.Avalonia) compiles the devices
+                // into its own exe, and a config saved by one host names that assembly.
+                var entry = Assembly.GetEntryAssembly();
+                type = entry != null ? entry.GetType(typeName) : null;
+            }
+            return type;
         }
 
         private static string GetTrimmedString(string value)

@@ -1,0 +1,70 @@
+<Project>
+
+  <!-- Kozynax.Sdl.csproj also targets net10.0 from this folder; keep intermediates apart. -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj\Avalonia\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>obj\Avalonia\</MSBuildProjectExtensionsPath>
+    <!-- Default excludes derive from BaseIntermediateOutputPath; keep the sibling obj/ out. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace />
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Kozynax.Avalonia</AssemblyName>
+    <DefineConstants>$(DefineConstants);AVALONIA_HOST</DefineConstants>
+    <Version>0.0.0</Version>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
+    <PackageReference Include="ICSharpCode.SharpZipLib.Patched" Version="1.2.0.9" />
+    <PackageReference Include="MoonSharp" Version="2.0.0" />
+    <!-- Audio + joystick only (Avalonia has neither); window/input are Avalonia. -->
+    <PackageReference Include="Silk.NET.SDL" Version="2.22.0" />
+    <PackageReference Include="StbImageSharp" Version="2.30.15" />
+    <PackageReference Include="StbImageWriteSharp" Version="1.13.5" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Windows / DX / WinForms host stay out of the Avalonia build -->
+    <Compile Remove="ZXMAK2.DirectX\**" />
+    <Compile Remove="ZXMAK2.Host.WinForms\**" />
+    <Compile Remove="ZXMAK2.Hardware.WinForms\**" />
+    <Compile Remove="ZXMAK2\Program.cs" />
+    <Compile Remove="Properties\AssemblyInfo.cs" />
+    <None Remove="ZXMAK2\app.config" />
+
+    <!-- SDL host stays out too, except the host-neutral bits we reuse. -->
+    <Compile Remove="ZXMAK2.Host.Sdl\**" />
+    <Compile Include="ZXMAK2.Host.Sdl\SdlSound.cs" />
+    <Compile Include="ZXMAK2.Host.Sdl\SdlJoystick.cs" />
+    <Compile Include="ZXMAK2.Host.Sdl\Services\IniFile.cs" />
+    <Compile Include="ZXMAK2.Host.Sdl\Views\KozuiToolViews.cs" />
+
+    <EmbeddedResource Remove="ZXMAK2.DirectX\**" />
+    <EmbeddedResource Remove="ZXMAK2.Host.WinForms\**" />
+    <EmbeddedResource Remove="ZXMAK2.Hardware.WinForms\**" />
+    <EmbeddedResource Remove="ZXMAK2.Host.Sdl\**" />
+    <None Remove="ZXMAK2.DirectX\**" />
+    <None Remove="ZXMAK2.Host.Sdl\**" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+</Project>

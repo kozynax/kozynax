@@ -41,6 +41,9 @@
     <Compile Remove="Properties\AssemblyInfo.cs" />
     <!-- Framework-era app.config is for WinForms; do not ship as *.dll.config -->
     <None Remove="ZXMAK2\app.config" />
+    <!-- Avalonia host is built by Kozynax.Avalonia.csproj only -->
+    <Compile Remove="ZXMAK2.Host.Avalonia\**" />
+    <None Remove="ZXMAK2.Host.Avalonia\**" />
 
     <EmbeddedResource Remove="ZXMAK2.DirectX\**" />
     <EmbeddedResource Remove="ZXMAK2.Host.WinForms\**" />
