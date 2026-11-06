@@ -1,18 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Kozynax.UI;
 using Kozynax.UI.Helpers;
 using Silk.NET.SDL;
 using ZXMAK2.Dependency;
 using ZXMAK2.Engine.Interfaces;
+using ZXMAK2.Host.AvaloniaBackend.Kozui;
 using ZXMAK2.Host.AvaloniaBackend.Views;
 using ZXMAK2.Host.Interfaces;
 using ZXMAK2.Host.Presentation;
@@ -253,6 +256,10 @@ namespace ZXMAK2.Host.AvaloniaBackend
             _window.AddHandler(InputElement.KeyDownEvent, Window_KeyDown, RoutingStrategies.Tunnel);
             _window.AddHandler(InputElement.KeyUpEvent, Window_KeyUp, RoutingStrategies.Tunnel);
 
+            DragDrop.SetAllowDrop(_window, true);
+            DragDrop.AddDragOverHandler(_window, Window_DragOver);
+            DragDrop.AddDropHandler(_window, Window_Drop);
+
             var surface = _window.Surface;
             surface.PointerPressed += Surface_PointerPressed;
             surface.PointerReleased += Surface_PointerReleased;
@@ -452,6 +459,97 @@ namespace ZXMAK2.Host.AvaloniaBackend
         {
             if (command != null && command.CanExecute(this))
                 command.Execute(this);
+        }
+
+        #endregion
+
+        #region Drag-n-Drop
+
+        private bool CanAcceptDrop
+            => !_quit && _window != null && OpenKozuiWindows.Top == null;
+
+        private void Window_DragOver(object sender, DragEventArgs e)
+        {
+            e.DragEffects = DragDropEffects.None;
+            try
+            {
+                if (!CanAcceptDrop)
+                    return;
+                var uri = TryGetDropUri(e);
+                var command = ViewModel?.CommandOpenUri;
+                if (uri != null && command != null && command.CanExecute(uri))
+                    e.DragEffects = DragDropEffects.Link;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
+        }
+
+        private void Window_Drop(object sender, DragEventArgs e)
+        {
+            try
+            {
+                if (!CanAcceptDrop)
+                    return;
+
+                var uri = TryGetDropUri(e);
+                var command = ViewModel?.CommandOpenUri;
+                if (uri == null || command == null || !command.CanExecute(uri))
+                    return;
+
+                Activate();
+                BeginInvoke(new Action(() =>
+                {
+                    if (!CanAcceptDrop)
+                        return;
+                    if (command.CanExecute(uri))
+                        command.Execute(uri);
+                }), null);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
+            }
+        }
+
+        /// <summary>
+        /// Prefer a file path (WinForms file drop); otherwise treat text as a URL
+        /// (WinForms link drop / SDL DROPTEXT).
+        /// </summary>
+        private static Uri TryGetDropUri(DragEventArgs e)
+        {
+            var data = e.DataTransfer;
+            if (data == null)
+                return null;
+
+            var files = data.TryGetFiles();
+            if (files != null)
+            {
+                foreach (var file in files)
+                {
+                    var path = file.TryGetLocalPath();
+                    if (string.IsNullOrWhiteSpace(path) && file.Path != null && file.Path.IsFile)
+                        path = file.Path.LocalPath;
+                    if (string.IsNullOrWhiteSpace(path))
+                        continue;
+                    return new Uri(Path.GetFullPath(path));
+                }
+            }
+
+            var text = data.TryGetText();
+            if (string.IsNullOrWhiteSpace(text))
+                return null;
+
+            text = text.Trim();
+            if (text.IndexOf("://", StringComparison.Ordinal) < 0)
+            {
+                if (File.Exists(text) || Directory.Exists(text))
+                    return new Uri(Path.GetFullPath(text));
+                return null;
+            }
+
+            return Uri.TryCreate(text, UriKind.Absolute, out var uri) ? uri : null;
         }
 
         #endregion
