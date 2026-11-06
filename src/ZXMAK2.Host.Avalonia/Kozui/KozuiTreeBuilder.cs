@@ -623,13 +623,28 @@ namespace ZXMAK2.Host.AvaloniaBackend.Kozui
                 },
             });
 
-            // Height: MinHeight is a fixed viewport in rows; otherwise content-sized but capped
-            // unless the list is a fill pane inside a resizable dialog.
+            // MinHeight is a fixed viewport in rows. Pin Height/Width so virtualization
+            // (different realized row lengths while scrolling) cannot resize the dialog.
             var viewportRows = source.MinHeight > 0 ? source.MinHeight : 0;
             if (viewportRows > 0)
-                listBox.MinHeight = viewportRows * RowH + 4;
-            if (source.VerticalAlignment != KL.VerticalAlignment.Stretch || ConstrainStretchLists)
-                listBox.MaxHeight = Math.Max(viewportRows, 16) * RowH + 4;
+            {
+                var height = viewportRows * RowH + 4;
+                listBox.Height = height;
+                listBox.MinHeight = height;
+                listBox.MaxHeight = height;
+            }
+            else if (source.VerticalAlignment != KL.VerticalAlignment.Stretch || ConstrainStretchLists)
+            {
+                listBox.MaxHeight = 16 * RowH + 4;
+            }
+
+            if (source.MinWidth > 0 && ConstrainStretchLists)
+            {
+                var width = Math.Max(10, source.MinWidth) * CellW;
+                listBox.Width = width;
+                listBox.MinWidth = width;
+                listBox.MaxWidth = width;
+            }
 
             var syncing = false;
 
@@ -775,9 +790,15 @@ namespace ZXMAK2.Host.AvaloniaBackend.Kozui
             var text = new TextBlock
             {
                 TextWrapping = TextWrapping.NoWrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
                 VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 Padding = new Thickness(2, 0),
             };
+            // Container recycling re-runs the template with null content.
+            if (row == null)
+                return text;
+
             void apply()
             {
                 text.Text = row.Text;
